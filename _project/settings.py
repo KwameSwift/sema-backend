@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
+    'Auth'
 ]
 
 MIDDLEWARE = [
@@ -108,7 +109,7 @@ TEMPLATES = [
         },
     },
 ]
-
+AUTH_USER_MODEL = 'Auth.User'
 WSGI_APPLICATION = '_project.wsgi.application'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1GB
