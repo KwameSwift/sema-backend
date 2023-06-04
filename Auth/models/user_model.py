@@ -1,14 +1,16 @@
 import uuid
+
 from django.contrib.auth.base_user import BaseUserManager
-from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
-from helpers.validations import check_parameters
+from django.db import models
+
 
 class UserManager(BaseUserManager):
-    def create_user(self, email='',
-                    password=None, 
-                    ):
-
+    def create_user(
+        self,
+        email="",
+        password=None,
+    ):
         """
         Creates and saves a User with the given email and password.
         """
@@ -18,12 +20,11 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save()
         return user
-    
+
     def create_superuser(self, email, password=None):
         """
         Creates and saves a superuser with the given email and password.
         """
-        check_parameters(email, 'Email')
         user = self.create_user(
             email,
             password=password,
@@ -32,20 +33,21 @@ class UserManager(BaseUserManager):
         user.save()
         return user
 
+
 class UserRole(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     Updated_on = models.DateTimeField(auto_now=False)
-    
+
     class Meta:
-        db_table = 'User_Roles'
+        db_table = "User_Roles"
 
 
 class User(AbstractBaseUser):
     user_key = models.UUIDField(
         unique=True,
         primary_key=True,
-        default = uuid.uuid4,
+        default=uuid.uuid4,
     )
 
     role = models.ForeignKey(
@@ -55,19 +57,19 @@ class User(AbstractBaseUser):
         null=False,
     )
     email = models.EmailField(unique=True)
-    
+
     phone_number = models.CharField(max_length=255, blank=True, unique=True)
 
-    first_name = models.CharField(max_length=255,blank=True)
+    first_name = models.CharField(max_length=255, blank=True)
 
     last_name = models.CharField(max_length=255, blank=True)
-    
+
     organization = models.CharField(max_length=255, null=True, blank=True)
-    
+
     country = models.CharField(max_length=255, null=True, blank=True)
 
     is_admin = models.BooleanField(default=False)
- 
+
     is_active = models.BooleanField(default=True)
 
     created_on = models.DateTimeField(auto_now_add=True)
@@ -76,17 +78,14 @@ class User(AbstractBaseUser):
         max_length=255,
         blank=True,
     )
-    
-    is_deleted = models.BooleanField(
-        default = False
-    )
 
+    account_type = models.CharField(max_length=255, null=False)
+
+    is_deleted = models.BooleanField(default=False)
 
     # unique field
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     objects = UserManager()
-    
+
     class Meta:
-        db_table = 'Users'
-
-
+        db_table = "Users"

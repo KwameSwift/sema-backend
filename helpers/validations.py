@@ -1,7 +1,6 @@
-import re
-import uuid
-# from Loan.models.loan_model import Loan
+import random
 
+from Auth.models.user_model import User
 from helpers.status_codes import EmptyParameters
 
 # def validate_email(s):
@@ -9,47 +8,49 @@ from helpers.status_codes import EmptyParameters
 #    if not re.match(pat,s):
 #       raise InvalidEmail()
 
-def check_parameters(data, param):
-   if not data:
-      status_code = 309
-      default_detail = {
-        "status": 'error',
-        "code": status_code,
-        "detail": param + " is required",
-      }
-      raise EmptyParameters(default_detail)
-   
-# def generate_reset_code():
-#    loan_id = uuid.uuid4().hex[:6]
-#    keys = Loan.objects.filter(id=loan_id)
-#    while keys.exists():
-#       keys = Loan.objects.filter(id=loan_id)
-#       loan_id = 'LLMS'+uuid.uuid4().hex[:6]
-#    return loan_id.upper()
+
+def check_required_fields(data, fields):
+    empty_fields = [f"{field} is required" for field in fields if not data.get(field)]
+    if empty_fields:
+        default_detail = {
+            "status": "error",
+            "code": 309,
+            "detail": empty_fields,
+        }
+        raise EmptyParameters(default_detail)
+
+
+def generate_password_reset_code():
+    reset_code = random.randint(100000, 999999)
+    keys = User.objects.get(password_reset_code=reset_code)
+    while keys.exists():
+        generate_password_reset_code()
+    return reset_code
+
 
 def flatten_list(input_list: list, output_list: list):
-   for item in input_list:
-         if type(item) is list:
+    for item in input_list:
+        if type(item) is list:
             flatten_list(item, output_list)
-         else:
+        else:
             output_list.append(item)
-            
+
+
 def capitalizeFirstLetters(name: str):
-   splt_name = str(name).split(" ")
-   try:
-      nm_1 = splt_name[0]
-      nm_2 = splt_name[1]
-      final_name = nm_1.capitalize() + " " + nm_2.capitalize()
-   except IndexError:
-      final_name = name.capitalize()
-   
-   return final_name
+    splt_name = str(name).split(" ")
+    try:
+        nm_1 = splt_name[0]
+        nm_2 = splt_name[1]
+        final_name = nm_1.capitalize() + " " + nm_2.capitalize()
+    except IndexError:
+        final_name = name.capitalize()
+
+    return final_name
 
 
 def unique_list(list_of_items):
-   unique_list = []
-   for x in list_of_items:
-      if x not in unique_list:
-         unique_list.append(x)
-   return unique_list
-      
+    unique_list = []
+    for x in list_of_items:
+        if x not in unique_list:
+            unique_list.append(x)
+    return unique_list
