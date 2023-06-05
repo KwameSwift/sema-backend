@@ -98,12 +98,12 @@ MIDDLEWARE = [
 ROOT_URLCONF = "_project.urls"
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv("SMTP_SERVER")
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("SMTP_HOST")
 EMAIL_USE_TLS = True
-EMAIL_PORT = os.getenv("SMTP_PORT")
-EMAIL_HOST_USER = os.getenv("SMTP_SENDER")
-EMAIL_HOST_PASSWORD = os.getenv("SMTP_PASSWORD")
+EMAIL_PORT = os.environ.get("SMTP_PORT")
+EMAIL_HOST_USER = os.environ.get("SMTP_USERNAME")
+EMAIL_HOST_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 
 TEMPLATES = [

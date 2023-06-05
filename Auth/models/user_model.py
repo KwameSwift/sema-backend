@@ -37,7 +37,10 @@ class UserManager(BaseUserManager):
 class UserRole(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    Updated_on = models.DateTimeField(auto_now=False)
+    Updated_on = models.DateTimeField(
+        auto_now=False,
+        null=True,
+    )
 
     class Meta:
         db_table = "User_Roles"
@@ -54,11 +57,11 @@ class User(AbstractBaseUser):
         UserRole,
         on_delete=models.CASCADE,
         blank=True,
-        null=False,
+        null=True,
     )
     email = models.EmailField(unique=True)
 
-    phone_number = models.CharField(max_length=255, blank=True, unique=True)
+    mobile_number = models.CharField(max_length=255, blank=True, null=True)
 
     first_name = models.CharField(max_length=255, blank=True)
 
@@ -72,12 +75,11 @@ class User(AbstractBaseUser):
 
     is_active = models.BooleanField(default=True)
 
+    is_verified = models.BooleanField(default=False)
+
     created_on = models.DateTimeField(auto_now_add=True)
 
-    password_reset_code = models.CharField(
-        max_length=255,
-        blank=True,
-    )
+    password_reset_code = models.CharField(max_length=255, blank=True, null=True)
 
     account_type = models.CharField(max_length=255, null=False)
 

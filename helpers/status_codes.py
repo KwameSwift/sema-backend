@@ -24,7 +24,7 @@ class UserAlreadyExists(APIException):
     default_detail = {
         "status": "error",
         "code": status_code,
-        "detail": "User already exists with same phone number",
+        "detail": "User already exists with same email",
     }
 
 
@@ -37,31 +37,34 @@ class WrongCredentials(APIException):
     }
 
 
-class PasswordLengthValidation(APIException):
-    status_code = 316
+class WrongCode(APIException):
+    status_code = 313
     default_detail = {
         "status": "error",
         "code": status_code,
-        "detail": "Minimum 6 Characters",
+        "detail": "Code is invalid",
     }
 
 
 class PasswordMismatch(APIException):
-    status_code = 317
+    status_code = 314
     default_detail = {
         "status": "error",
         "code": status_code,
-        "detail": "Passwords mismatch",
+        "detail": "Passwords do not match",
     }
 
 
-class BorrowerDoesNotExist(APIException):
-    status_code = 318
-    default_detail = {
-        "status": "error",
-        "code": status_code,
-        "detail": "Borrower does not exist",
-    }
+def cannot_perform_action(message):
+    class CannotPerformAction(APIException):
+        status_code = 315
+        default_detail = {
+            "status": "error",
+            "code": status_code,
+            "detail": message,
+        }
+
+    return CannotPerformAction
 
 
 class BorrowerAlreadyExists(APIException):

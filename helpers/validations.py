@@ -22,10 +22,11 @@ def check_required_fields(data, fields):
 
 def generate_password_reset_code():
     reset_code = random.randint(100000, 999999)
-    keys = User.objects.get(password_reset_code=reset_code)
-    while keys.exists():
+    try:
+        User.objects.get(password_reset_code=reset_code)
         generate_password_reset_code()
-    return reset_code
+    except User.DoesNotExist:
+        return reset_code
 
 
 def flatten_list(input_list: list, output_list: list):

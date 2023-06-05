@@ -2,53 +2,34 @@ import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from django.core.mail import send_mail
 
-SMTP_SERVER = os.getenv("SMTP_SERVER")
+# SMTP server configuration
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = os.getenv("SMTP_PORT")  # Replace with the appropriate port number
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_PORT = os.getenv("SMTP_PORT")
-SMTP_SENDER = os.getenv("SMTP_SENDER")
+
 
 def send_email(recipient_email, subject, message):
     try:
-        # Create a multipart message object
+        # Create a multipart message
         msg = MIMEMultipart()
-        msg["From"] = SMTP_SENDER
+        msg["From"] = SMTP_USERNAME
         msg["To"] = recipient_email
         msg["Subject"] = subject
 
-        # Attach the message to the MIMEMultipart object
+        # Add message body
         msg.attach(MIMEText(message, "plain"))
 
-        # Connect to the SMTP server provided by your hosting provider
-        smtp_server = SMTP_SERVER  # Update this with your SMTP server details
-        smtp_port = SMTP_PORT  # Update this with your SMTP server port
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
+        # Create SMTP server connection
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+            # server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
 
-        # Login to your email account
-        server.login(SMTP_SENDER, SMTP_PASSWORD)
+            # Send email
+            server.send_message(msg)
 
-        # Send the email
-        server.sendmail(SMTP_SENDER, recipient_email, msg.as_string())
-        print("Email sent successfully!")
-        
     except Exception as e:
-        print("An error occurred while sending the email:")
-        print(str(e))
-    finally:
-        # Clean up
-        server.quit()
+        print("An error occurred while sending the email:", str(e))
 
     return True
-
-
-def send_another_email():
-    subject = 'welcome to GFG world'
-    message = f'Hi Swift, thank you for registering in geeksforgeeks.'
-    email_from = SMTP_SENDER
-    recipient_list = ["charlestontaylor09@gmail.com", ]
-    
-    return send_mail(subject, message, email_from, recipient_list)
-    
-    

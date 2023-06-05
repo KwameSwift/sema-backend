@@ -10,70 +10,78 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from Auth.models import User
-from helpers.email_sender import send_another_email, send_email
+from helpers.email_sender import send_email
 from helpers.status_codes import (PasswordMismatch, UserAlreadyExists,
-                                  UserDoesNotExist, WrongCredentials)
-from helpers.validations import check_required_fields
+                                  UserDoesNotExist, WrongCode,
+                                  WrongCredentials, cannot_perform_action)
+from helpers.validations import (check_required_fields,
+                                 generate_password_reset_code)
 
 
 class RegisterView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
 
-        check_required_fields(data, ["email"])
-
-        if "password" in data:
-            check_required_fields(data, ["password", "confirm_password"])
-            if data["password"] == data["confirm_password"]:
-                data["password"] = make_password(data["password"])
-                data["account_type"] = "Contnent Creator"
-            else:
-                raise PasswordMismatch()
-        else:
-            data["account_type"] = "Guest"
+        check_required_fields(data, ["email", "first_name", "last_name"])
         try:
             User.objects.get(email=data[("email")])
             raise UserAlreadyExists()
         except User.DoesNotExist:
+            if "password" in data:
+                check_required_fields(
+                    data,
+                    [
+                        "password",
+                        "confirm_password",
+                        "organization",
+                        "country",
+                        "mobile_number",
+                    ],
+                )
+                if data["password"] == data["confirm_password"]:
+                    data["password"] = make_password(data["password"])
+                    data["account_type"] = "Content Creator"
+                    data.pop("confirm_password", None)
+                else:
+                    raise PasswordMismatch()
+            else:
+                data["account_type"] = "Guest"
+
             user = User.objects.create(**data)
 
-        # Send welcome mail to user
-        new_line = "\n"
-        email = data["email"]
-        account_type = data["account_type"]
-        message = (
-            f"Hi, {email}. {new_line}"
-            f"Thank you for signing up on Sema as a {account_type}. {new_line}"
-            f"We hope you have a wonderful time {new_line}{new_line}"
-            f"The Sema Team"
-        )
-        send_email(data["email"], "Welcome to Sema", message)
-        
-        
-        refresh = RefreshToken.for_user(user)
+            # Send welcome mail to user
+            new_line = "\n"
+            account_type = data["account_type"]
+            message = (
+                f"Hi, {user.first_name}. {new_line}"
+                f"Thank you for signing up on Sema as a {account_type}. {new_line}"
+                f"We hope you have a wonderful time. {new_line}{new_line}"
+                f"{new_line}The Sema Team"
+            )
+            send_email(data["email"], "Welcome to Sema", message)
 
-        # Construct user object with tokens and necessary details
-        tokens = {
-            "refresh_token": str(refresh),
-            "access_token": str(refresh.access_token),
-        }
-        
-        return JsonResponse(
-            {
-                "status": "success",
-                "detail": "User registered successfully",
-                "data": user.user_key,
-                "tokens": tokens
-            },
-            safe=False,
-        )
-        
+            refresh = RefreshToken.for_user(user)
+
+            # Construct user object with tokens and necessary details
+            tokens = {
+                "refresh_token": str(refresh),
+                "access_token": str(refresh.access_token),
+            }
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "User registered successfully",
+                    "data": user.user_key,
+                    "tokens": tokens,
+                },
+                safe=False,
+            )
 
 
 class LoginView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
-
         check_required_fields(data, ["email", "password"])
 
         try:
@@ -86,6 +94,7 @@ class LoginView(APIView):
                 data = {
                     "refresh_token": str(refresh),
                     "access_token": str(refresh.access_token),
+                    "user": {},
                 }
 
                 settings.TIME_ZONE
@@ -94,11 +103,14 @@ class LoginView(APIView):
                 user.last_login = aware_datetime
                 user.save()
 
-                data["user"]["user_key"] = (user.user_key,)
-                data["user"]["role_id"] = (user.role_id,)
-                data["user"]["role_name"] = (user.role.name,)
-                data["user"]["email"] = (user.email,)
-                data["user"]["account_type"] = (user.account_type,)
+                data["user"]["user_key"] = user.user_key
+                data["user"]["role_id"] = user.role_id
+                try:
+                    data["user"]["role_name"] = user.role.name
+                except AttributeError:
+                    data["user"]["role_name"] = None
+                data["user"]["email"] = user.email
+                data["user"]["account_type"] = user.account_type
                 data["user"]["is_admin"] = user.is_admin
 
                 return JsonResponse(
@@ -109,12 +121,66 @@ class LoginView(APIView):
                 raise WrongCredentials()
         except User.DoesNotExist:
             raise UserDoesNotExist()
-        
 
-class TestEmailService(APIView):
+
+class SendResetPasswordMailView(APIView):
     def post(self, request, *args, **kwargs):
-        print("Request is here")
-        
-        email = send_another_email()
-        print(email)
-        return JsonResponse({'response': 'success'}, safe=False)
+        data = request.data
+        check_required_fields(data, ["email"])
+
+        try:
+            user = User.objects.get(email=data["email"])
+
+            if user.account_type == "Guest":
+                raise cannot_perform_action(
+                    "The email entered signed up as a Guest account"
+                )
+
+            reset_code = generate_password_reset_code()
+            user.password_reset_code = reset_code
+            user.save()
+            new_line = "\n"
+            message = (
+                f"Hi, {user.first_name}.{new_line}"
+                f"You have requested to reset your password."
+                f"Please use the code below to reset your password: {new_line}"
+                f"{reset_code}"
+            )
+
+            send_email(user.email, "Password Reset", message)
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Password reset email sent successfully",
+                },
+                safe=False,
+            )
+        except User.DoesNotExist:
+            raise UserDoesNotExist()
+
+
+class PasswordResetView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+
+        check_required_fields(data, ["reset_code", "new_password", "confirm_password"])
+
+        try:
+            user = User.objects.get(password_reset_code=data["reset_code"])
+            if data["new_password"] == data["confirm_password"]:
+                user.password = make_password(data["new_password"])
+                user.password_reset_code = None
+                user.save()
+
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Password reset successful",
+                    },
+                    safe=False,
+                )
+            else:
+                raise PasswordMismatch()
+        except User.DoesNotExist:
+            raise WrongCode()
