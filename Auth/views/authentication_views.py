@@ -4,16 +4,17 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
 from django.utils.timezone import make_aware
-# from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-# from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from Auth.models import User
 from helpers.email_sender import send_email
-from helpers.status_codes import (PasswordMismatch, UserAlreadyExists,
-                                  UserDoesNotExist, WrongCode,
-                                  WrongCredentials, cannot_perform_action)
+from helpers.status_codes import (PasswordMismatch, WrongCode,
+                                  WrongCredentials, WrongPassword,
+                                  cannot_perform_action,
+                                  duplicate_data_exception, non_existing_data)
 from helpers.validations import (check_required_fields,
                                  generate_password_reset_code)
 
@@ -25,7 +26,7 @@ class RegisterView(APIView):
         check_required_fields(data, ["email", "first_name", "last_name"])
         try:
             User.objects.get(email=data[("email")])
-            raise UserAlreadyExists()
+            raise duplicate_data_exception("User with email")
         except User.DoesNotExist:
             if "password" in data:
                 check_required_fields(
@@ -120,7 +121,7 @@ class LoginView(APIView):
             else:
                 raise WrongCredentials()
         except User.DoesNotExist:
-            raise UserDoesNotExist()
+            raise non_existing_data("User with email")
 
 
 class SendResetPasswordMailView(APIView):
@@ -157,7 +158,7 @@ class SendResetPasswordMailView(APIView):
                 safe=False,
             )
         except User.DoesNotExist:
-            raise UserDoesNotExist()
+            raise non_existing_data("User with email")
 
 
 class PasswordResetView(APIView):
@@ -184,3 +185,36 @@ class PasswordResetView(APIView):
                 raise PasswordMismatch()
         except User.DoesNotExist:
             raise WrongCode()
+
+
+class ChangePasswordView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        data = request
+        user = self.request.user
+
+        check_required_fields(
+            data, ["old_password", "new_password", "confirm_password"]
+        )
+        try:
+            user = User.objects.get(email=user.email)
+            if user.check_password(data["old_password"]):
+                if data["new_password"] == data["confirm_password"]:
+                    user.password = make_password(data["new_password"])
+                    user.save()
+
+                    return JsonResponse(
+                        {
+                            "status": "success",
+                            "detail": "Password change successful",
+                        },
+                        safe=False,
+                    )
+                else:
+                    raise PasswordMismatch()
+            else:
+                raise WrongPassword()
+        except User.DoesNotExist:
+            raise non_existing_data("User")

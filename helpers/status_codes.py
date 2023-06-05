@@ -10,22 +10,28 @@ class EmptyParameters(APIException):
     }
 
 
-class UserDoesNotExist(APIException):
-    status_code = 310
-    default_detail = {
-        "status": "error",
-        "code": status_code,
-        "detail": "User does not exist",
-    }
+def non_existing_data(message):
+    class DataDoesNotExist(APIException):
+        status_code = 310
+        default_detail = {
+            "status": "error",
+            "code": status_code,
+            "detail": f"{message} does not exist",
+        }
+
+    return DataDoesNotExist
 
 
-class UserAlreadyExists(APIException):
-    status_code = 311
-    default_detail = {
-        "status": "error",
-        "code": status_code,
-        "detail": "User already exists with same email",
-    }
+def duplicate_data_exception(message):
+    class DataDoesNotExist(APIException):
+        status_code = 311
+        default_detail = {
+            "status": "error",
+            "code": status_code,
+            "detail": f"{message} already exists",
+        }
+
+    return DataDoesNotExist
 
 
 class WrongCredentials(APIException):
@@ -58,30 +64,17 @@ class PasswordMismatch(APIException):
 def cannot_perform_action(message):
     class CannotPerformAction(APIException):
         status_code = 315
-        default_detail = {
-            "status": "error",
-            "code": status_code,
-            "detail": message,
-        }
+        default_detail = {"status": "error", "code": status_code, "detail": message}
 
     return CannotPerformAction
 
 
-class BorrowerAlreadyExists(APIException):
-    status_code = 319
+class WrongPassword(APIException):
+    status_code = 316
     default_detail = {
         "status": "error",
         "code": status_code,
-        "detail": "Borrower already exists",
-    }
-
-
-class FileDoesNotExist(APIException):
-    status_code = 320
-    default_detail = {
-        "status": "error",
-        "code": status_code,
-        "detail": "File does not exist",
+        "detail": "Wrong password",
     }
 
 

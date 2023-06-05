@@ -37,7 +37,7 @@ class UserManager(BaseUserManager):
 class UserRole(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    Updated_on = models.DateTimeField(
+    updated_on = models.DateTimeField(
         auto_now=False,
         null=True,
     )
