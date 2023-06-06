@@ -1,11 +1,10 @@
 from django.urls import path
 
-from .views.authentication_views import (ChangePasswordView, LoginView,
+from .views.authentication_views import (ChangePasswordView, LoginView, VerifyPasswordResetCode,
                                          PasswordResetView, RegisterView,
                                          SendResetPasswordMailView)
-from .views.user_roles_views import (AddUserRoleView, DeleteUserRoleView,
-                                     GetAllUserRolesView,
-                                     GetSingleUserRoleView, UpdateUserRoleView)
+from .views.permissions_view import (AddUserRole, DeleteUserRole, AddModuleView,
+                                     GetAllUserRoles, UpdateUserRole, GetSingleRole)
 
 urlpatterns = [
     # User authentication
@@ -22,26 +21,36 @@ urlpatterns = [
         PasswordResetView.as_view(),
         name="Reset Password",
     ),
+    path(
+        "verify-password-reset-code/",
+        VerifyPasswordResetCode.as_view(),
+        name="Verify Reset Password Code",
+    ),
     # User roles
-    path("add-user-role/", AddUserRoleView.as_view(), name="Add User Role"),
+    path("add-user-role/", AddUserRole.as_view(), name="Add User Role"),
     path(
         "delete-user-role/<int:role_id>/",
-        DeleteUserRoleView.as_view(),
+        DeleteUserRole.as_view(),
         name="Delete User Role",
     ),
     path(
         "get-all-user-roles/<int:page_number>/",
-        GetAllUserRolesView.as_view(),
+        GetAllUserRoles.as_view(),
         name="Get All User Roles",
     ),
     path(
-        "get-user-role/<int:role_id>/",
-        GetSingleUserRoleView.as_view(),
+        "update-user-role/<int:role_id>/",
+        UpdateUserRole.as_view(),
+        name="Update User Role",
+    ),
+    path(
+        "get-single-role/<int:role_id>/",
+        GetSingleRole.as_view(),
         name="Get Single User Role",
     ),
     path(
-        "update-user-role/<int:role_id>/",
-        UpdateUserRoleView.as_view(),
-        name="Update User Role",
+        "add-module/",
+        AddModuleView.as_view(),
+        name="Add Module",
     ),
 ]

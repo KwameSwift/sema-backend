@@ -1,4 +1,7 @@
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.utils.timezone import make_aware
+
+from _project import settings
 
 
 # Function to return paginated data
@@ -34,3 +37,9 @@ def paginate_data(data, page_number, items_per_page):
 
     # Return paginated data details
     return response_data
+
+
+# Function to return aware datetime
+def aware_datetime(datetime):
+    settings.TIME_ZONE
+    return make_aware(datetime)

@@ -64,17 +64,27 @@ class RegisterView(APIView):
             refresh = RefreshToken.for_user(user)
 
             # Construct user object with tokens and necessary details
-            tokens = {
+            data = {
                 "refresh_token": str(refresh),
                 "access_token": str(refresh.access_token),
+                "user": {}
             }
+            
+            data["user"]["user_key"] = user.user_key
+            data["user"]["role_id"] = user.role_id
+            try:
+                data["user"]["role_name"] = user.role.name
+            except AttributeError:
+                data["user"]["role_name"] = None
+            data["user"]["email"] = user.email
+            data["user"]["account_type"] = user.account_type
+            data["user"]["is_admin"] = user.is_admin
 
             return JsonResponse(
                 {
                     "status": "success",
                     "detail": "User registered successfully",
-                    "data": user.user_key,
-                    "tokens": tokens,
+                    "data": data,
                 },
                 safe=False,
             )
@@ -160,6 +170,25 @@ class SendResetPasswordMailView(APIView):
         except User.DoesNotExist:
             raise non_existing_data("User with email")
 
+
+class VerifyPasswordResetCode(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+
+        check_required_fields(data, ["reset_code", "email"])
+
+        try:
+            User.objects.get(password_reset_code=data["reset_code"], email=data["email"])
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Code verified successfully",
+                },
+                safe=False,
+            )
+            
+        except User.DoesNotExist:
+            raise WrongCode()
 
 class PasswordResetView(APIView):
     def post(self, request, *args, **kwargs):
