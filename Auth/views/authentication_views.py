@@ -194,10 +194,10 @@ class PasswordResetView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
 
-        check_required_fields(data, ["reset_code", "new_password", "confirm_password"])
+        check_required_fields(data, ["email", "new_password", "confirm_password"])
 
         try:
-            user = User.objects.get(password_reset_code=data["reset_code"])
+            user = User.objects.get(email=data["email"])
             if data["new_password"] == data["confirm_password"]:
                 user.password = make_password(data["new_password"])
                 user.password_reset_code = None

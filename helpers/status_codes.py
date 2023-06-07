@@ -23,7 +23,7 @@ def non_existing_data(message):
 
 
 def duplicate_data_exception(message):
-    class DataDoesNotExist(APIException):
+    class DuplicateData(APIException):
         status_code = 311
         default_detail = {
             "status": "error",
@@ -31,7 +31,7 @@ def duplicate_data_exception(message):
             "detail": f"{message} already exists",
         }
 
-    return DataDoesNotExist
+    return DuplicateData
 
 
 class WrongCredentials(APIException):
