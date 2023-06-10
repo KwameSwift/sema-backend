@@ -9,7 +9,8 @@ from Auth.models.permissions_model import Module, Permission
 from Auth.models.user_model import User, UserRole
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (cannot_perform_action,
-                                  duplicate_data_exception, non_existing_data)
+                                  duplicate_data_exception,
+                                  non_existing_data_exception)
 from helpers.validations import check_required_fields
 
 
@@ -33,9 +34,9 @@ class AssignRolesView(APIView):
                 safe=False,
             )
         except UserRole.DoesNotExist:
-            raise non_existing_data("User role")
+            raise non_existing_data_exception("User role")
         except User.DoesNotExist:
-            raise non_existing_data("User")
+            raise non_existing_data_exception("User")
 
 
 class DeleteUserRole(APIView):
@@ -77,7 +78,7 @@ class DeleteUserRole(APIView):
             )
         except UserRole.DoesNotExist:
             # Raise exception if role does not exist
-            raise non_existing_data("User role")
+            raise non_existing_data_exception("User role")
 
 
 class AddUserRole(APIView):
@@ -113,7 +114,7 @@ class AddUserRole(APIView):
                 Permission.objects.create(**details)
             except Module.DoesNotExist:
                 # Except that module does not exist, raise an exception
-                raise non_existing_data("Module")
+                raise non_existing_data_exception("Module")
         # Return response to user
         return JsonResponse(
             {"status": "success", "detail": "Role added successfully"},
@@ -156,19 +157,23 @@ class GetSingleRole(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
-        role_id = self.kwargs['role_id']
+        role_id = self.kwargs["role_id"]
         user_role = UserRole.objects.filter(id=role_id).values().first()
-        
-        user_permissions = Permission.objects.filter(role_id=role_id).values("id", "module_id", "module__name", "access_level")
+
+        user_permissions = Permission.objects.filter(role_id=role_id).values(
+            "id", "module_id", "module__name", "access_level"
+        )
         user_role["permissions"] = list(user_permissions)
         # Send response to user
         return JsonResponse(
-            {"status": "success", 
-             "detail": "Role updated successfully",
-             "data": user_role
-             },
+            {
+                "status": "success",
+                "detail": "Role updated successfully",
+                "data": user_role,
+            },
             safe=False,
         )
+
 
 class UpdateUserRole(APIView):
     permission_classes = (IsAuthenticated,)
@@ -205,14 +210,14 @@ class UpdateUserRole(APIView):
                 permission.save()
             except Permission.DoesNotExist:
                 # If any permission does not exist, raise an exception
-                raise non_existing_data("Permission")
+                raise non_existing_data_exception("Permission")
 
         # Return response to user
         return JsonResponse(
             {"status": "success", "detail": "Role updated successfully"},
             safe=False,
         )
-       
+
 
 class AddModuleView(APIView):
     permission_classes = (IsAuthenticated,)

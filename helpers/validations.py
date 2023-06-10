@@ -1,5 +1,6 @@
 import random
 
+from Auth.models.permissions_model import Module, Permission
 from Auth.models.user_model import User
 from helpers.status_codes import EmptyParameters
 
@@ -55,3 +56,15 @@ def unique_list(list_of_items):
         if x not in unique_list:
             unique_list.append(x)
     return unique_list
+
+
+# Check user module permision
+def check_permission(user, module_name, access_level):
+    module = Module.objects.get(name=module_name)
+    permission = Permission.objects.get(role_id=user.role_id, module=module)
+    return permission.access_level in access_level
+
+
+# Check Super Admin permissions
+def check_super_admin(user):
+    return user.is_admin

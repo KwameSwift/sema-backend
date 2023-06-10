@@ -7,7 +7,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models.user_model import UserRole
 from helpers.functions import aware_datetime, paginate_data
-from helpers.status_codes import duplicate_data_exception, non_existing_data
+from helpers.status_codes import (duplicate_data_exception,
+                                  non_existing_data_exception)
 from helpers.validations import check_required_fields
 
 
@@ -47,7 +48,7 @@ class DeleteUserRoleView(APIView):
                 safe=False,
             )
         except UserRole.DoesNotExist:
-            raise non_existing_data("User role")
+            raise non_existing_data_exception("User role")
 
 
 class UpdateUserRoleView(APIView):
@@ -68,7 +69,7 @@ class UpdateUserRoleView(APIView):
                 safe=False,
             )
         except UserRole.DoesNotExist:
-            raise non_existing_data("User role")
+            raise non_existing_data_exception("User role")
 
 
 class GetAllUserRolesView(APIView):
@@ -100,4 +101,4 @@ class GetSingleUserRoleView(APIView):
                 safe=False,
             )
         except IndexError:
-            raise non_existing_data("User role")
+            raise non_existing_data_exception("User role")

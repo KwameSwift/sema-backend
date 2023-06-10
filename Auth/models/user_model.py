@@ -46,6 +46,35 @@ class UserRole(models.Model):
         db_table = "User_Roles"
 
 
+class Country(models.Model):
+    name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=False,
+    )
+
+    abbreviation = models.CharField(
+        max_length=255,
+        blank=True,
+        null=False,
+    )
+
+    calling_code = models.CharField(
+        max_length=255,
+        blank=True,
+        null=False,
+    )
+
+    flag = models.CharField(
+        max_length=255,
+        blank=True,
+        null=False,
+    )
+
+    class Meta:
+        db_table = "Countries"
+
+
 class User(AbstractBaseUser):
     user_key = models.UUIDField(
         unique=True,
@@ -69,7 +98,12 @@ class User(AbstractBaseUser):
 
     organization = models.CharField(max_length=255, null=True, blank=True)
 
-    country = models.CharField(max_length=255, null=True, blank=True)
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
 
     is_admin = models.BooleanField(default=False)
 
@@ -78,6 +112,8 @@ class User(AbstractBaseUser):
     is_verified = models.BooleanField(default=False)
 
     created_on = models.DateTimeField(auto_now_add=True)
+
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
     password_reset_code = models.CharField(max_length=255, blank=True, null=True)
 

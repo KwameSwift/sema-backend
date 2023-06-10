@@ -27,4 +27,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("sentry-debug/", trigger_error),
     path("auth/", include("Auth.urls")),
+    path("users/", include("Users.urls")),
 ]

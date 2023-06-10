@@ -1,3 +1,6 @@
+import random
+import string
+
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.timezone import make_aware
 
@@ -43,3 +46,10 @@ def paginate_data(data, page_number, items_per_page):
 def aware_datetime(datetime):
     settings.TIME_ZONE
     return make_aware(datetime)
+
+
+# Generate random password
+def generate_random_string(length):
+    alphanumeric_chars = string.ascii_letters + string.digits
+    random_string = "".join(random.choice(alphanumeric_chars) for _ in range(length))
+    return random_string

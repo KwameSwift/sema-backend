@@ -1,4 +1,5 @@
 import datetime
+import os
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -14,7 +15,8 @@ from helpers.email_sender import send_email
 from helpers.status_codes import (PasswordMismatch, WrongCode,
                                   WrongCredentials, WrongPassword,
                                   cannot_perform_action,
-                                  duplicate_data_exception, non_existing_data)
+                                  duplicate_data_exception,
+                                  non_existing_data_exception)
 from helpers.validations import (check_required_fields,
                                  generate_password_reset_code)
 
@@ -35,7 +37,7 @@ class RegisterView(APIView):
                         "password",
                         "confirm_password",
                         "organization",
-                        "country",
+                        "country_id",
                         "mobile_number",
                     ],
                 )
@@ -52,12 +54,13 @@ class RegisterView(APIView):
 
             # Send welcome mail to user
             new_line = "\n"
+            double_new_line = "\n\n"
             account_type = data["account_type"]
             message = (
                 f"Hi, {user.first_name}. {new_line}"
                 f"Thank you for signing up on Sema as a {account_type}. {new_line}"
-                f"We hope you have a wonderful time. {new_line}{new_line}"
-                f"{new_line}The Sema Team"
+                f"We hope you have a wonderful time. {new_line}"
+                f"{double_new_line}The Sema Team"
             )
             send_email(data["email"], "Welcome to Sema", message)
 
@@ -67,9 +70,9 @@ class RegisterView(APIView):
             data = {
                 "refresh_token": str(refresh),
                 "access_token": str(refresh.access_token),
-                "user": {}
+                "user": {},
             }
-            
+
             data["user"]["user_key"] = user.user_key
             data["user"]["role_id"] = user.role_id
             try:
@@ -131,7 +134,7 @@ class LoginView(APIView):
             else:
                 raise WrongCredentials()
         except User.DoesNotExist:
-            raise non_existing_data("User with email")
+            raise non_existing_data_exception("User with email")
 
 
 class SendResetPasswordMailView(APIView):
@@ -151,11 +154,13 @@ class SendResetPasswordMailView(APIView):
             user.password_reset_code = reset_code
             user.save()
             new_line = "\n"
+            double_new_line = "\n\n"
             message = (
                 f"Hi, {user.first_name}.{new_line}"
                 f"You have requested to reset your password."
                 f"Please use the code below to reset your password: {new_line}"
                 f"{reset_code}"
+                f"{double_new_line}The Sema Team"
             )
 
             send_email(user.email, "Password Reset", message)
@@ -168,7 +173,7 @@ class SendResetPasswordMailView(APIView):
                 safe=False,
             )
         except User.DoesNotExist:
-            raise non_existing_data("User with email")
+            raise non_existing_data_exception("User with email")
 
 
 class VerifyPasswordResetCode(APIView):
@@ -178,7 +183,9 @@ class VerifyPasswordResetCode(APIView):
         check_required_fields(data, ["reset_code", "email"])
 
         try:
-            User.objects.get(password_reset_code=data["reset_code"], email=data["email"])
+            User.objects.get(
+                password_reset_code=data["reset_code"], email=data["email"]
+            )
             return JsonResponse(
                 {
                     "status": "success",
@@ -186,9 +193,10 @@ class VerifyPasswordResetCode(APIView):
                 },
                 safe=False,
             )
-            
+
         except User.DoesNotExist:
             raise WrongCode()
+
 
 class PasswordResetView(APIView):
     def post(self, request, *args, **kwargs):
@@ -246,4 +254,5 @@ class ChangePasswordView(APIView):
             else:
                 raise WrongPassword()
         except User.DoesNotExist:
-            raise non_existing_data("User")
+            raise non_existing_data_exception("User")
+

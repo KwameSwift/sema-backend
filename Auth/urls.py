@@ -1,10 +1,13 @@
 from django.urls import path
 
-from .views.authentication_views import (ChangePasswordView, LoginView, VerifyPasswordResetCode,
+from .views.authentication_views import (ChangePasswordView, LoginView,
                                          PasswordResetView, RegisterView,
-                                         SendResetPasswordMailView)
-from .views.permissions_view import (AddUserRole, DeleteUserRole, AddModuleView,
-                                     GetAllUserRoles, UpdateUserRole, GetSingleRole)
+                                         SendResetPasswordMailView,
+                                         VerifyPasswordResetCode)
+from .views.permissions_view import (AddModuleView, AddUserRole,
+                                     DeleteUserRole, GetAllUserRoles,
+                                     GetSingleRole, UpdateUserRole)
+from Users.views.utilities_view import AddCountries
 
 urlpatterns = [
     # User authentication
@@ -48,9 +51,19 @@ urlpatterns = [
         GetSingleRole.as_view(),
         name="Get Single User Role",
     ),
+    # Modules
     path(
         "add-module/",
         AddModuleView.as_view(),
         name="Add Module",
     ),
+    
+    # Countries
+    path(
+        "add-countries/",
+        AddCountries.as_view(),
+        name="Add Countries",
+    ),
+    
+    
 ]
