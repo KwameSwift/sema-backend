@@ -1,200 +1,182 @@
-import datetime
+import os
 
-from django.contrib.auth.hashers import make_password
+from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
-from django.utils.timezone import make_aware
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Auth.models.user_model import User, UserRole
-from helpers.email_sender import send_email
-from helpers.functions import generate_random_string, paginate_data
+from Auth.models.user_documents_model import UserDocuments
+from Auth.models.user_model import User
+from Blog.models.blog_model import BlogComment, BlogPost
+from helpers.functions import delete_file, paginate_data, upload_images
 from helpers.status_codes import (action_authorization_exception,
-                                  duplicate_data_exception,
+                                  cannot_perform_action,
                                   non_existing_data_exception)
-from helpers.validations import check_required_fields, check_super_admin
+from helpers.validations import check_required_fields
 
 
-# Get all content creators
-class GetAllUsers(APIView):
+# View my profile
+class ProfileView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        usr = self.request.user
+        user = (
+            User.objects.filter(user_key=usr.user_key)
+            .values(
+                "user_key",
+                "role__name",
+                "email",
+                "first_name",
+                "last_name",
+                "profile_image",
+                "bio",
+                "links",
+                "organization",
+                "country__name",
+                "is_verified",
+            )
+            .first()
+        )
+
+        documents = UserDocuments.objects.filter(user=usr).values(
+            "id", "document_location"
+        )
+
+        user["documents"] = list(documents)
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Profile retrieved successfully",
+                "data": user,
+            },
+            safe=False,
+        )
+
+
+# Upload profile image
+class UploadProfileImage(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        files = request.FILES.getlist("files")
+
+        user = User.objects.get(user_key=self.request.user.user_key)
+
+        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
+        for file in files:
+            file_extension = os.path.splitext(file.name)[1]
+            new_name = f"{user.first_name}_{user.last_name}{file_extension}"
+            fs = FileSystemStorage(location=LOCAL_FILE_PATH)
+            fs.save(new_name, file)
+
+            file_path = LOCAL_FILE_PATH + new_name
+
+            subdirectory = f"{user.first_name}_{user.last_name}/Profile_Image"
+            uploaded_path = upload_images(file_path, subdirectory)
+
+            user.profile_image = uploaded_path
+            user.save()
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        return JsonResponse(
+            {"status": "success", "detail": "File uploaded successfully"},
+            safe=False,
+        )
+
+
+# Upload user documents
+class UploadUserDocuments(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        files = request.FILES.getlist("files")
+        user = self.request.user
+
+        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
+        for file in files:
+            file_name = str(file.name)
+            new_name = file_name.replace(" ", "_")
+            fs = FileSystemStorage(location=LOCAL_FILE_PATH)
+            fs.save(new_name, file)
+
+            file_path = LOCAL_FILE_PATH + new_name
+
+            subdirectory = f"{user.first_name}_{user.last_name}/Documents"
+            uploaded_path = upload_images(file_path, subdirectory)
+
+            user_documents = {"user": user, "document_location": uploaded_path}
+
+            UserDocuments.objects.create(**user_documents)
+
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        return JsonResponse(
+            {"status": "success", "detail": "Documents uploaded successfully"},
+            safe=False,
+        )
+
+
+# Get all blog posts created by a user
+class GetUserBlogPosts(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
         user = self.request.user
         page_number = self.kwargs.get("page_number")
-        account_type = request.data.get("account_type")
 
-        if not check_super_admin(user):
-            raise action_authorization_exception("Unauthorized to perform action")
+        if user.account_type == "Guest":
+            raise action_authorization_exception("Unauthorized to view Blogs")
 
-        users = (
-            User.objects.filter(account_type=account_type)
+        blog_posts = (
+            BlogPost.objects.filter(author=user)
             .values(
-                "user_key",
-                "role_id",
-                "role__name",
-                "email",
-                "first_name",
-                "last_name",
-                "organization",
-                "country__name",
-                "is_verified",
+                "id",
+                "title",
+                "content",
+                "blog_image_location",
+                "created_on",
+                "is_approved",
+                "is_published",
             )
             .order_by("-created_on")
         )
 
-        data = paginate_data(users, page_number, 10)
+        for blog_post in blog_posts:
+            total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
+            blog_post["total_comments"] = total_comments
 
-        return JsonResponse(data, safe=False)
-
-
-# Add Super Admins
-class AddSuperAdmins(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
-    def post(self, request, *args, **kwargs):
-        user = self.request.user
-        data = request.data
-
-        if not check_super_admin(user):
-            raise action_authorization_exception("Unauthorized to perform action")
-
-        check_required_fields(
+        data = paginate_data(blog_posts, page_number, 10)
+        return JsonResponse(
             data,
-            ["email", "first_name", "last_name", "organization", "country_id", "role_id"],
+            safe=False,
         )
 
-        try:
-            User.objects.get(email=data["email"])
-            raise duplicate_data_exception("Email")
-        except User.DoesNotExist:
-            password = generate_random_string(8)
-            data["password"] = make_password(password)
-            data["is_verified"] = True
-            data["is_admin"] = True
-            data["account_type"] = "Super Admin"
 
-            new_user = User.objects.create(**data)
-
-            new_line = "\n"
-            double_new_line = "\n\n"
-            message = (
-                f"Hi, {new_user.first_name}.{new_line}"
-                f"You have been added as an Admin on Sema."
-                f"Please use the password below to login into your account {new_line}"
-                f"Password: {password}{new_line}"
-                f"Change your password after logging in. {new_line}"
-                f"{double_new_line}The Sema Team"
-            )
-
-            send_email(new_user.email, "New Account - Sema", message)
-
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "detail": "Admin registered successfully",
-                },
-                safe=False,
-            )
-
-
-class AssignUserRoleToUser(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
-    def post(self, request, *args, **kwargs):
-        data = request.data
-
-        if not check_super_admin(self.request.user):
-            raise action_authorization_exception("Unauthorized to perform action")
-
-        check_required_fields(data, ["user_key", "role_id"])
-
-        try:
-            role = UserRole.objects.get(id=data["role_id"])
-            user = User.objects.get(user_key=data["user_key"])
-            user.role_id = role.id
-            user.updated_on = make_aware(datetime.datetime.now())
-            user.save()
-
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "detail": "Role assigned to user successfully",
-                },
-                safe=False,
-            )
-        except UserRole.DoesNotExist:
-            raise non_existing_data_exception("User role")
-        except User.DoesNotExist:
-            raise non_existing_data_exception("User")
-
-
-# Delete a user from the database
-class DeleteUserView(APIView):
+# Delete Profile Image
+class DeleteProfileImage(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
     def delete(self, request, *args, **kwargs):
-        data = request.data
+        user = self.request.user
 
-        if not check_super_admin(self.request.user):
-            raise action_authorization_exception("Unauthorized to perform action")
-
-        check_required_fields(data, ["user_key"])
-
-        try:
-            user = User.objects.get(user_key=data["user_key"])
-            user.delete()
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "detail": "User deleted successfully",
-                },
-                safe=False,
-            )
-        except User.DoesNotExist:
-            raise non_existing_data_exception("User")
-
-
-# Get Single User
-class GetSingleUser(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
-    def get(self, request, *args, **kwargs):
-        data = request.data
-
-        if not check_super_admin(self.request.user):
-            raise action_authorization_exception("Unauthorized to perform action")
-
-        check_required_fields(data, ["user_key"])
-
-        user = User.objects.filter(user_key=data["user_key"]).values(
-            "user_key",
-            "role_id",
-            "role__name",
-            "email",
-            "first_name",
-            "last_name",
-            "organization",
-            "country__name",
-            "is_verified",
-        )
-
-        try:
-            user = user[0]
-        except IndexError:
-            raise non_existing_data_exception("User")
+        if user.profile_image:
+            delete_file(user.profile_image)
+            user.profile_image = None
+            user.save()
+        else:
+            raise cannot_perform_action("No image to delete")
 
         return JsonResponse(
-            {
-                "status": "success",
-                "detail": "User retrieved successfully",
-                "data": user,
-            },
+            {"status": "success", "detail": "Profile image deleted successfully"},
             safe=False,
         )

@@ -1,5 +1,4 @@
 import datetime
-import os
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -255,4 +254,3 @@ class ChangePasswordView(APIView):
                 raise WrongPassword()
         except User.DoesNotExist:
             raise non_existing_data_exception("User")
-

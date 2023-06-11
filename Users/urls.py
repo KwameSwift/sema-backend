@@ -1,41 +1,34 @@
 from django.urls import path
 
-from .views.users_views import (AddSuperAdmins, AssignUserRoleToUser,
-                                DeleteUserView, GetAllUsers, GetSingleUser)
-from .views.utilities_view import DropDowns
+from .views.users_views import (DeleteProfileImage, GetUserBlogPosts,
+                                ProfileView, UploadProfileImage,
+                                UploadUserDocuments)
 
 urlpatterns = [
-    # Dropdowns
-    path(
-        "dropdowns/<int:drop_type>/",
-        DropDowns.as_view(),
-        name="All Dropdowns",
-    ),
-    
     # Users
     path(
-        "all-users/<int:page_number>/",
-        GetAllUsers.as_view(),
-        name="All Users",
+        "upload-profile-image/",
+        UploadProfileImage.as_view(),
+        name="Upload Profile Image",
     ),
     path(
-        "add-admins/",
-        AddSuperAdmins.as_view(),
-        name="Add Admins",
+        "upload-user-documents/",
+        UploadUserDocuments.as_view(),
+        name="Upload User Documents",
     ),
     path(
-        "assign-user-roles/",
-        AssignUserRoleToUser.as_view(),
-        name="Assign User Roles",
+        "my-profile/",
+        ProfileView.as_view(),
+        name="Profile View",
     ),
     path(
-        "delete-user/",
-        DeleteUserView.as_view(),
-        name="Delete User",
+        "my-blog-posts/<int:page_number>/",
+        GetUserBlogPosts.as_view(),
+        name="User BlogPosts",
     ),
     path(
-        "get-user/",
-        GetSingleUser.as_view(),
-        name="Get User",
+        "delete-profile-image/",
+        DeleteProfileImage.as_view(),
+        name="Delete Profile Image",
     ),
 ]

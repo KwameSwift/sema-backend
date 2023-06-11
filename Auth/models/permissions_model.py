@@ -1,6 +1,6 @@
 from django.db import models
 
-from Auth.models.user_model import User, UserRole
+from Auth.models.user_model import UserRole
 
 
 class Module(models.Model):

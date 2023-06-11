@@ -105,6 +105,10 @@ class User(AbstractBaseUser):
         null=True,
     )
 
+    bio = models.TextField(null=True, blank=True)
+
+    links = models.JSONField(null=True, blank=True)
+
     is_admin = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
@@ -116,6 +120,8 @@ class User(AbstractBaseUser):
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
     password_reset_code = models.CharField(max_length=255, blank=True, null=True)
+
+    profile_image = models.CharField(max_length=255, blank=True, null=True)
 
     account_type = models.CharField(max_length=255, null=False)
 
