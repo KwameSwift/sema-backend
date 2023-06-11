@@ -11,7 +11,7 @@ from _project import settings
 FTP_HOSTNAME = os.getenv("FTP_HOSTNAME")
 FTP_USERNAME = os.getenv("FTP_USERNAME")
 FTP_PASSWORD = os.getenv("FTP_PASSWORD")
-REMOTE_PATH = os.getenv("REMOTE_PATH")
+
 
 
 # Function to return paginated data
@@ -84,36 +84,6 @@ def delete_file(file_name, subdirectory=None):
             print("File does not exist")
             return False
         
-    except ftplib.all_errors as e:
-        print("FTP error:", str(e))
-        
-
-
-# Upload file
-def upload_file(file_path, subdirectory):
-    try:
-        # Connect to the FTP server
-        ftp = ftplib.FTP(FTP_HOSTNAME)
-        ftp.login(FTP_USERNAME, FTP_PASSWORD)
-
-        file_name = os.path.basename(file_path)
-
-        # Check if the subdirectory exists
-        if subdirectory not in ftp.nlst():
-            # Create the subdirectory if it doesn't exist
-            ftp.mkd("/" + subdirectory)
-
-        ftp.cwd("/" + subdirectory)
-
-        # Open the local file in binary mode for uploading
-        with open(file_path, "rb") as file:
-            # Upload the file to the remote directory
-            ftp.storbinary("STOR " + file_name, file)
-        # Close the FTP connection
-        ftp.quit()
-        print("File uploaded successfully.")
-        remote_filepath = REMOTE_PATH + "/" + subdirectory + "/" + file_name
-        return remote_filepath
     except ftplib.all_errors as e:
         print("FTP error:", str(e))
 

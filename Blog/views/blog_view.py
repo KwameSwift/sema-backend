@@ -8,7 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (delete_file, paginate_data, upload_file,
+from helpers.functions import (delete_file, paginate_data,
                                upload_images)
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,

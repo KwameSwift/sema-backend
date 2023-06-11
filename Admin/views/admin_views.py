@@ -10,11 +10,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User, UserRole
+from Auth.models.user_documents_model import UserDocuments
 from Blog.models.blog_model import BlogComment, BlogPost
 from helpers.email_sender import send_email
 from helpers.functions import (aware_datetime, delete_file,
                                generate_random_string, paginate_data,
-                               upload_file)
+                               )
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
@@ -274,6 +275,11 @@ class GetSingleUser(APIView):
             )
             .first()
         )
+        
+        documents = UserDocuments.objects.filter(user_id=data["user_key"]).values(
+            "id", "document_location"
+        )
+        user["documents"] = list(documents)
 
         if not user:
             raise non_existing_data_exception("User")
