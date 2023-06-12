@@ -5,9 +5,9 @@ from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
                                            GetSingleRole, UpdateUserRole)
 from .views.admin_views import (AddSuperAdmins, ApproveAndPublishBlogs,
                                 AssignUserRoleToUser, DeleteUserView,
-                                GetAllBlogPostsAsAdmin, GetAllUsers,
-                                GetSingleUser, GetSystemStatistics,
-                                VerifyUsers)
+                                GetAllBlogPostsAsAdmin, GetAllEventsAsAdmin,
+                                GetAllUsers, GetSingleUser,
+                                GetSystemStatistics, VerifyUsers)
 
 urlpatterns = [
     # System Statistics
@@ -81,5 +81,11 @@ urlpatterns = [
         "add-module/",
         AddModuleView.as_view(),
         name="Add Module",
+    ),
+    # Events
+    path(
+        "get-all-events/",
+        GetAllEventsAsAdmin.as_view(),
+        name="Admin Get All Events",
     ),
 ]

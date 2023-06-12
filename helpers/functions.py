@@ -13,7 +13,6 @@ FTP_USERNAME = os.getenv("FTP_USERNAME")
 FTP_PASSWORD = os.getenv("FTP_PASSWORD")
 
 
-
 # Function to return paginated data
 def paginate_data(data, page_number, items_per_page):
     # Pass the data to the paginator module
@@ -78,42 +77,32 @@ def delete_file(file_name, subdirectory=None):
             ftp.delete(file_path)
             # Close the FTP connection
             ftp.quit()
-            print(f"File '{file_path}' deleted successfully.")
+            print(f"File deleted successfully.")
             return True
         except ftplib.all_errors as e:
             print("File does not exist")
             return False
-        
+
     except ftplib.all_errors as e:
         print("FTP error:", str(e))
 
 
-def upload_images(file_path, subdirectory):
+def create_directory_recursively(ftp, path):
+    dirs = path.split("/")
+    for dir in dirs:
+        if dir not in ftp.nlst():
+            ftp.mkd(dir)
+        ftp.cwd(dir)
+
+
+def upload_files(file_path, subdirectory):
     try:
         # Connect to the FTP server
         ftp = ftplib.FTP(FTP_HOSTNAME)
         ftp.login(FTP_USERNAME, FTP_PASSWORD)
 
-        # Check if the parent directory exists
-        parent_directory = os.path.dirname(subdirectory)
-
-        try:
-            if parent_directory and parent_directory not in ftp.nlst():
-                # Create the parent directory if it doesn't exist
-                ftp.mkd(parent_directory)
-        except ftplib.all_errors as e:
-            pass
-
-        try:
-            # Check if the subdirectory exists
-            if subdirectory not in ftp.nlst():
-                # Create the subdirectory
-                ftp.mkd(subdirectory)
-        except ftplib.all_errors as e:
-            pass
-
-        # Change to the subdirectory
-        ftp.cwd(subdirectory)
+        # Create parent directories recursively if they don't exist
+        create_directory_recursively(ftp, subdirectory)
 
         file_name = os.path.basename(file_path)
 
@@ -126,8 +115,10 @@ def upload_images(file_path, subdirectory):
         with open(file_path, "rb") as file:
             # Upload the file to the remote directory
             ftp.storbinary("STOR " + file_name, file)
+
         # Close the FTP connection
         ftp.quit()
+
         print("File uploaded successfully.")
         remote_filepath = "/" + subdirectory + "/" + file_name
         return remote_filepath

@@ -8,8 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (delete_file, paginate_data,
-                               upload_images)
+from helpers.functions import delete_file, paginate_data, upload_files
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
@@ -91,9 +90,12 @@ class GetSingleBlogPost(APIView):
                     "title",
                     "content",
                     "blog_image_location",
-                    "created_on",
                     "is_approved",
                     "is_published",
+                    "blog_links",
+                    "author__first_name",
+                    "author__last_name",
+                    "created_on",
                 )
                 .first()
             )
@@ -130,9 +132,12 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "title",
                 "content",
                 "blog_image_location",
-                "created_on",
                 "is_approved",
                 "is_published",
+                "blog_links",
+                "author__first_name",
+                "author__last_name",
+                "created_on",
             )
             .order_by("-created_on")
         )
@@ -162,10 +167,10 @@ class GetAllPublishedBlogPost(APIView):
                 "id",
                 "title",
                 "content",
-                "blog_image_url",
                 "blog_image_location",
                 "is_approved",
                 "is_published",
+                "blog_links",
                 "author__first_name",
                 "author__last_name",
                 "created_on",
@@ -230,7 +235,7 @@ class UploadBlogImage(APIView):
             subdirectory = (
                 f"{user.first_name}_{user.last_name}/Blog_Images/{blog.title}"
             )
-            uploaded_path = upload_images(file_path, subdirectory)
+            uploaded_path = upload_files(file_path, subdirectory)
 
             blog.blog_image_location = uploaded_path
             blog.save()
@@ -253,20 +258,20 @@ class DeleteBlogImage(APIView):
         data = request.data
 
         if not check_permission(user, "Blog", [2]):
-            raise action_authorization_exception("Unauthorized to upload blog image")
+            raise action_authorization_exception("Unauthorized to delete blog image")
 
         check_required_fields(data, ["blog_post_id"])
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
             if blog.author != user:
                 raise action_authorization_exception(
-                    "Unauthorized to upload blog image for this blog"
+                    "Unauthorized to delete blog image for this blog"
                 )
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")
 
         delete_file(blog.blog_image_location)
-        
+
         blog.blog_image_location = None
         blog.save()
 
@@ -274,3 +279,67 @@ class DeleteBlogImage(APIView):
             {"status": "success", "detail": "File deleted successfully"},
             safe=False,
         )
+
+
+# Update a blog post
+class UpdateBlogPost(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        data = request.data
+        user = self.request.user
+
+        if not check_permission(user, "Blog", [2]):
+            raise action_authorization_exception("Unauthorized to create blog post")
+
+        check_required_fields(data, ["blog_post_id"])
+
+        try:
+            BlogPost.objects.get(id=data["blog_post_id"])
+            blog_id = data.pop("blog_post_id", None)
+            BlogPost.objects.filter(id=blog_id).update(**data)
+
+            blog_data = BlogPost.objects.filter(id=blog_id).values().first()
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Blog updated successfully",
+                    "data": blog_data,
+                },
+                safe=False,
+            )
+
+        except BlogPost.DoesNotExist:
+            raise non_existing_data_exception("Blog")
+
+
+# Update a blog post
+class DeleteBlogPost(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def delete(self, request, *args, **kwargs):
+        data = request.data
+        user = self.request.user
+
+        if not check_permission(user, "Blog", [2]):
+            raise action_authorization_exception("Unauthorized to create blog post")
+
+        check_required_fields(data, ["blog_post_id"])
+
+        try:
+            blog = BlogPost.objects.get(id=data["blog_post_id"])
+
+            delete_file(blog.blog_image_location)
+
+            blog.delete()
+
+            return JsonResponse(
+                {"status": "success", "detail": "Blog deleted successfully"},
+                safe=False,
+            )
+
+        except BlogPost.DoesNotExist:
+            raise non_existing_data_exception("Blog")

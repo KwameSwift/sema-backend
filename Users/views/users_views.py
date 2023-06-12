@@ -9,7 +9,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_documents_model import UserDocuments
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import delete_file, paginate_data, upload_images
+from helpers.functions import delete_file, paginate_data, upload_files
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   non_existing_data_exception)
@@ -77,7 +77,7 @@ class UploadProfileImage(APIView):
             file_path = LOCAL_FILE_PATH + new_name
 
             subdirectory = f"{user.first_name}_{user.last_name}/Profile_Image"
-            uploaded_path = upload_images(file_path, subdirectory)
+            uploaded_path = upload_files(file_path, subdirectory)
 
             user.profile_image = uploaded_path
             user.save()
@@ -109,7 +109,7 @@ class UploadUserDocuments(APIView):
             file_path = LOCAL_FILE_PATH + new_name
 
             subdirectory = f"{user.first_name}_{user.last_name}/Documents"
-            uploaded_path = upload_images(file_path, subdirectory)
+            uploaded_path = upload_files(file_path, subdirectory)
 
             user_documents = {"user": user, "document_location": uploaded_path}
 

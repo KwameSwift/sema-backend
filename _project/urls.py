@@ -31,4 +31,5 @@ urlpatterns = [
     path("utilities/", include("Utilities.urls")),
     path("blog/", include("Blog.urls")),
     path("super-admin/", include("Admin.urls")),
+    path("events/", include("Events.urls")),
 ]

@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "Blog",
     "Utilities",
     "Admin",
+    "Events",
 ]
 
 MIDDLEWARE = [
