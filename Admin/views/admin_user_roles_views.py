@@ -7,36 +7,44 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User, UserRole
 from Auth.models.permissions_model import Module, Permission
-from helpers.functions import aware_datetime, paginate_data
-from helpers.status_codes import (cannot_perform_action,
+from helpers.functions import aware_datetime, paginate_data, aware_datetime
+from helpers.status_codes import (action_authorization_exception, cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
-from helpers.validations import check_required_fields
+from helpers.validations import check_required_fields, check_super_admin
 
 
-class AssignRolesView(APIView):
+class AssignUserRoleToUser(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
     def post(self, request, *args, **kwargs):
         data = request.data
 
-        check_required_fields(data, ["role_id", "user_key"])
+        if not check_super_admin(self.request.user):
+            raise action_authorization_exception("Unauthorized to perform action")
+
+        check_required_fields(data, ["user_key", "role_id"])
 
         try:
-            user = User.objects.get(user_key=data["user_key"])
             role = UserRole.objects.get(id=data["role_id"])
+            user = User.objects.get(user_key=data["user_key"])
             user.role_id = role.id
+            user.updated_on = aware_datetime(datetime.datetime.now())
             user.save()
 
             return JsonResponse(
-                {"status": "success", "detail": "Role assigned to user successfully"},
+                {
+                    "status": "success",
+                    "detail": "Role assigned to user successfully",
+                },
                 safe=False,
             )
         except UserRole.DoesNotExist:
             raise non_existing_data_exception("User role")
         except User.DoesNotExist:
             raise non_existing_data_exception("User")
+
 
 
 class AddUserRole(APIView):

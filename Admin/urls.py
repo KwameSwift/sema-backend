@@ -1,13 +1,13 @@
 from django.urls import path
 
-from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
+from .views.admin_user_roles_views import (AddModuleView, AddUserRole, AssignUserRoleToUser,
                                            DeleteUserRole, GetAllUserRoles,
                                            GetSingleRole, UpdateUserRole)
-from .views.admin_views import (AddSuperAdmins, ApproveAndPublishBlogs,
-                                AssignUserRoleToUser, DeleteUserView,
-                                GetAllBlogPostsAsAdmin, GetAllEventsAsAdmin,
+from .views.admin_views import (AddSuperAdmins,DeleteUserView,
+                                GetAllEventsAsAdmin,
                                 GetAllUsers, GetSingleUser,
                                 GetSystemStatistics, VerifyUsers)
+from .views.admin_blog_views import GetAllBlogPostsAsAdmin, ApproveAndPublishBlogs
 
 urlpatterns = [
     # System Statistics

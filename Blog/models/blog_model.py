@@ -17,6 +17,13 @@ class BlogPost(models.Model):
     blog_links = models.JSONField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False)
+    approved_and_published_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="approved_by",
+    )
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 

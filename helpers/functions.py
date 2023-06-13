@@ -77,9 +77,9 @@ def delete_file(file_name, subdirectory=None):
             ftp.delete(file_path)
             # Close the FTP connection
             ftp.quit()
-            print(f"File deleted successfully.")
+            print("File deleted successfully.")
             return True
-        except ftplib.all_errors as e:
+        except ftplib.all_errors:
             print("File does not exist")
             return False
 
@@ -108,7 +108,7 @@ def upload_files(file_path, subdirectory):
 
         try:
             ftp.delete(file_name)
-        except ftplib.all_errors as e:
+        except ftplib.all_errors:
             pass
 
         # Open the local file in binary mode for uploading
