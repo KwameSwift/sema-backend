@@ -8,6 +8,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Auth.models.user_documents_model import UserDocuments
+from Blog.models.blog_model import BlogPost
+from Events.models.events_model import Events
 from helpers.email_sender import send_email
 from helpers.functions import (aware_datetime, generate_random_string,
                                paginate_data)
@@ -33,12 +35,21 @@ class GetSystemStatistics(APIView):
         total_content_creators = User.objects.filter(
             account_type="Content Creator"
         ).count()
-
+        
+        total_blogs = BlogPost.objects.all().count()
+        total_events = Events.objects.all().count()
+        
         data = {
             "total_users": total_users,
             "total_admins": total_admins,
             "total_guests": total_guests,
             "total_content_creators": total_content_creators,
+            "total_blogs": total_blogs,
+            "total_events": total_events,
+            "total_polls": 0,
+            "total_donations": 0,
+            "total_forums": 0,
+            "total_documents_in_vault": 0,
         }
 
         return JsonResponse(
