@@ -20,7 +20,7 @@ urlpatterns = [
     ),
     # Blog
     path(
-        "all-blog-posts/<int:blog_post_id>/",
+        "all-blog-posts/<int:data_type>/<int:blog_post_id>/",
         GetAllBlogPostsAsAdmin.as_view(),
         name="Admin All Blog Posts",
     ),

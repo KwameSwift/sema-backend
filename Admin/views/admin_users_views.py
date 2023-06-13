@@ -40,6 +40,8 @@ class GetSystemStatistics(APIView):
         total_events = Events.objects.all().count()
         total_polls = 0
         total_forums = 0
+        total_documents_in_vault = 0
+        total_donations = 0
         
         data = {
             "total_users": total_users,
@@ -48,8 +50,8 @@ class GetSystemStatistics(APIView):
             "total_content_creators": total_content_creators,
             "total_blogs_and_polls": total_blogs + total_polls,
             "total_events_and_forums": total_events + total_forums,
-            "total_donations": 0,
-            "total_documents_in_vault": 0,
+            "total_donations": total_donations,
+            "total_documents_in_vault": total_documents_in_vault,
         }
 
         return JsonResponse(

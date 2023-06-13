@@ -55,12 +55,16 @@ class GetAllBlogPostsAsAdmin(APIView):
     def get(self, request, *args, **kwargs):
         user = self.request.user
         page_number = self.kwargs.get("page_number")
+        data_type = self.kwargs.get("data_type")
 
         if not check_super_admin(user):
             raise action_authorization_exception("Unauthorized to view Blog Posts")
-
+        if data_type == 1:
+            is_approved = True
+        else:
+            is_approved = False
         blog_posts = (
-            BlogPost.objects.all()
+            BlogPost.objects.filter(is_approved=is_approved)
             .values(
                 "id",
                 "title",
@@ -80,7 +84,7 @@ class GetAllBlogPostsAsAdmin(APIView):
             total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
             blog_post["total_comments"] = total_comments
 
-        data = paginate_data(blog_posts, page_number, 10)
+        data = paginate_data(blog_posts, page_number, 3)
         return JsonResponse(
             data,
             safe=False,
