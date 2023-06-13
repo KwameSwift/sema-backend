@@ -7,8 +7,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User, UserRole
 from Auth.models.permissions_model import Module, Permission
-from helpers.functions import aware_datetime, paginate_data, aware_datetime
-from helpers.status_codes import (action_authorization_exception, cannot_perform_action,
+from helpers.functions import aware_datetime, paginate_data
+from helpers.status_codes import (action_authorization_exception,
+                                  cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields, check_super_admin
@@ -44,7 +45,6 @@ class AssignUserRoleToUser(APIView):
             raise non_existing_data_exception("User role")
         except User.DoesNotExist:
             raise non_existing_data_exception("User")
-
 
 
 class AddUserRole(APIView):

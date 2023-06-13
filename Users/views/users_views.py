@@ -9,6 +9,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_documents_model import UserDocuments
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
+from Events.models.events_model import Events
 from helpers.functions import delete_file, paginate_data, upload_files
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
@@ -178,5 +179,34 @@ class DeleteProfileImage(APIView):
 
         return JsonResponse(
             {"status": "success", "detail": "Profile image deleted successfully"},
+            safe=False,
+        )
+        
+# Get my statistics
+class GetAuthorStatistics(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+
+        total_blogs = BlogPost.objects.filter(author=user).count()
+        total_events = Events.objects.filter(created_by=user).count()
+
+        data = {
+            "total_blogs": total_blogs,
+            "total_events": total_events,
+            "total_polls": 0,
+            "total_donations": 0,
+            "total_forums": 0,
+            "total_documents_in_vault": 0,
+        }
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Statistics retrieved successfully",
+                "data": data,
+            },
             safe=False,
         )

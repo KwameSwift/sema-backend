@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views.users_views import (DeleteProfileImage, GetUserBlogPosts,
                                 ProfileView, UploadProfileImage,
-                                UploadUserDocuments)
+                                UploadUserDocuments, GetAuthorStatistics)
 
 urlpatterns = [
     # Users
@@ -30,5 +30,11 @@ urlpatterns = [
         "delete-profile-image/",
         DeleteProfileImage.as_view(),
         name="Delete Profile Image",
+    ),
+    
+    path(
+        "my-statistics/",
+        GetAuthorStatistics.as_view(),
+        name="Get My Statistics",
     ),
 ]

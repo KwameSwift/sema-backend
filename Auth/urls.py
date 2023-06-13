@@ -4,6 +4,7 @@ from .views.authentication_views import (ChangePasswordView, LoginView,
                                          PasswordResetView, RegisterView,
                                          SendResetPasswordMailView,
                                          VerifyPasswordResetCode)
+from rest_framework_simplejwt import views as jwt_views
 
 urlpatterns = [
     # User authentication
@@ -24,5 +25,10 @@ urlpatterns = [
         "verify-password-reset-code/",
         VerifyPasswordResetCode.as_view(),
         name="Verify Reset Password Code",
+    ),
+    path(
+        "refresh-token/",
+        jwt_views.TokenRefreshView.as_view(),
+        name="Refresh Access Token",
     ),
 ]

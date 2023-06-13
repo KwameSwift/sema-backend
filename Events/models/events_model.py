@@ -20,6 +20,14 @@ class Events(models.Model):
         null=True,
         related_name="events_owner",
     )
+    is_approved = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="events_approved_by",
+    )
     created_on = models.DateField(auto_now_add=True)
     updated_on = models.DateField(null=True, blank=True)
 

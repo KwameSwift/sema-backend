@@ -67,8 +67,8 @@ class RegisterView(APIView):
 
             # Construct user object with tokens and necessary details
             data = {
-                "refresh_token": str(refresh),
-                "access_token": str(refresh.access_token),
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
                 "user": {},
             }
 
@@ -105,8 +105,8 @@ class LoginView(APIView):
 
                 # Construct user object with tokens and necessary details
                 data = {
-                    "refresh_token": str(refresh),
-                    "access_token": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
                     "user": {},
                 }
 

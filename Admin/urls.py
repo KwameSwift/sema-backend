@@ -1,13 +1,15 @@
 from django.urls import path
 
-from .views.admin_user_roles_views import (AddModuleView, AddUserRole, AssignUserRoleToUser,
+from .views.admin_blog_views import (ApproveAndPublishBlogs,
+                                     GetAllBlogPostsAsAdmin)
+from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
+from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
+                                           AssignUserRoleToUser,
                                            DeleteUserRole, GetAllUserRoles,
                                            GetSingleRole, UpdateUserRole)
-from .views.admin_views import (AddSuperAdmins,DeleteUserView,
-                                GetAllEventsAsAdmin,
-                                GetAllUsers, GetSingleUser,
-                                GetSystemStatistics, VerifyUsers)
-from .views.admin_blog_views import GetAllBlogPostsAsAdmin, ApproveAndPublishBlogs
+from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
+                                      GetAllUsers, GetSingleUser,
+                                      GetSystemStatistics, VerifyUsers)
 
 urlpatterns = [
     # System Statistics
@@ -84,8 +86,13 @@ urlpatterns = [
     ),
     # Events
     path(
-        "get-all-events/",
+        "get-all-events/<int:page_number>/",
         GetAllEventsAsAdmin.as_view(),
         name="Admin Get All Events",
+    ),
+    path(
+        "approve-event/",
+        ApproveEvents.as_view(),
+        name="Admin Approve Events",
     ),
 ]

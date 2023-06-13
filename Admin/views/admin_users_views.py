@@ -1,5 +1,4 @@
 import datetime
-import os
 
 from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
@@ -9,7 +8,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Auth.models.user_documents_model import UserDocuments
-from Events.models.events_model import Events
 from helpers.email_sender import send_email
 from helpers.functions import (aware_datetime, generate_random_string,
                                paginate_data)
@@ -17,8 +15,7 @@ from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
-from helpers.validations import (check_required_fields,
-                                 check_super_admin)
+from helpers.validations import check_required_fields, check_super_admin
 
 
 # Get system statistics
@@ -265,41 +262,3 @@ class VerifyUsers(APIView):
             )
         except User.DoesNotExist:
             raise non_existing_data_exception("User")
-
-
-
-# Get all events by admin
-class GetAllEventsAsAdmin(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
-    def get(self, request, *args, **kwargs):
-        user = self.request.user
-        page_number = self.kwargs.get("page_number")
-
-        if not check_super_admin(user):
-            raise action_authorization_exception("Unauthorized to view Events")
-
-        events = (
-            Events.objects.all()
-            .values(
-                "id",
-                "event_name",
-                "venue",
-                "location",
-                "start_date",
-                "end_date",
-                "event_image",
-                "description",
-                "created_by__first_name",
-                "created_by__last_name",
-                "created_on",
-            )
-            .order_by("-created_on")
-        )
-
-        data = paginate_data(events, page_number, 10)
-        return JsonResponse(
-            data,
-            safe=False,
-        )
