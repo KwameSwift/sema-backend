@@ -3,8 +3,8 @@ from django.urls import path
 from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
-                              UpdateBlogPost, UploadBlogDocument,
-                              LikeABlogPost)
+                              LikeABlogPost, UpdateBlogPost,
+                              UploadBlogDocument)
 
 urlpatterns = [
     # Blog

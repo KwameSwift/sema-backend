@@ -9,11 +9,56 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
-from helpers.functions import delete_file, paginate_data, upload_files
+from helpers.functions import (delete_file, local_file_upload, paginate_data,
+                               upload_files)
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   non_existing_data_exception)
-from helpers.validations import check_required_fields
+from Utilities.models.documents_model import UserDocuments
+
+LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
+
+
+# Upload profile image
+class UploadProfileImage(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        file = request.FILES["file"]
+        user = self.request.user
+
+        try:
+            profile_image = UserDocuments.objects.get(
+                owner=user, document_type="Profile Image"
+            )
+            url = profile_image.document_location
+            if os.path.exists(url):
+                os.remove(url)
+        except UserDocuments.DoesNotExist:
+            pass
+
+        full_directory = (
+            f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Profile_Image"
+        )
+        file_path = local_file_upload(full_directory, file)
+
+        new_event_image = {
+            "owner": user,
+            "document_type": "Profile Image",
+            "document_location": file_path,
+        }
+
+        UserDocuments.objects.create(**new_event_image)
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "File(s) uploaded successfully",
+                "profile_image": file_path,
+            },
+            safe=False,
+        )
 
 
 # View my profile
@@ -134,9 +179,16 @@ class GetUserBlogPosts(APIView):
                 "id",
                 "title",
                 "content",
-                "created_on",
+                "description",
+                "total_likes",
+                "total_shares",
                 "is_approved",
                 "is_published",
+                "blog_links",
+                "author__first_name",
+                "author__last_name",
+                "author__is_verified",
+                "created_on",
             )
             .order_by("-created_on")
         )

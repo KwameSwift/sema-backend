@@ -8,8 +8,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models.user_model import User
 from Events.models.events_model import Events
-from helpers.functions import (delete_file, delete_local_file, local_file_upload, paginate_data,
-                               upload_files)
+from helpers.functions import (delete_file, delete_local_file,
+                               local_file_upload, paginate_data, upload_files)
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
@@ -91,7 +91,7 @@ class CreateEvent(APIView):
 
 
 # Upload events image
-class UploadEventImage(APIView):
+class UploadEventDocuments(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
@@ -177,11 +177,11 @@ class DeleteEvent(APIView):
         check_required_fields(data, ["event_id"])
         try:
             event = Events.objects.get(id=data["event_id"])
-            
+
             events = EventDocuments.objects.filter(event_id=event.id).values(
                 "document_location"
             )
-            
+
             for doc in events:
                 delete_local_file(doc["document_location"])
 

@@ -8,11 +8,11 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Blog.models.blog_model import BlogComment, BlogPost
-from Utilities.models.documents_model import BlogDocuments
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields, check_super_admin
+from Utilities.models.documents_model import BlogDocuments
 
 
 # Approve and Publish Blogs

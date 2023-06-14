@@ -36,4 +36,9 @@ urlpatterns = [
         GetAuthorStatistics.as_view(),
         name="Get My Statistics",
     ),
+    path(
+        "upload-profile-image/",
+        UploadProfileImage.as_view(),
+        name="Upload Profile Image",
+    ),
 ]

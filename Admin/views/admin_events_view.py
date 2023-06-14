@@ -6,12 +6,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Events.models.events_model import Events
-from Utilities.models.documents_model import EventDocuments
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields, check_super_admin
+from Utilities.models.documents_model import EventDocuments
 
 
 # Get all events by admin

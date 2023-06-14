@@ -1,10 +1,10 @@
 import os
 
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.db.models import Q
 
 from Blog.models.blog_model import BlogComment, BlogPost
 from helpers.functions import (delete_local_file, local_file_upload,
@@ -14,7 +14,7 @@ from helpers.status_codes import (action_authorization_exception,
                                   non_existing_data_exception)
 from helpers.validations import (check_permission, check_required_fields,
                                  check_super_admin)
-from Utilities.models.documents_model import BlogDocuments
+from Utilities.models.documents_model import BlogDocuments, UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -107,11 +107,14 @@ class GetSingleBlogPost(APIView):
                     "content",
                     "description",
                     "total_likes",
+                    "total_shares",
                     "is_approved",
                     "is_published",
                     "blog_links",
+                    "author_id",
                     "author__first_name",
                     "author__last_name",
+                    "author__is_verified",
                     "created_on",
                 )
                 .first()
@@ -125,6 +128,11 @@ class GetSingleBlogPost(APIView):
                 BlogDocuments.objects.filter(blog_id=blog_post["id"]).values(
                     "id", "document_location"
                 )
+            )
+            blog_post["author_profile_image"] = list(
+                UserDocuments.objects.filter(
+                    owner=blog_post["author_id"], document_type="Profile Image"
+                ).values("id", "document_location")
             )
 
             return JsonResponse(
@@ -155,11 +163,14 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "content",
                 "description",
                 "total_likes",
+                "total_shares",
                 "is_approved",
                 "is_published",
                 "blog_links",
+                "author_id",
                 "author__first_name",
                 "author__last_name",
+                "author__is_verified",
                 "created_on",
             )
             .order_by("-created_on")
@@ -170,6 +181,11 @@ class GetAllBlogPostsAsAdmin(APIView):
             blog_post["total_comments"] = total_comments
             blog_post["documents"] = list(
                 BlogDocuments.objects.filter(blog_id=blog_post["id"]).values()
+            )
+            blog_post["author_profile_image"] = list(
+                UserDocuments.objects.filter(
+                    owner=blog_post["author_id"], document_type="Profile Image"
+                ).values("id", "document_location")
             )
 
         data = paginate_data(blog_posts, page_number, 10)
@@ -193,9 +209,12 @@ class GetAllPublishedBlogPost(APIView):
                 "description",
                 "is_approved",
                 "total_likes",
+                "total_shares",
                 "is_published",
                 "blog_links",
+                "author_id",
                 "author__first_name",
+                "author__is_verified",
                 "author__last_name",
                 "created_on",
             )
@@ -220,6 +239,11 @@ class GetAllPublishedBlogPost(APIView):
                 BlogDocuments.objects.filter(blog_id=blog_post["id"])
                 .values()
                 .order_by("-created_on")
+            )
+            blog_post["author_profile_image"] = list(
+                UserDocuments.objects.filter(
+                    owner=blog_post["author_id"], document_type="Profile Image"
+                ).values("id", "document_location")
             )
 
         data = paginate_data(blog_posts, page_number, 10)
@@ -373,31 +397,51 @@ class LikeABlogPost(APIView):
 
     def put(self, request, *args, **kwargs):
         user = self.request.user
-        blog_id = self.kwargs['blog_id']
-        
+        blog_id = self.kwargs["blog_id"]
+
         try:
             blog = BlogPost.objects.get(id=blog_id)
             exists = BlogPost.likers.through.objects.filter(
                 Q(blogpost_id=blog_id) & Q(user_id=user.user_key)
             )
             if exists:
-                likes = blog.total_likes -1
+                likes = blog.total_likes - 1
                 blog.likers.remove(user)
                 message = "Blog unliked"
             else:
                 blog.likers.add(user)
-                likes = blog.total_likes +1
+                likes = blog.total_likes + 1
                 message = "Blog liked"
-            
-            
+
             blog.total_likes = likes
             blog.save()
-            
+
             return JsonResponse(
-                {"status": "success", 
-                 "detail": message,
-                 "total_likes": likes
-                },
+                {"status": "success", "detail": message, "total_likes": likes},
+                safe=False,
+            )
+        except BlogPost.DoesNotExist:
+            raise non_existing_data_exception("Blog")
+
+
+# Share a Blog
+class ShareABlogPost(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        blog_id = self.kwargs["blog_id"]
+
+        try:
+            blog = BlogPost.objects.get(id=blog_id)
+
+            shares = blog.total_shares + 1
+            blog.total_shares = shares
+            blog.save()
+
+            return JsonResponse(
+                {"status": "success", "detail": "Blog shared", "total_likes": shares},
                 safe=False,
             )
         except BlogPost.DoesNotExist:

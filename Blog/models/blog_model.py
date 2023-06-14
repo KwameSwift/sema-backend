@@ -18,6 +18,7 @@ class BlogPost(models.Model):
     is_approved = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False)
     total_likes = models.IntegerField(default=0, null=True, blank=True)
+    total_shares = models.IntegerField(default=0, null=True, blank=True)
     approved_and_published_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -58,5 +59,3 @@ class BlogComment(models.Model):
     class Meta:
         ordering = ("-created_on",)
         db_table = "Blog_Comments"
-
-
