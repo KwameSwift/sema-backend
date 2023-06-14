@@ -1,10 +1,10 @@
 import os
 
-from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.db.models import Q
 
 from Blog.models.blog_model import BlogComment, BlogPost
 from helpers.functions import (delete_local_file, local_file_upload,
@@ -106,6 +106,7 @@ class GetSingleBlogPost(APIView):
                     "title",
                     "content",
                     "description",
+                    "total_likes",
                     "is_approved",
                     "is_published",
                     "blog_links",
@@ -153,6 +154,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "title",
                 "content",
                 "description",
+                "total_likes",
                 "is_approved",
                 "is_published",
                 "blog_links",
@@ -190,6 +192,7 @@ class GetAllPublishedBlogPost(APIView):
                 "content",
                 "description",
                 "is_approved",
+                "total_likes",
                 "is_published",
                 "blog_links",
                 "author__first_name",
@@ -359,5 +362,43 @@ class DeleteBlogPost(APIView):
                 safe=False,
             )
 
+        except BlogPost.DoesNotExist:
+            raise non_existing_data_exception("Blog")
+
+
+# Like a Blog
+class LikeABlogPost(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        blog_id = self.kwargs['blog_id']
+        
+        try:
+            blog = BlogPost.objects.get(id=blog_id)
+            exists = BlogPost.likers.through.objects.filter(
+                Q(blogpost_id=blog_id) & Q(user_id=user.user_key)
+            )
+            if exists:
+                likes = blog.total_likes -1
+                blog.likers.remove(user)
+                message = "Blog unliked"
+            else:
+                blog.likers.add(user)
+                likes = blog.total_likes +1
+                message = "Blog liked"
+            
+            
+            blog.total_likes = likes
+            blog.save()
+            
+            return JsonResponse(
+                {"status": "success", 
+                 "detail": message,
+                 "total_likes": likes
+                },
+                safe=False,
+            )
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")

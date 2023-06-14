@@ -3,7 +3,8 @@ from django.urls import path
 from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
-                              UpdateBlogPost, UploadBlogImage)
+                              UpdateBlogPost, UploadBlogImage,
+                              LikeABlogPost)
 
 urlpatterns = [
     # Blog
@@ -42,5 +43,10 @@ urlpatterns = [
         "delete-blog-post/",
         DeleteBlogPost.as_view(),
         name="Delete Blog Post",
+    ),
+    path(
+        "like-blog-post/<int:blog_id>/",
+        LikeABlogPost.as_view(),
+        name="Like A Blog Post",
     ),
 ]

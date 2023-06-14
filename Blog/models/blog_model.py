@@ -17,12 +17,17 @@ class BlogPost(models.Model):
     blog_links = models.JSONField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False)
+    total_likes = models.IntegerField(default=0, null=True, blank=True)
     approved_and_published_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name="approved_by",
+    )
+    likers = models.ManyToManyField(
+        User,
+        related_name="blog_likers",
     )
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
@@ -53,3 +58,5 @@ class BlogComment(models.Model):
     class Meta:
         ordering = ("-created_on",)
         db_table = "Blog_Comments"
+
+
