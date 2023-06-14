@@ -7,12 +7,16 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import delete_file, paginate_data, upload_files
+from helpers.functions import (delete_local_file, local_file_upload,
+                               paginate_data)
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
 from helpers.validations import (check_permission, check_required_fields,
                                  check_super_admin)
+from Utilities.models.documents_model import BlogDocuments
+
+LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
 
 # Create a new blog post
@@ -23,6 +27,7 @@ class CreateBlogPost(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
+        files = request.FILES.getlist("files")
 
         if not check_permission(user, "Blog", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
@@ -35,6 +40,18 @@ class CreateBlogPost(APIView):
         except BlogPost.DoesNotExist:
             data["author"] = user
             blog = BlogPost.objects.create(**data)
+
+            for file in files:
+                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Images/{blog.title}"
+                file_path = local_file_upload(full_directory, file)
+
+                new_blog_image = {
+                    "owner": user,
+                    "blog_id": blog.id,
+                    "document_location": file_path,
+                }
+
+                BlogDocuments.objects.create(**new_blog_image)
 
             blog_data = BlogPost.objects.filter(id=blog.id).values().first()
 
@@ -89,7 +106,6 @@ class GetSingleBlogPost(APIView):
                     "title",
                     "content",
                     "description",
-                    "blog_image_location",
                     "is_approved",
                     "is_published",
                     "blog_links",
@@ -104,6 +120,11 @@ class GetSingleBlogPost(APIView):
             )
             blog_post["total_comments"] = blog_comments.count()
             blog_post["comments"] = list(blog_comments)
+            blog_post["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog_post["id"]).values(
+                    "id", "document_location"
+                )
+            )
 
             return JsonResponse(
                 {"status": "success", "detail": "Comment posted", "data": blog_post},
@@ -132,7 +153,6 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "title",
                 "content",
                 "description",
-                "blog_image_location",
                 "is_approved",
                 "is_published",
                 "blog_links",
@@ -146,6 +166,9 @@ class GetAllBlogPostsAsAdmin(APIView):
         for blog_post in blog_posts:
             total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
             blog_post["total_comments"] = total_comments
+            blog_post["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog_post["id"]).values()
+            )
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
@@ -166,7 +189,6 @@ class GetAllPublishedBlogPost(APIView):
                 "title",
                 "content",
                 "description",
-                "blog_image_location",
                 "is_approved",
                 "is_published",
                 "blog_links",
@@ -191,6 +213,11 @@ class GetAllPublishedBlogPost(APIView):
             )
             blog_post["total_comments"] = comments.count()
             blog_post["comments"] = list(comments)
+            blog_post["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog_post["id"])
+                .values()
+                .order_by("-created_on")
+            )
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
@@ -215,31 +242,20 @@ class UploadBlogImage(APIView):
         check_required_fields(data, ["blog_post_id"])
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
-            if blog.author != user:
-                raise action_authorization_exception(
-                    "Unauthorized to upload blog image for this blog"
-                )
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")
 
-        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
         for file in files:
-            file_name = str(file.name)
-            new_name = file_name.replace(" ", "_")
-            fs = FileSystemStorage(location=LOCAL_FILE_PATH)
-            fs.save(new_name, file)
+            full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Images/{blog.title}"
+            file_path = local_file_upload(full_directory, file)
 
-            file_path = LOCAL_FILE_PATH + new_name
+            new_blog_image = {
+                "owner": user,
+                "blog_id": blog.id,
+                "document_location": file_path,
+            }
 
-            subdirectory = (
-                f"{user.first_name}_{user.last_name}/Blog_Images/{blog.title}"
-            )
-            uploaded_path = upload_files(file_path, subdirectory)
-
-            blog.blog_image_location = uploaded_path
-            blog.save()
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            BlogDocuments.objects.create(**new_blog_image)
 
         return JsonResponse(
             {"status": "success", "detail": "File uploaded successfully"},
@@ -248,7 +264,7 @@ class UploadBlogImage(APIView):
 
 
 # Delete Blog Image
-class DeleteBlogImage(APIView):
+class DeleteBlogDocuments(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
@@ -259,23 +275,19 @@ class DeleteBlogImage(APIView):
         if not check_permission(user, "Blog", [2]):
             raise action_authorization_exception("Unauthorized to delete blog image")
 
-        check_required_fields(data, ["blog_post_id"])
+        check_required_fields(data, ["blog_post_id"], ["document_urls"])
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
-            if blog.author != user:
-                raise action_authorization_exception(
-                    "Unauthorized to delete blog image for this blog"
-                )
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")
 
-        delete_file(blog.blog_image_location)
-
-        blog.blog_image_location = None
-        blog.save()
+        for url in data["document_urls"]:
+            if os.path.exists(url):
+                os.remove(url)
+            BlogDocuments.objects.filter(blog=blog, document_location=url).delete()
 
         return JsonResponse(
-            {"status": "success", "detail": "File deleted successfully"},
+            {"status": "success", "detail": "File(s) deleted successfully"},
             safe=False,
         )
 
@@ -331,7 +343,14 @@ class DeleteBlogPost(APIView):
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
 
-            delete_file(blog.blog_image_location)
+            docs = BlogDocuments.objects.filter(blog_id=blog.id).values(
+                "document_location"
+            )
+
+            for doc in docs:
+                delete_local_file(doc["document_location"])
+
+            BlogDocuments.objects.filter(blog_id=blog.id).delete()
 
             blog.delete()
 

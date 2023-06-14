@@ -125,3 +125,48 @@ def upload_files(file_path, subdirectory):
     except ftplib.all_errors as e:
         print("FTP error:", str(e))
         return False
+
+
+def retrieve_file(remote_filepath, local_directory):
+    try:
+        # Connect to the FTP server
+        ftp = ftplib.FTP(FTP_HOSTNAME)
+        ftp.login(FTP_USERNAME, FTP_PASSWORD)
+
+        # Extract the file name from the remote file path
+        file_name = os.path.basename(remote_filepath)
+
+        # Set the local file path where the retrieved file will be saved
+        local_file_path = os.path.join(local_directory, file_name)
+
+        # Open the local file in binary mode for writing
+        with open(local_file_path, "wb") as file:
+            # Retrieve the file from the remote directory
+            ftp.retrbinary("RETR " + remote_filepath, file.write)
+
+        # Close the FTP connection
+        ftp.quit()
+
+        print("File retrieved successfully.")
+        return local_file_path
+    except ftplib.all_errors as e:
+        print("FTP error:", str(e))
+        return False
+
+
+def local_file_upload(full_directory, file):
+    from django.core.files.storage import FileSystemStorage
+
+    file_name = str(file.name)
+    new_filename = file_name.replace(" ", "_")
+    fs = FileSystemStorage(location=full_directory)
+    fs.save(new_filename, file)
+
+    return f"{full_directory}/{new_filename}"
+
+
+def delete_local_file(full_directory):
+    if os.path.exists(full_directory):
+        os.remove(full_directory)
+
+    return True

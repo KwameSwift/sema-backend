@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
-                              DeleteBlogImage, DeleteBlogPost,
+                              DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
                               UpdateBlogPost, UploadBlogImage)
 
@@ -29,14 +29,14 @@ urlpatterns = [
         name="Upload Blog Image",
     ),
     path(
-        "delete-blog-image/",
-        DeleteBlogImage.as_view(),
+        "delete-blog-documents/",
+        DeleteBlogDocuments.as_view(),
         name="Delete Blog Image",
     ),
     path(
-        "update-blog-image/",
+        "update-blog-documents/",
         UpdateBlogPost.as_view(),
-        name="Update Blog Image",
+        name="Update Blog Documents",
     ),
     path(
         "delete-blog-post/",

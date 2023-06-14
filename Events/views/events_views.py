@@ -8,12 +8,16 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models.user_model import User
 from Events.models.events_model import Events
-from helpers.functions import delete_file, paginate_data, upload_files
+from helpers.functions import (delete_file, delete_local_file, local_file_upload, paginate_data,
+                               upload_files)
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
 from helpers.validations import check_permission, check_required_fields
+from Utilities.models.documents_model import EventDocuments
+
+LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
 
 # Create an Event
@@ -24,6 +28,7 @@ class CreateEvent(APIView):
     def post(self, request, *args, **kwargs):
         user = self.request.user
         data = request.data
+        files = request.FILES.getlist("files")
 
         if not check_permission(user, "Events", [2]):
             raise action_authorization_exception("Unauthorized to create events")
@@ -37,6 +42,18 @@ class CreateEvent(APIView):
             data["created_by"] = user
             event = Events.objects.create(**data)
 
+            for file in files:
+                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Event_Documents/{event.event_name}"
+                file_path = local_file_upload(full_directory, file)
+
+                new_event_doc = {
+                    "owner": user,
+                    "event_id": event.id,
+                    "document_location": file_path,
+                }
+
+                EventDocuments.objects.create(**new_event_doc)
+
             event_details = (
                 Events.objects.filter(id=event.id)
                 .values(
@@ -46,7 +63,6 @@ class CreateEvent(APIView):
                     "location",
                     "start_date",
                     "end_date",
-                    "event_image",
                     "description",
                     "is_approved",
                     "created_by__first_name",
@@ -56,6 +72,12 @@ class CreateEvent(APIView):
                     "created_on",
                 )
                 .first()
+            )
+
+            event["documnets"] = list(
+                EventDocuments.objects.filter(event_id=event.id).values(
+                    "id", "document_location"
+                )
             )
 
             return JsonResponse(
@@ -88,31 +110,26 @@ class UploadEventImage(APIView):
         except Events.DoesNotExist:
             raise non_existing_data_exception("Event")
 
-        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
         for file in files:
-            file_name = str(file.name)
-            new_name = file_name.replace(" ", "_")
-            fs = FileSystemStorage(location=LOCAL_FILE_PATH)
-            fs.save(new_name, file)
+            full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Event_Documents/{event.event_name}"
+            file_path = local_file_upload(full_directory, file)
 
-            file_path = LOCAL_FILE_PATH + new_name
+            new_event_image = {
+                "owner": user,
+                "event_id": event.id,
+                "document_location": file_path,
+            }
 
-            subdirectory = f"Events/Documents/Event_Images/{event.event_name}"
-            uploaded_path = upload_files(file_path, subdirectory)
-
-            event.event_image = uploaded_path
-            event.save()
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            EventDocuments.objects.create(**new_event_image)
 
         return JsonResponse(
-            {"status": "success", "detail": "File uploaded successfully"},
+            {"status": "success", "detail": "File(s) uploaded successfully"},
             safe=False,
         )
 
 
 # Delete event image
-class DeleteEventImage(APIView):
+class DeleteEventDocument(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
@@ -123,15 +140,16 @@ class DeleteEventImage(APIView):
         if not check_permission(user, "Events", [2]):
             raise action_authorization_exception("Unauthorized to delete event image")
 
-        check_required_fields(data, ["event_id"])
+        check_required_fields(data, ["event_id", "document_urls"])
         try:
             event = Events.objects.get(id=data["event_id"])
-            if event.created_by != user:
-                raise action_authorization_exception(
-                    "Unauthorized to delete image for this event"
-                )
         except Events.DoesNotExist:
             raise non_existing_data_exception("Event")
+
+        for url in data["document_urls"]:
+            if os.path.exists(url):
+                os.remove(url)
+            EventDocuments.objects.filter(event=event, document_location=url).delete()
 
         delete_file(event.event_image)
 
@@ -159,8 +177,15 @@ class DeleteEvent(APIView):
         check_required_fields(data, ["event_id"])
         try:
             event = Events.objects.get(id=data["event_id"])
+            
+            events = EventDocuments.objects.filter(event_id=event.id).values(
+                "document_location"
+            )
+            
+            for doc in events:
+                delete_local_file(doc["document_location"])
 
-            delete_file(event.event_image)
+            EventDocuments.objects.filter(event_id=event.id).delete()
 
             event.delete()
 
@@ -200,6 +225,13 @@ class GetEventsByAuthor(APIView):
             .order_by("-created_on")
         )
 
+        for event in events:
+            event["documents"] = list(
+                EventDocuments.objects.filter(event_id=event["id"]).values(
+                    "id", "document_location"
+                )
+            )
+
         data = paginate_data(events, page_number, 10)
         return JsonResponse(
             data,
@@ -222,7 +254,6 @@ class GetAllApprovedEvents(APIView):
                 "location",
                 "start_date",
                 "end_date",
-                "event_image",
                 "description",
                 "is_approved",
                 "created_by__first_name",
@@ -233,6 +264,12 @@ class GetAllApprovedEvents(APIView):
             )
             .order_by("-created_on")
         )
+        for event in events:
+            event["documents"] = list(
+                EventDocuments.objects.filter(event_id=event["id"]).values(
+                    "id", "document_location"
+                )
+            )
 
         return JsonResponse(
             {

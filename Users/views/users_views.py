@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Auth.models.user_documents_model import UserDocuments
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
@@ -41,12 +40,6 @@ class ProfileView(APIView):
             )
             .first()
         )
-
-        documents = UserDocuments.objects.filter(user=usr).values(
-            "id", "document_location"
-        )
-
-        user["documents"] = list(documents)
 
         return JsonResponse(
             {
@@ -114,8 +107,6 @@ class UploadUserDocuments(APIView):
 
             user_documents = {"user": user, "document_location": uploaded_path}
 
-            UserDocuments.objects.create(**user_documents)
-
             if os.path.exists(file_path):
                 os.remove(file_path)
 
@@ -143,7 +134,6 @@ class GetUserBlogPosts(APIView):
                 "id",
                 "title",
                 "content",
-                "blog_image_location",
                 "created_on",
                 "is_approved",
                 "is_published",

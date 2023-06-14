@@ -7,7 +7,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
-from Auth.models.user_documents_model import UserDocuments
 from Blog.models.blog_model import BlogPost
 from Events.models.events_model import Events
 from helpers.email_sender import send_email
@@ -231,11 +230,6 @@ class GetSingleUser(APIView):
             )
             .first()
         )
-
-        documents = UserDocuments.objects.filter(user_id=data["user_key"]).values(
-            "id", "document_location"
-        )
-        user["documents"] = list(documents)
 
         if not user:
             raise non_existing_data_exception("User")

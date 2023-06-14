@@ -9,7 +9,6 @@ class Events(models.Model):
     venue = models.CharField(max_length=255, null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
-    event_image = models.CharField(max_length=255, null=True, blank=True)
     event_links = models.JSONField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)

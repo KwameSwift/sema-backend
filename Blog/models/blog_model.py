@@ -14,7 +14,6 @@ class BlogPost(models.Model):
         related_name="blog_author",
     )
     description = models.CharField(max_length=255, null=True, blank=True)
-    blog_image_location = models.CharField(max_length=255, null=True, blank=True)
     blog_links = models.JSONField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False)

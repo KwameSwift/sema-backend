@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Events.models.events_model import Events
+from Utilities.models.documents_model import EventDocuments
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
@@ -34,7 +35,6 @@ class GetAllEventsAsAdmin(APIView):
                 "location",
                 "start_date",
                 "end_date",
-                "event_image",
                 "description",
                 "is_approved",
                 "created_by__first_name",
@@ -45,6 +45,12 @@ class GetAllEventsAsAdmin(APIView):
             )
             .order_by("-created_on")
         )
+        for event in events:
+            event["documents"] = list(
+                EventDocuments.objects.filter(event_id=event["id"]).values(
+                    "id", "document_location"
+                )
+            )
 
         data = paginate_data(events, page_number, 10)
         return JsonResponse(

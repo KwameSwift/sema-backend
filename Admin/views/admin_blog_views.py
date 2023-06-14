@@ -8,6 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Blog.models.blog_model import BlogComment, BlogPost
+from Utilities.models.documents_model import BlogDocuments
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   non_existing_data_exception)
@@ -73,7 +74,6 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "author__first_name",
                 "author__last_name",
                 "blog_links",
-                "blog_image_location",
                 "is_approved",
                 "is_published",
                 "created_on",
@@ -84,6 +84,11 @@ class GetAllBlogPostsAsAdmin(APIView):
         for blog_post in blog_posts:
             total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
             blog_post["total_comments"] = total_comments
+            blog_post["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog_post["id"])
+                .values()
+                .order_by("-created_on")
+            )
 
         data = paginate_data(blog_posts, page_number, 3)
         return JsonResponse(
