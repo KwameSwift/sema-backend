@@ -230,7 +230,7 @@ class GetAllPublishedBlogPost(APIView):
 
 
 # Upload blog image
-class UploadBlogImage(APIView):
+class UploadBlogDocument(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
