@@ -69,6 +69,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "id",
                 "title",
                 "content",
+                "description",
                 "author__first_name",
                 "author__last_name",
                 "blog_links",

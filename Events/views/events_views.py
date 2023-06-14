@@ -179,27 +179,33 @@ class GetEventsByAuthor(APIView):
 
     def get(self, request, *args, **kwargs):
         user = self.request.user
-        page_number = self.kwargs.get('page_number')
+        page_number = self.kwargs.get("page_number")
 
         if not check_permission(user, "Events", [1, 2]):
             raise action_authorization_exception("Unauthorized to delete event")
 
         events = (
-            Events.objects.filter(created_by=user).
-            values(
-                "id", "venue",
-                "location", "start_date", 
-                "end_date", "description",
-                "event_links", "is_approved",
-                "created_on"
-            ).order_by("-created_on"))
+            Events.objects.filter(created_by=user)
+            .values(
+                "id",
+                "venue",
+                "location",
+                "start_date",
+                "end_date",
+                "description",
+                "event_links",
+                "is_approved",
+                "created_on",
+            )
+            .order_by("-created_on")
+        )
 
         data = paginate_data(events, page_number, 10)
         return JsonResponse(
             data,
             safe=False,
         )
-        
+
 
 # Get all approved events
 class GetAllApprovedEvents(APIView):
@@ -207,10 +213,9 @@ class GetAllApprovedEvents(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
-
         events = (
-            Events.objects.filter(is_approved=True).
-            values(
+            Events.objects.filter(is_approved=True)
+            .values(
                 "id",
                 "event_name",
                 "venue",
@@ -225,9 +230,10 @@ class GetAllApprovedEvents(APIView):
                 "approved_by__first_name",
                 "approved_by__last_name",
                 "created_on",
-            ).order_by("-created_on"))
+            )
+            .order_by("-created_on")
+        )
 
-        
         return JsonResponse(
             {
                 "status": "success",

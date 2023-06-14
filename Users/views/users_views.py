@@ -181,7 +181,8 @@ class DeleteProfileImage(APIView):
             {"status": "success", "detail": "Profile image deleted successfully"},
             safe=False,
         )
-        
+
+
 # Get my statistics
 class GetAuthorStatistics(APIView):
     permission_classes = (IsAuthenticated,)

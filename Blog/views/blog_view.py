@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Auth.models import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from helpers.functions import delete_file, paginate_data, upload_files
 from helpers.status_codes import (action_authorization_exception,
@@ -89,6 +88,7 @@ class GetSingleBlogPost(APIView):
                     "id",
                     "title",
                     "content",
+                    "description",
                     "blog_image_location",
                     "is_approved",
                     "is_published",
@@ -131,6 +131,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "id",
                 "title",
                 "content",
+                "description",
                 "blog_image_location",
                 "is_approved",
                 "is_published",
@@ -155,9 +156,6 @@ class GetAllBlogPostsAsAdmin(APIView):
 
 # Get all published blog posts
 class GetAllPublishedBlogPost(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
     def get(self, request, *args, **kwargs):
         page_number = self.kwargs.get("page_number")
 
@@ -167,6 +165,7 @@ class GetAllPublishedBlogPost(APIView):
                 "id",
                 "title",
                 "content",
+                "description",
                 "blog_image_location",
                 "is_approved",
                 "is_published",
@@ -193,7 +192,7 @@ class GetAllPublishedBlogPost(APIView):
             blog_post["total_comments"] = comments.count()
             blog_post["comments"] = list(comments)
 
-        data = paginate_data(blog_posts, page_number, 5)
+        data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
             data,
             safe=False,

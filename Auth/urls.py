@@ -1,10 +1,10 @@
 from django.urls import path
+from rest_framework_simplejwt import views as jwt_views
 
 from .views.authentication_views import (ChangePasswordView, LoginView,
                                          PasswordResetView, RegisterView,
                                          SendResetPasswordMailView,
                                          VerifyPasswordResetCode)
-from rest_framework_simplejwt import views as jwt_views
 
 urlpatterns = [
     # User authentication

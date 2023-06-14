@@ -35,14 +35,14 @@ class GetSystemStatistics(APIView):
         total_content_creators = User.objects.filter(
             account_type="Content Creator"
         ).count()
-        
+
         total_blogs = BlogPost.objects.all().count()
         total_events = Events.objects.all().count()
         total_polls = 0
         total_forums = 0
         total_documents_in_vault = 0
         total_donations = 0
-        
+
         data = {
             "total_users": total_users,
             "total_admins": total_admins,
