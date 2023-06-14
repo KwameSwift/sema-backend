@@ -43,13 +43,13 @@ class UploadProfileImage(APIView):
         )
         file_path = local_file_upload(full_directory, file)
 
-        new_event_image = {
+        new_profile_image = {
             "owner": user,
             "document_type": "Profile Image",
             "document_location": file_path,
         }
 
-        UserDocuments.objects.create(**new_event_image)
+        UserDocuments.objects.create(**new_profile_image)
 
         return JsonResponse(
             {
@@ -95,38 +95,6 @@ class ProfileView(APIView):
             safe=False,
         )
 
-
-# Upload profile image
-class UploadProfileImage(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
-    def post(self, request, *args, **kwargs):
-        files = request.FILES.getlist("files")
-
-        user = User.objects.get(user_key=self.request.user.user_key)
-
-        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
-        for file in files:
-            file_extension = os.path.splitext(file.name)[1]
-            new_name = f"{user.first_name}_{user.last_name}{file_extension}"
-            fs = FileSystemStorage(location=LOCAL_FILE_PATH)
-            fs.save(new_name, file)
-
-            file_path = LOCAL_FILE_PATH + new_name
-
-            subdirectory = f"{user.first_name}_{user.last_name}/Profile_Image"
-            uploaded_path = upload_files(file_path, subdirectory)
-
-            user.profile_image = uploaded_path
-            user.save()
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-        return JsonResponse(
-            {"status": "success", "detail": "File uploaded successfully"},
-            safe=False,
-        )
 
 
 # Upload user documents

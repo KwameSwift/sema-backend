@@ -7,11 +7,6 @@ from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
 urlpatterns = [
     # Users
     path(
-        "upload-profile-image/",
-        UploadProfileImage.as_view(),
-        name="Upload Profile Image",
-    ),
-    path(
         "upload-user-documents/",
         UploadUserDocuments.as_view(),
         name="Upload User Documents",

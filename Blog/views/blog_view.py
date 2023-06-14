@@ -240,11 +240,12 @@ class GetAllPublishedBlogPost(APIView):
                 .values()
                 .order_by("-created_on")
             )
-            blog_post["author_profile_image"] = list(
+            blog_post["author_profile_image"] =(
                 UserDocuments.objects.filter(
                     owner=blog_post["author_id"], document_type="Profile Image"
-                ).values("id", "document_location")
-            )
+                ).values("id", "document_location").first()
+                )
+            
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
