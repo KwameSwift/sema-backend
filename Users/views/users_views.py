@@ -35,6 +35,7 @@ class UploadProfileImage(APIView):
             url = profile_image.document_location
             if os.path.exists(url):
                 os.remove(url)
+            profile_image.delete()
         except UserDocuments.DoesNotExist:
             pass
 
