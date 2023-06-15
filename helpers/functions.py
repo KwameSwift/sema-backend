@@ -2,8 +2,8 @@ import ftplib
 import os
 import random
 import string
-from better_profanity import profanity
 
+from better_profanity import profanity
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.timezone import make_aware
 
@@ -154,6 +154,7 @@ def retrieve_file(remote_filepath, local_directory):
         print("FTP error:", str(e))
         return False
 
+
 # Upload files
 def local_file_upload(full_directory, file):
     from django.core.files.storage import FileSystemStorage
@@ -165,6 +166,7 @@ def local_file_upload(full_directory, file):
 
     return f"{full_directory}/{new_filename}"
 
+
 # Delete files
 def delete_local_file(full_directory):
     if os.path.exists(full_directory):
@@ -172,10 +174,10 @@ def delete_local_file(full_directory):
 
     return True
 
+
 # Check Abusive words
 def check_abusive_words(content):
     profanity.load_censor_words()
     censored_text = profanity.censor(content)
     is_abusive = profanity.contains_profanity(content)
     return censored_text, is_abusive
-    

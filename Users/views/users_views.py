@@ -1,5 +1,7 @@
 import os
 
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -8,7 +10,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
-from helpers.functions import (check_abusive_words, delete_file, local_file_upload, paginate_data)
+from helpers.functions import (check_abusive_words, delete_file,
+                               local_file_upload, paginate_data)
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action)
 from Utilities.models.documents_model import UserDocuments
@@ -83,7 +86,7 @@ class ProfileView(APIView):
             )
             .first()
         )
-        
+
         return JsonResponse(
             {
                 "status": "success",
@@ -203,14 +206,27 @@ class GetAuthorStatistics(APIView):
 
         total_blogs = BlogPost.objects.filter(author=user).count()
         total_events = Events.objects.filter(created_by=user).count()
+        total_polls = 0
+        total_donations = 0
+        total_forums = 0
+
+        blogs = (
+            BlogPost.objects.filter(author=user)
+            .annotate(month=TruncMonth("created_on"))
+            .values("month")
+            .annotate(count=Count("id"))
+        )
+        blog_data = [
+            {"month": entry["month"].strftime("%m-%Y"), "count": entry["count"]}
+            for entry in blogs
+        ]
 
         data = {
-            "total_blogs": total_blogs,
+            "total_blogs_and_polls": total_blogs + total_polls,
             "total_events": total_events,
-            "total_polls": 0,
-            "total_donations": 0,
-            "total_forums": 0,
-            "total_documents_in_vault": 0,
+            "total_donations": total_donations,
+            "total_forums": total_forums,
+            "blog_data": blog_data
         }
 
         return JsonResponse(

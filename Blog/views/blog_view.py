@@ -7,8 +7,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (check_abusive_words, delete_local_file, local_file_upload,
-                               paginate_data)
+from helpers.functions import (check_abusive_words, delete_local_file,
+                               local_file_upload, paginate_data)
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
@@ -36,8 +36,8 @@ class CreateBlogPost(APIView):
 
         try:
             abusive_words_check = check_abusive_words(content=data["content"])
-            data['censored_content'] = abusive_words_check[0]
-            data['is_abusive'] = abusive_words_check[1]
+            data["censored_content"] = abusive_words_check[0]
+            data["is_abusive"] = abusive_words_check[1]
 
             BlogPost.objects.get(title=data["title"])
             raise duplicate_data_exception("Blog title")
@@ -348,6 +348,10 @@ class UpdateBlogPost(APIView):
         try:
             BlogPost.objects.get(id=data["blog_post_id"])
             blog_id = data.pop("blog_post_id", None)
+            if "content" in data:
+                abusive_words_check = check_abusive_words(content=data["content"])
+                data["censored_content"] = abusive_words_check[0]
+                data["is_abusive"] = abusive_words_check[1]
             BlogPost.objects.filter(id=blog_id).update(**data)
 
             blog_data = BlogPost.objects.filter(id=blog_id).values().first()
@@ -453,7 +457,7 @@ class ShareABlogPost(APIView):
             blog.save()
 
             return JsonResponse(
-                {"status": "success", "detail": "Blog shared", "total_likes": shares},
+                {"status": "success", "detail": "Blog shared", "total_shares": shares},
                 safe=False,
             )
         except BlogPost.DoesNotExist:
