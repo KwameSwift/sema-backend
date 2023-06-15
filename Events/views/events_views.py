@@ -1,17 +1,14 @@
 import os
 
-from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Auth.models.user_model import User
 from Events.models.events_model import Events
 from helpers.functions import (delete_file, delete_local_file,
-                               local_file_upload, paginate_data, upload_files)
+                               local_file_upload, paginate_data)
 from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
 from helpers.validations import check_permission, check_required_fields

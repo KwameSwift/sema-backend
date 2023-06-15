@@ -1,6 +1,5 @@
 import os
 
-from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -9,11 +8,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
-from helpers.functions import (delete_file, local_file_upload, paginate_data,
-                               upload_files)
+from helpers.functions import (check_abusive_words, delete_file, local_file_upload, paginate_data)
 from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  non_existing_data_exception)
+                                  cannot_perform_action)
 from Utilities.models.documents_model import UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
@@ -86,7 +83,7 @@ class ProfileView(APIView):
             )
             .first()
         )
-
+        
         return JsonResponse(
             {
                 "status": "success",
@@ -95,7 +92,6 @@ class ProfileView(APIView):
             },
             safe=False,
         )
-
 
 
 # Upload user documents
@@ -109,20 +105,18 @@ class UploadUserDocuments(APIView):
 
         LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
         for file in files:
-            file_name = str(file.name)
-            new_name = file_name.replace(" ", "_")
-            fs = FileSystemStorage(location=LOCAL_FILE_PATH)
-            fs.save(new_name, file)
+            full_directory = (
+                f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Documents"
+            )
+            file_path = local_file_upload(full_directory, file)
 
-            file_path = LOCAL_FILE_PATH + new_name
+            new_event_image = {
+                "owner": user,
+                "document_type": "Personal Documents",
+                "document_location": file_path,
+            }
 
-            subdirectory = f"{user.first_name}_{user.last_name}/Documents"
-            uploaded_path = upload_files(file_path, subdirectory)
-
-            user_documents = {"user": user, "document_location": uploaded_path}
-
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            UserDocuments.objects.create(**new_event_image)
 
         return JsonResponse(
             {"status": "success", "detail": "Documents uploaded successfully"},
@@ -153,7 +147,7 @@ class GetUserBlogPosts(APIView):
                 "total_shares",
                 "is_approved",
                 "is_published",
-                "blog_links",
+                "reference",
                 "author__first_name",
                 "author__last_name",
                 "author__is_verified",
@@ -163,8 +157,13 @@ class GetUserBlogPosts(APIView):
         )
 
         for blog_post in blog_posts:
-            total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
-            blog_post["total_comments"] = total_comments
+            total_comments = (
+                BlogComment.objects.filter(blog_id=blog_post["id"])
+                .values("id", "comment", "commentor__first_name", "commentor_last_name")
+                .order_by("-created_on")
+            )
+            blog_post["total_comments"] = total_comments.count()
+            blog_post["comments"] = total_comments
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(

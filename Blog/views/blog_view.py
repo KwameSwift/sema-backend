@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (delete_local_file, local_file_upload,
+from helpers.functions import (check_abusive_words, delete_local_file, local_file_upload,
                                paginate_data)
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,
@@ -35,6 +35,10 @@ class CreateBlogPost(APIView):
         check_required_fields(data, ["title", "content"])
 
         try:
+            abusive_words_check = check_abusive_words(content=data["content"])
+            data['censored_content'] = abusive_words_check[0]
+            data['is_abusive'] = abusive_words_check[1]
+
             BlogPost.objects.get(title=data["title"])
             raise duplicate_data_exception("Blog title")
         except BlogPost.DoesNotExist:
@@ -108,9 +112,11 @@ class GetSingleBlogPost(APIView):
                     "description",
                     "total_likes",
                     "total_shares",
+                    "censored_content",
+                    "is_abusive",
                     "is_approved",
                     "is_published",
-                    "blog_links",
+                    "reference",
                     "author_id",
                     "author__first_name",
                     "author__last_name",
@@ -164,9 +170,11 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "description",
                 "total_likes",
                 "total_shares",
+                "censored_content",
+                "is_abusive",
                 "is_approved",
                 "is_published",
-                "blog_links",
+                "reference",
                 "author_id",
                 "author__first_name",
                 "author__last_name",
@@ -211,7 +219,9 @@ class GetAllPublishedBlogPost(APIView):
                 "total_likes",
                 "total_shares",
                 "is_published",
-                "blog_links",
+                "censored_content",
+                "is_abusive",
+                "reference",
                 "author_id",
                 "author__first_name",
                 "author__is_verified",
@@ -240,12 +250,13 @@ class GetAllPublishedBlogPost(APIView):
                 .values()
                 .order_by("-created_on")
             )
-            blog_post["author_profile_image"] =(
+            blog_post["author_profile_image"] = (
                 UserDocuments.objects.filter(
                     owner=blog_post["author_id"], document_type="Profile Image"
-                ).values("id", "document_location").first()
                 )
-            
+                .values("id", "document_location")
+                .first()
+            )
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(

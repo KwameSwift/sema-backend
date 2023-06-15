@@ -75,7 +75,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "author__last_name",
                 "total_likes",
                 "total_shares",
-                "blog_links",
+                "reference",
                 "is_approved",
                 "is_published",
                 "created_on",
