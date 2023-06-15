@@ -166,7 +166,7 @@ class GetUserBlogPosts(APIView):
                 .order_by("-created_on")
             )
             blog_post["total_comments"] = total_comments.count()
-            blog_post["comments"] = total_comments
+            blog_post["comments"] = list(total_comments)
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
