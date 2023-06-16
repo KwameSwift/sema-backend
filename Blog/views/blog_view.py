@@ -51,7 +51,7 @@ class CreateBlogPost(APIView):
             blog = BlogPost.objects.create(**data)
 
             for file in files:
-                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Images/{blog.title}"
+                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
                 file_path = local_file_upload(full_directory, file)
 
                 new_blog_image = {
