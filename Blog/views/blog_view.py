@@ -29,6 +29,7 @@ class CreateBlogPost(APIView):
         data = request.data
         user = self.request.user
         files = request.FILES.getlist("files")
+        cover_image = request.FILES["cover_image"]
         
         files = data.pop("files", None)
         if not check_permission(user, "Blog", [2]):
@@ -46,9 +47,24 @@ class CreateBlogPost(APIView):
             BlogPost.objects.get(title=data["title"])
             raise duplicate_data_exception("Blog title")
         except BlogPost.DoesNotExist:
+            if cover_image:
+                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
+                cover_image_path = local_file_upload(full_directory, cover_image)
+                
+                data["cover_image"] = cover_image_path
             data["author_id"] = user.user_key
             
             blog = BlogPost.objects.create(**data)
+            
+            
+
+            new_blog_image = {
+                "owner_id": user.user_key,
+                "blog_id": blog.id,
+                "document_location": cover_image_path,
+            }
+
+            BlogDocuments.objects.create(**new_blog_image)
 
             for file in files:
                 full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
