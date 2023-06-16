@@ -1,3 +1,4 @@
+import json
 import os
 
 from django.db.models import Q
@@ -28,21 +29,25 @@ class CreateBlogPost(APIView):
         data = request.data
         user = self.request.user
         files = request.FILES.getlist("files")
-
+        
+        files = data.pop("files", None)
         if not check_permission(user, "Blog", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         check_required_fields(data, ["title", "content"])
-
+        abusive_words_check = check_abusive_words(content=data["content"])
+        data["censored_content"] = abusive_words_check[0]
+        data["is_abusive"] = abusive_words_check[1]
+        
+        data = json.dumps(data)
+        data = json.loads(data)
+        
         try:
-            abusive_words_check = check_abusive_words(content=data["content"])
-            data["censored_content"] = abusive_words_check[0]
-            data["is_abusive"] = abusive_words_check[1]
-
             BlogPost.objects.get(title=data["title"])
             raise duplicate_data_exception("Blog title")
         except BlogPost.DoesNotExist:
-            data["author"] = user
+            data["author_id"] = user.user_key
+            
             blog = BlogPost.objects.create(**data)
 
             for file in files:
@@ -50,7 +55,7 @@ class CreateBlogPost(APIView):
                 file_path = local_file_upload(full_directory, file)
 
                 new_blog_image = {
-                    "owner": user,
+                    "owner_id": user.user_key,
                     "blog_id": blog.id,
                     "document_location": file_path,
                 }

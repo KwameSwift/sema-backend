@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "Utilities",
     "Admin",
     "Events",
+    "Polls",
 ]
 
 MIDDLEWARE = [
