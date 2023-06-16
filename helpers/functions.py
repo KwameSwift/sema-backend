@@ -160,7 +160,6 @@ def local_file_upload(full_directory, file):
     from django.core.files.storage import FileSystemStorage
 
     file_name = str(file.name)
-    print(file_name)
     new_filename = file_name.replace(" ", "_")
     fs = FileSystemStorage(location=full_directory)
     fs.save(new_filename, file)
