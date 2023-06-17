@@ -30,8 +30,9 @@ class CreateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files")
         cover_image = request.FILES["cover_image"]
-        
+
         files = data.pop("files", None)
+        cover_image = data.pop("cover_image", None)
         if not check_permission(user, "Blog", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
@@ -39,47 +40,51 @@ class CreateBlogPost(APIView):
         abusive_words_check = check_abusive_words(content=data["content"])
         data["censored_content"] = abusive_words_check[0]
         data["is_abusive"] = abusive_words_check[1]
-        
+
         data = json.dumps(data)
         data = json.loads(data)
-        
+
         try:
             BlogPost.objects.get(title=data["title"])
             raise duplicate_data_exception("Blog title")
         except BlogPost.DoesNotExist:
-            if cover_image:
-                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
-                cover_image_path = local_file_upload(full_directory, cover_image)
-                
-                data["cover_image"] = cover_image_path
             data["author_id"] = user.user_key
-            
+
             blog = BlogPost.objects.create(**data)
-            
-            
 
-            new_blog_image = {
-                "owner_id": user.user_key,
-                "blog_id": blog.id,
-                "document_location": cover_image_path,
-            }
-
-            BlogDocuments.objects.create(**new_blog_image)
-
-            for file in files:
+            for image in cover_image:
                 full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
-                file_path = local_file_upload(full_directory, file)
+                cover_image_path = local_file_upload(full_directory, image)
+
+                blog.cover_image = cover_image_path
+                blog.save()
+
+                blog_image = {
+                    "owner_id": user.user_key,
+                    "blog_id": blog.id,
+                    "document_location": cover_image_path,
+                }
+
+            BlogDocuments.objects.create(**blog_image)
+
+            for img in files:
+                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
+                filepath = local_file_upload(full_directory, img)
 
                 new_blog_image = {
                     "owner_id": user.user_key,
                     "blog_id": blog.id,
-                    "document_location": file_path,
+                    "document_location": filepath,
                 }
 
                 BlogDocuments.objects.create(**new_blog_image)
 
             blog_data = BlogPost.objects.filter(id=blog.id).values().first()
-
+            blog_data["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog.id).values(
+                    "id", "document_location"
+                )
+            )
             return JsonResponse(
                 {
                     "status": "success",
