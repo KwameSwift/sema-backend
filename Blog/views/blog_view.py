@@ -71,7 +71,10 @@ class CreateBlogPost(APIView):
                     }
 
                 BlogDocuments.objects.create(**blog_image)
+            except TypeError:
+                pass
 
+            try:
                 for img in files:
                     full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
                     filepath = local_file_upload(full_directory, img)
