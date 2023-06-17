@@ -68,7 +68,7 @@ class GetAllUsers(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         user = self.request.user
         page_number = self.kwargs.get("page_number")
         account_type = request.data.get("account_type")
