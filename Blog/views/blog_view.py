@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from Blog.blog_helper import create_cover_image, create_other_blog_documents
 from Blog.models.blog_model import BlogComment, BlogPost
 from helpers.functions import (check_abusive_words, delete_local_file,
                                local_file_upload, paginate_data)
@@ -30,23 +31,22 @@ class CreateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files")
         cover_image = request.FILES.get("cover_image")
-        
+
         if files:
             files = data.pop("files", None)
         if cover_image:
             cover_image = data.pop("cover_image", None)
-        
+
         if not check_permission(user, "Blog", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         data = json.dumps(data)
         data = json.loads(data)
-        
+
         check_required_fields(data, ["title", "content"])
         abusive_words_check = check_abusive_words(content=data["content"])
         data["censored_content"] = abusive_words_check[0]
         data["is_abusive"] = abusive_words_check[1]
-        
 
         try:
             BlogPost.objects.get(title=data["title"])
@@ -56,38 +56,8 @@ class CreateBlogPost(APIView):
 
             blog = BlogPost.objects.create(**data)
 
-            try:
-                for image in cover_image:
-                    full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
-                    cover_image_path = local_file_upload(full_directory, image)
-
-                    blog.cover_image = cover_image_path
-                    blog.save()
-
-                    blog_image = {
-                        "owner_id": user.user_key,
-                        "blog_id": blog.id,
-                        "document_location": cover_image_path,
-                    }
-
-                BlogDocuments.objects.create(**blog_image)
-            except TypeError:
-                pass
-
-            try:
-                for img in files:
-                    full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Documents/{blog.title}"
-                    filepath = local_file_upload(full_directory, img)
-
-                    new_blog_image = {
-                        "owner_id": user.user_key,
-                        "blog_id": blog.id,
-                        "document_location": filepath,
-                    }
-
-                    BlogDocuments.objects.create(**new_blog_image)
-            except TypeError:
-                pass
+            create_cover_image(cover_image, blog, user)
+            create_other_blog_documents(files, blog, user)
 
             blog_data = BlogPost.objects.filter(id=blog.id).values().first()
             blog_data["documents"] = list(
@@ -148,6 +118,8 @@ class GetSingleBlogPost(APIView):
                     "description",
                     "total_likes",
                     "total_shares",
+                    "cover_image",
+                    "links",
                     "censored_content",
                     "is_abusive",
                     "is_approved",
@@ -208,6 +180,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "total_shares",
                 "censored_content",
                 "is_abusive",
+                "links",
                 "is_approved",
                 "is_published",
                 "reference",
@@ -255,6 +228,8 @@ class GetAllPublishedBlogPost(APIView):
                 "total_likes",
                 "total_shares",
                 "is_published",
+                "cover_image",
+                "links",
                 "censored_content",
                 "is_abusive",
                 "reference",
@@ -321,7 +296,8 @@ class UploadBlogDocument(APIView):
             raise non_existing_data_exception("Blog")
 
         for file in files:
-            full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Blog_Images/{blog.title}"
+            base_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}"
+            full_directory = f"{base_directory}/Blog_Documents/{blog.title}"
             file_path = local_file_upload(full_directory, file)
 
             new_blog_image = {
@@ -375,6 +351,16 @@ class UpdateBlogPost(APIView):
     def put(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
+        files = request.FILES.getlist("files")
+        cover_image = request.FILES.get("cover_image")
+        
+        if files:
+            files = data.pop("files", None)
+        if cover_image:
+            cover_image = data.pop("cover_image", None)
+        
+        data = json.dumps(data)
+        data = json.loads(data)
 
         if not check_permission(user, "Blog", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
@@ -382,7 +368,7 @@ class UpdateBlogPost(APIView):
         check_required_fields(data, ["blog_post_id"])
 
         try:
-            BlogPost.objects.get(id=data["blog_post_id"])
+            blog = BlogPost.objects.get(id=data["blog_post_id"])
             blog_id = data.pop("blog_post_id", None)
             if "content" in data:
                 abusive_words_check = check_abusive_words(content=data["content"])
@@ -390,8 +376,22 @@ class UpdateBlogPost(APIView):
                 data["is_abusive"] = abusive_words_check[1]
             BlogPost.objects.filter(id=blog_id).update(**data)
 
+            
+            
+            if cover_image:
+                delete_local_file(blog.cover_image)
+                BlogDocuments.objects.filter(document_location=blog.cover_image).delete()
+                create_cover_image(cover_image, blog, user)
+                
+            if files:   
+                create_other_blog_documents(files, blog, user)
+                
             blog_data = BlogPost.objects.filter(id=blog_id).values().first()
-
+            blog_data["documents"] = list(BlogDocuments.objects.filter(
+                blog_id=blog_id
+            ).values("id", "document_location"))
+            
+            
             return JsonResponse(
                 {
                     "status": "success",
@@ -482,7 +482,6 @@ class ShareABlogPost(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def put(self, request, *args, **kwargs):
-        user = self.request.user
         blog_id = self.kwargs["blog_id"]
 
         try:

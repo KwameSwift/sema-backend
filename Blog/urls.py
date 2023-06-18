@@ -4,7 +4,7 @@ from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
                               LikeABlogPost, UpdateBlogPost,
-                              UploadBlogDocument)
+                              UploadBlogDocument, ShareABlogPost)
 
 urlpatterns = [
     # Blog
@@ -49,4 +49,9 @@ urlpatterns = [
         LikeABlogPost.as_view(),
         name="Like A Blog Post",
     ),
+    path(
+        "share-blog-post/<int:blog_id>/",
+        ShareABlogPost.as_view(),
+        name="Share A Blog Post",
+    )
 ]

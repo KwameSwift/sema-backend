@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
+from django.db.models import Q
 from Auth.models import User
 from Blog.models.blog_model import BlogPost
 from Events.models.events_model import Events
@@ -102,6 +102,7 @@ class GetAllUsers(APIView):
                     "email",
                     "first_name",
                     "last_name",
+                    "account_type",
                     "organization",
                     "country__name",
                     "is_verified",
@@ -269,3 +270,44 @@ class VerifyUsers(APIView):
             )
         except User.DoesNotExist:
             raise non_existing_data_exception("User")
+
+
+# Get all content creators
+class SearchAllUsers(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        page_number = self.kwargs.get("page_number")
+        search_query = request.data.get("search_query")
+
+        if not check_super_admin(user):
+            raise action_authorization_exception("Unauthorized to perform action")
+        
+        check_required_fields(request.data, ["search_query"])
+        
+        users = (
+            User.objects.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) | 
+                Q(email__icontains=search_query) |
+                Q(organization__icontains=search_query)
+                ).values(
+                "user_key",
+                "role_id",
+                "role__name",
+                "email",
+                "first_name",
+                "last_name",
+                "account_type",
+                "organization",
+                "country__name",
+                "is_verified",
+            )
+            .order_by("-created_on")
+        )
+        
+        data = paginate_data(users, page_number, 10)
+
+        return JsonResponse(data, safe=False)

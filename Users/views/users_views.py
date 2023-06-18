@@ -10,8 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
-from helpers.functions import (check_abusive_words, delete_file,
-                               local_file_upload, paginate_data)
+from helpers.functions import delete_file, local_file_upload, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action)
 from Utilities.models.documents_model import UserDocuments
@@ -148,9 +147,13 @@ class GetUserBlogPosts(APIView):
                 "description",
                 "total_likes",
                 "total_shares",
+                "cover_image",
+                "censored_content",
+                "is_abusive",
                 "is_approved",
                 "is_published",
                 "reference",
+                "author_id",
                 "author__first_name",
                 "author__last_name",
                 "author__is_verified",

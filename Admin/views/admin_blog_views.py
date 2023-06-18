@@ -1,5 +1,4 @@
 import datetime
-import os
 
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
@@ -71,13 +70,19 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "title",
                 "content",
                 "description",
-                "author__first_name",
-                "author__last_name",
                 "total_likes",
                 "total_shares",
-                "reference",
+                "cover_image",
+                "censored_content",
+                "is_abusive",
+                "links",
                 "is_approved",
                 "is_published",
+                "reference",
+                "author_id",
+                "author__first_name",
+                "author__last_name",
+                "author__is_verified",
                 "created_on",
             )
             .order_by("-created_on")

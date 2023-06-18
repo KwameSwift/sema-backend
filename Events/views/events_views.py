@@ -40,7 +40,8 @@ class CreateEvent(APIView):
             event = Events.objects.create(**data)
 
             for file in files:
-                full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Event_Documents/{event.event_name}"
+                base_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}"
+                full_directory = f"{base_directory}/Event_Documents/{event.event_name}"
                 file_path = local_file_upload(full_directory, file)
 
                 new_event_doc = {
@@ -108,7 +109,8 @@ class UploadEventDocuments(APIView):
             raise non_existing_data_exception("Event")
 
         for file in files:
-            full_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Event_Documents/{event.event_name}"
+            base_directory_name = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}"
+            full_directory = f"{base_directory_name}/Event_Documents/{event.event_name}"
             file_path = local_file_upload(full_directory, file)
 
             new_event_image = {

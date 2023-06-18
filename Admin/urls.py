@@ -9,7 +9,8 @@ from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
                                            GetSingleRole, UpdateUserRole)
 from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
                                       GetAllUsers, GetSingleUser,
-                                      GetSystemStatistics, VerifyUsers)
+                                      GetSystemStatistics, VerifyUsers,
+                                      SearchAllUsers)
 
 urlpatterns = [
     # System Statistics
@@ -94,5 +95,10 @@ urlpatterns = [
         "approve-event/",
         ApproveEvents.as_view(),
         name="Admin Approve Events",
+    ),
+    path(
+        "search-users/<int:page_number>/",
+        SearchAllUsers.as_view(),
+        name="Search All Users",
     ),
 ]

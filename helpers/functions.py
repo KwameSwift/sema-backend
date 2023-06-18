@@ -170,8 +170,11 @@ def local_file_upload(full_directory, file):
 
 # Delete files
 def delete_local_file(full_directory):
-    if os.path.exists(full_directory):
-        os.remove(full_directory)
+    try:
+        if os.path.exists(full_directory):
+            os.remove(full_directory)
+    except TypeError:
+        pass
 
     return True
 
