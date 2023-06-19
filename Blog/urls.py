@@ -3,8 +3,8 @@ from django.urls import path
 from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
-                              LikeABlogPost, UpdateBlogPost,
-                              UploadBlogDocument, ShareABlogPost)
+                              LikeABlogPost, ShareABlogPost, UpdateBlogPost,
+                              UploadBlogDocument)
 
 urlpatterns = [
     # Blog
@@ -53,5 +53,5 @@ urlpatterns = [
         "share-blog-post/<int:blog_id>/",
         ShareABlogPost.as_view(),
         name="Share A Blog Post",
-    )
+    ),
 ]

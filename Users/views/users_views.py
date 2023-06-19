@@ -1,6 +1,6 @@
 import os
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
@@ -134,12 +134,19 @@ class GetUserBlogPosts(APIView):
     def get(self, request, *args, **kwargs):
         user = self.request.user
         page_number = self.kwargs.get("page_number")
+        data_type = self.kwargs.get("data_type")
 
         if user.account_type == "Guest":
             raise action_authorization_exception("Unauthorized to view Blogs")
 
+        query = Q(author=user)
+        if data_type == 1:
+            query &= Q(is_approved=True)
+        elif data_type == 2:
+            query &= Q(is_approved=False)
+
         blog_posts = (
-            BlogPost.objects.filter(author=user)
+            BlogPost.objects.filter(query)
             .values(
                 "id",
                 "title",

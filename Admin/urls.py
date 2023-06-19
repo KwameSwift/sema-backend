@@ -9,8 +9,8 @@ from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
                                            GetSingleRole, UpdateUserRole)
 from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
                                       GetAllUsers, GetSingleUser,
-                                      GetSystemStatistics, VerifyUsers,
-                                      SearchAllUsers)
+                                      GetSystemStatistics, SearchAllUsers,
+                                      VerifyUsers)
 
 urlpatterns = [
     # System Statistics

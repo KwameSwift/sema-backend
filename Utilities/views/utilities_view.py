@@ -3,8 +3,8 @@ import os
 import requests
 from django.http import JsonResponse
 from rest_framework.views import APIView
-from Auth.models.permissions_model import Module
 
+from Auth.models.permissions_model import Module
 from Auth.models.user_model import Country, UserRole
 from helpers.status_codes import cannot_perform_action
 
@@ -39,11 +39,17 @@ class DropDowns(APIView):
         drop_type = self.kwargs["drop_type"]
 
         if drop_type == 1:
-            data = UserRole.objects.all().values("id", "name", "created_on").order_by("-created_on")
+            data = (
+                UserRole.objects.all()
+                .values("id", "name", "created_on")
+                .order_by("-created_on")
+            )
         elif drop_type == 2:
             data = Country.objects.all().values("id", "name", "calling_code")
         elif drop_type == 3:
-            data = Module.objects.all().values("id", "name", "created_on").order_by("id")
+            data = (
+                Module.objects.all().values("id", "name", "created_on").order_by("id")
+            )
         else:
             raise cannot_perform_action("Invalid drop_type")
         return JsonResponse(

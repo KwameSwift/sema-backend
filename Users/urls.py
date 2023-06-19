@@ -17,7 +17,7 @@ urlpatterns = [
         name="Profile View",
     ),
     path(
-        "my-blog-posts/<int:page_number>/",
+        "my-blog-posts/<int:data_type>/<int:page_number>/",
         GetUserBlogPosts.as_view(),
         name="User BlogPosts",
     ),

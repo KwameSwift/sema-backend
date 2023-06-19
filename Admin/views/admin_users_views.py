@@ -1,13 +1,13 @@
 import datetime
 
 from django.contrib.auth.hashers import make_password
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.db.models import Q
+
 from Auth.models import User
-from Auth.models.user_model import UserRole
 from Blog.models.blog_model import BlogPost
 from Events.models.events_model import Events
 from helpers.email_sender import send_email
@@ -289,16 +289,17 @@ class SearchAllUsers(APIView):
 
         if not check_super_admin(user):
             raise action_authorization_exception("Unauthorized to perform action")
-        
+
         check_required_fields(request.data, ["search_query"])
-        
+
         users = (
             User.objects.filter(
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query) | 
-                Q(email__icontains=search_query) |
-                Q(organization__icontains=search_query)
-                ).values(
+                Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
+                | Q(email__icontains=search_query)
+                | Q(organization__icontains=search_query)
+            )
+            .values(
                 "user_key",
                 "role_id",
                 "role__name",
@@ -312,7 +313,7 @@ class SearchAllUsers(APIView):
             )
             .order_by("-created_on")
         )
-        
+
         data = paginate_data(users, page_number, 10)
 
         return JsonResponse(data, safe=False)

@@ -1,5 +1,6 @@
 import datetime
 
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -11,7 +12,6 @@ from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields, check_super_admin
-from Utilities.models.documents_model import BlogDocuments
 
 
 # Approve and Publish Blogs
@@ -59,12 +59,15 @@ class GetAllBlogPostsAsAdmin(APIView):
 
         if not check_super_admin(user):
             raise action_authorization_exception("Unauthorized to view Blog Posts")
-        if data_type == 1:
-            is_approved = True
-        else:
-            is_approved = False
+
         blog_posts = (
-            BlogPost.objects.filter(is_approved=is_approved)
+            BlogPost.objects.filter(
+                Q(is_approved=True)
+                if data_type == 1
+                else Q(is_approved=False)
+                if data_type == 2
+                else Q()
+            )
             .values(
                 "id",
                 "title",
@@ -89,15 +92,17 @@ class GetAllBlogPostsAsAdmin(APIView):
         )
 
         for blog_post in blog_posts:
-            total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
-            blog_post["total_comments"] = total_comments
-            blog_post["documents"] = list(
-                BlogDocuments.objects.filter(blog_id=blog_post["id"])
-                .values()
+            total_comments = (
+                BlogComment.objects.filter(blog_id=blog_post["id"])
+                .values(
+                    "id", "comment", "commentor__first_name", "commentor__last_name"
+                )
                 .order_by("-created_on")
             )
+            blog_post["total_comments"] = total_comments.count()
+            blog_post["comments"] = list(total_comments)
 
-        data = paginate_data(blog_posts, page_number, 3)
+        data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
             data,
             safe=False,

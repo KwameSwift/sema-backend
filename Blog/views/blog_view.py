@@ -353,12 +353,12 @@ class UpdateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files")
         cover_image = request.FILES.get("cover_image")
-        
+
         if files:
             files = data.pop("files", None)
         if cover_image:
             cover_image = data.pop("cover_image", None)
-        
+
         data = json.dumps(data)
         data = json.loads(data)
 
@@ -376,22 +376,23 @@ class UpdateBlogPost(APIView):
                 data["is_abusive"] = abusive_words_check[1]
             BlogPost.objects.filter(id=blog_id).update(**data)
 
-            
-            
             if cover_image:
                 delete_local_file(blog.cover_image)
-                BlogDocuments.objects.filter(document_location=blog.cover_image).delete()
+                BlogDocuments.objects.filter(
+                    document_location=blog.cover_image
+                ).delete()
                 create_cover_image(cover_image, blog, user)
-                
-            if files:   
+
+            if files:
                 create_other_blog_documents(files, blog, user)
-                
+
             blog_data = BlogPost.objects.filter(id=blog_id).values().first()
-            blog_data["documents"] = list(BlogDocuments.objects.filter(
-                blog_id=blog_id
-            ).values("id", "document_location"))
-            
-            
+            blog_data["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog_id).values(
+                    "id", "document_location"
+                )
+            )
+
             return JsonResponse(
                 {
                     "status": "success",
