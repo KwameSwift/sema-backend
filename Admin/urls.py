@@ -52,7 +52,7 @@ urlpatterns = [
         name="Delete Single User",
     ),
     path(
-        "add-admins/",
+        "add-users/",
         AddSuperAdmins.as_view(),
         name="Add Admins",
     ),
