@@ -37,7 +37,7 @@ class CreateBlogPost(APIView):
         if cover_image:
             cover_image = data.pop("cover_image", None)
 
-        if not check_permission(user, "Blog", [2]):
+        if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         data = json.dumps(data)
@@ -286,7 +286,7 @@ class UploadBlogDocument(APIView):
         files = request.FILES.getlist("files")
         data = request.data
 
-        if not check_permission(user, "Blog", [2]):
+        if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to upload blog image")
 
         check_required_fields(data, ["blog_post_id"])
@@ -323,7 +323,7 @@ class DeleteBlogDocuments(APIView):
         user = self.request.user
         data = request.data
 
-        if not check_permission(user, "Blog", [2]):
+        if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to delete blog image")
 
         check_required_fields(data, ["blog_post_id"], ["document_urls"])
@@ -362,7 +362,7 @@ class UpdateBlogPost(APIView):
         data = json.dumps(data)
         data = json.loads(data)
 
-        if not check_permission(user, "Blog", [2]):
+        if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         check_required_fields(data, ["blog_post_id"])
@@ -414,7 +414,7 @@ class DeleteBlogPost(APIView):
         data = request.data
         user = self.request.user
 
-        if not check_permission(user, "Blog", [2]):
+        if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         check_required_fields(data, ["blog_post_id"])
