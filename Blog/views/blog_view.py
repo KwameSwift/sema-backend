@@ -412,16 +412,14 @@ class DeleteBlogPost(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def delete(self, request, *args, **kwargs):
-        data = request.data
+        blog_post_id = self.kwargs["blog_post_id"]
         user = self.request.user
 
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
-        check_required_fields(data, ["blog_post_id"])
-
         try:
-            blog = BlogPost.objects.get(id=data["blog_post_id"])
+            blog = BlogPost.objects.get(id=blog_post_id)
 
             docs = BlogDocuments.objects.filter(blog_id=blog.id).values(
                 "document_location"

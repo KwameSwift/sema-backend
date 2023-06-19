@@ -47,7 +47,7 @@ urlpatterns = [
         name="Get Single User",
     ),
     path(
-        "delete-single-user/",
+        "delete-single-user/<slug:user_key>/",
         DeleteUserView.as_view(),
         name="Delete Single User",
     ),

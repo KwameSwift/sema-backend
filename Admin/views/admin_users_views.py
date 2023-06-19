@@ -181,15 +181,13 @@ class DeleteUserView(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def delete(self, request, *args, **kwargs):
-        data = request.data
+        user_key = self.kwargs["user_key"]
 
         if not check_super_admin(self.request.user):
             raise action_authorization_exception("Unauthorized to perform action")
 
-        check_required_fields(data, ["user_key"])
-
         try:
-            user = User.objects.get(user_key=data["user_key"])
+            user = User.objects.get(user_key=user_key)
             user.delete()
             return JsonResponse(
                 {

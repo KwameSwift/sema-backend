@@ -40,7 +40,7 @@ urlpatterns = [
         name="Update Blog Post",
     ),
     path(
-        "delete-blog-post/",
+        "delete-blog-post/<slug:blog_post_id>/",
         DeleteBlogPost.as_view(),
         name="Delete Blog Post",
     ),
