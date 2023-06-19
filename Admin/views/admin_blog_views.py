@@ -83,6 +83,8 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "is_published",
                 "reference",
                 "author_id",
+                "approved_and_published_by__first_name",
+                "approved_and_published_by__last_name",
                 "author__first_name",
                 "author__last_name",
                 "author__is_verified",

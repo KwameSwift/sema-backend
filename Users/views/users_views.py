@@ -159,6 +159,8 @@ class GetUserBlogPosts(APIView):
                 "is_abusive",
                 "is_approved",
                 "is_published",
+                "approved_and_published_by__first_name",
+                "approved_and_published_by__last_name",
                 "reference",
                 "author_id",
                 "author__first_name",
