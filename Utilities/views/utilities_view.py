@@ -39,11 +39,11 @@ class DropDowns(APIView):
         drop_type = self.kwargs["drop_type"]
 
         if drop_type == 1:
-            data = UserRole.objects.all().values("id", "name")
+            data = UserRole.objects.all().values("id", "name", "created_on").order_by("-created_on")
         elif drop_type == 2:
             data = Country.objects.all().values("id", "name", "calling_code")
         elif drop_type == 3:
-            data = Module.objects.all().values("id", "name")
+            data = Module.objects.all().values("id", "name", "created_on").order_by("-created_on")
         else:
             raise cannot_perform_action("Invalid drop_type")
         return JsonResponse(
