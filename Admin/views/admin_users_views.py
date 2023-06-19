@@ -260,7 +260,10 @@ class VerifyUsers(APIView):
 
         try:
             user = User.objects.get(user_key=data["user_key"])
-            user.is_verified = True
+            if user.is_verified:
+                user.is_verified = False
+            else:
+                user.is_verified = True
             user.updated_on = aware_datetime(datetime.datetime.now())
             user.save()
 
