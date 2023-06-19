@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.db.models import Q
 from Auth.models import User
+from Auth.models.user_model import UserRole
 from Blog.models.blog_model import BlogPost
 from Events.models.events_model import Events
 from helpers.email_sender import send_email
@@ -133,6 +134,7 @@ class AddSuperAdmins(APIView):
                 "email",
                 "first_name",
                 "last_name",
+                "account_type",
                 "organization",
                 "country_id",
                 "role_id",
@@ -145,17 +147,17 @@ class AddSuperAdmins(APIView):
         except User.DoesNotExist:
             password = generate_random_string(8)
             data["password"] = make_password(password)
-            data["is_verified"] = True
-            data["is_admin"] = True
-            data["account_type"] = "Super Admin"
+            if data["account_type"] == "Super Admin":
+                data["is_verified"] = True
+                data["is_admin"] = True
 
             new_user = User.objects.create(**data)
-
+            account_type = data["account_type"]
             new_line = "\n"
             double_new_line = "\n\n"
             message = (
                 f"Hi, {new_user.first_name}.{new_line}"
-                f"You have been added as an Admin on Sema."
+                f"You have been added as {account_type} on Sema."
                 f"Please use the password below to login into your account {new_line}"
                 f"Password: {password}{new_line}"
                 f"Change your password after logging in. {new_line}"
