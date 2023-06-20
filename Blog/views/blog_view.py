@@ -515,10 +515,10 @@ class SearchBlogPosts(APIView):
         
         blog_posts = (
             BlogPost.objects.filter(
-                Q(title=data["search_query"]) |
-                Q(description=data["search_query"]) |
-                Q(author__first_name=data["search_query"]) |
-                Q(author__last_name=data["search_query"]) 
+                Q(title__icontains=data["search_query"]) |
+                Q(description__icontains=data["search_query"]) |
+                Q(author__first_name__icontains=data["search_query"]) |
+                Q(author__last_name__icontains=data["search_query"]) 
                 )
             .values(
                 "id",
