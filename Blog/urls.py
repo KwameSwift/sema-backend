@@ -4,7 +4,7 @@ from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
                               LikeABlogPost, ShareABlogPost, UpdateBlogPost,
-                              UploadBlogDocument)
+                              UploadBlogDocument, SearchBlogPosts)
 
 urlpatterns = [
     # Blog
@@ -54,4 +54,10 @@ urlpatterns = [
         ShareABlogPost.as_view(),
         name="Share A Blog Post",
     ),
+    path(
+        "search-blog-post/",
+        SearchBlogPosts.as_view(),
+        name="Search Blog Posts",
+    ),
+    
 ]

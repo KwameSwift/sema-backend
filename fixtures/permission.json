@@ -1,0 +1,138 @@
+[
+    {
+      "model": "Auth.UserRole",
+      "pk": 1,
+      "fields": {
+        "name": "Super Admin",
+        "created_on": "2023-06-06 08:12:39.835536+00"
+      }
+    },
+    {
+        "model": "Auth.UserRole",
+        "pk": 2,
+        "fields": {
+          "name": "Content Creator",
+          "created_on": "2023-06-06 08:12:52.090124+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 1,
+        "fields": {
+            "role_id": 1,
+            "module_id": 1,
+            "access_level": 2,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 2,
+        "fields": {
+            "role_id": 1,
+            "module_id": 2,
+            "access_level": 2,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 3,
+        "fields": {
+            "role_id": 1,
+            "module_id": 3,
+            "access_level": 2,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 4,
+        "fields": {
+            "role_id": 1,
+            "module_id": 4,
+            "access_level": 2,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 5,
+        "fields": {
+            "role_id": 1,
+            "module_id": 5,
+            "access_level": 2,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 6,
+        "fields": {
+            "role_id": 1,
+            "module_id": 6,
+            "access_level": 2,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 7,
+        "fields": {
+            "role_id": 2,
+            "module_id": 1,
+            "access_level": 1,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 8,
+        "fields": {
+            "role_id": 2,
+            "module_id": 2,
+            "access_level": 1,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 9,
+        "fields": {
+            "role_id":2,
+            "module_id": 3,
+            "access_level": 1,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 10,
+        "fields": {
+            "role_id": 2,
+            "module_id": 4,
+            "access_level": 1,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 11,
+        "fields": {
+            "role_id": 2,
+            "module_id": 5,
+            "access_level": 1,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    },
+    {
+        "model": "Auth.Permission",
+        "pk": 12,
+        "fields": {
+            "role_id": 2,
+            "module_id": 6,
+            "access_level": 1,
+            "created_on": "2023-06-06 08:13:06.256899+00"
+        }
+    }
+]

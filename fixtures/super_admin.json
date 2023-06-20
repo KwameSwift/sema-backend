@@ -1,0 +1,40 @@
+[
+    {
+      "model": "Auth.User",
+      "pk": 1,
+      "fields": {
+        "user_key": "698b1698-b3b2-456a-ad8a-937dc0079d95",
+        "role_id": 1,
+        "email": "admin@africanchildprojects.com",
+        "password": "pbkdf2_sha256$600000$HI4C8wJtr5xNlvhRE3a3XH$tNeVbkb3e8EA0fXaOttrnY2oCqobyE45wvOrA2n7o3I=",
+        "first_name": "Super",
+        "last_name": "Admin",
+        "organization": "SEMA Tanzania",
+        "country": 224,
+        "is_admin": true,
+        "is_active": true,
+        "is_verified": true,
+        "account_type": "Super Admin",
+        "created_on": "2023-06-06 08:12:39.835536+00"
+      }
+    },
+    {
+        "model": "Auth.User",
+        "pk": 2,
+        "fields": {
+          "user_key": "1f571f08-7786-4c99-bb7a-379772b1c2e8",
+          "role_id": 2,
+          "email": "creator@africanchildprojects.com",
+          "password": "pbkdf2_sha256$600000$HI4C8wJtr5xNlvhRE3a3XH$tNeVbkb3e8EA0fXaOttrnY2oCqobyE45wvOrA2n7o3I=",
+          "first_name": "Content",
+          "last_name": "Creator",
+          "organization": "SEMA Tanzania",
+          "country": 224,
+          "is_admin": false,
+          "is_active": true,
+          "is_verified": true,
+          "account_type": "Content Creator",
+          "created_on": "2023-06-06 08:12:39.835536+00"
+        }
+      }
+]

@@ -503,3 +503,77 @@ class ShareABlogPost(APIView):
             )
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")
+
+
+# Search blogs
+class SearchBlogPosts(APIView):
+    def post(self, request, *args, **kwargs):
+        page_number = self.kwargs.get("page_number")
+        data = request.data
+        
+        check_required_fields(data, ["search_query"])
+        
+        blog_posts = (
+            BlogPost.objects.filter(
+                Q(title=data["search_query"]) |
+                Q(description=data["search_query"]) |
+                Q(author__first_name=data["search_query"]) |
+                Q(author__last_name=data["search_query"]) 
+                )
+            .values(
+                "id",
+                "title",
+                "content",
+                "description",
+                "is_approved",
+                "total_likes",
+                "total_shares",
+                "is_published",
+                "approved_and_published_by__first_name",
+                "approved_and_published_by__last_name",
+                "cover_image",
+                "links",
+                "censored_content",
+                "is_abusive",
+                "reference",
+                "author_id",
+                "author__first_name",
+                "author__is_verified",
+                "author__last_name",
+                "created_on",
+            )
+            .order_by("-created_on")
+        )
+
+        for blog_post in blog_posts:
+            comments = (
+                BlogComment.objects.filter(blog_id=blog_post["id"])
+                .values(
+                    "id",
+                    "commentor__first_name",
+                    "commentor__last_name",
+                    "comment",
+                    "created_on",
+                )
+                .order_by("-created_on")
+            )
+            blog_post["total_comments"] = comments.count()
+            blog_post["comments"] = list(comments)
+            blog_post["documents"] = list(
+                BlogDocuments.objects.filter(blog_id=blog_post["id"])
+                .values()
+                .order_by("-created_on")
+            )
+            blog_post["author_profile_image"] = (
+                UserDocuments.objects.filter(
+                    owner=blog_post["author_id"], document_type="Profile Image"
+                )
+                .values("id", "document_location")
+                .first()
+            )
+
+        data = paginate_data(blog_posts, page_number, 10)
+        return JsonResponse(
+            data,
+            safe=False,
+        )
