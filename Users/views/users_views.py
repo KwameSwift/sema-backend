@@ -14,6 +14,7 @@ from helpers.functions import delete_file, local_file_upload, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action)
 from Utilities.models.documents_model import UserDocuments
+from helpers.validations import check_required_fields
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -174,13 +175,9 @@ class GetUserBlogPosts(APIView):
         for blog_post in blog_posts:
             total_comments = (
                 BlogComment.objects.filter(blog_id=blog_post["id"])
-                .values(
-                    "id", "comment", "commentor__first_name", "commentor__last_name"
-                )
-                .order_by("-created_on")
+                .values()
             )
             blog_post["total_comments"] = total_comments.count()
-            blog_post["comments"] = list(total_comments)
 
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
@@ -249,5 +246,62 @@ class GetAuthorStatistics(APIView):
                 "detail": "Statistics retrieved successfully",
                 "data": data,
             },
+            safe=False,
+        )
+
+
+
+# Search blogs
+class SearchMyBlogPosts(APIView):
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        page_number = self.kwargs.get("page_number")
+        data = request.data
+
+        check_required_fields(data, ["search_query"])
+
+        blog_posts = (
+            BlogPost.objects.filter(
+                Q(title__icontains=data["search_query"], author=user)
+                | Q(description__icontains=data["search_query"], author=user)
+                | Q(author__first_name__icontains=data["search_query"], author=user)
+                | Q(author__last_name__icontains=data["search_query"], author=user)
+            )
+            .values(
+                "id",
+                "title",
+                "content",
+                "description",
+                "is_approved",
+                "total_likes",
+                "total_shares",
+                "is_published",
+                "approved_and_published_by__first_name",
+                "approved_and_published_by__last_name",
+                "cover_image",
+                "links",
+                "censored_content",
+                "is_abusive",
+                "reference",
+                "author_id",
+                "author__first_name",
+                "author__is_verified",
+                "author__last_name",
+                "created_on",
+            )
+            .order_by("-created_on")
+        )
+
+        for blog_post in blog_posts:
+            total_comments = (
+                BlogComment.objects.filter(blog_id=blog_post["id"])
+                .values()
+                .order_by("-created_on")
+            )
+            blog_post["total_comments"] = total_comments.count()
+
+        data = paginate_data(blog_posts, page_number, 10)
+        return JsonResponse(
+            data,
             safe=False,
         )

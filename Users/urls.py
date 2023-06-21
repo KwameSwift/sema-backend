@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
-                                GetUserBlogPosts, ProfileView,
+                                GetUserBlogPosts, ProfileView, SearchMyBlogPosts,
                                 UploadProfileImage, UploadUserDocuments)
 
 urlpatterns = [
@@ -35,5 +35,10 @@ urlpatterns = [
         "upload-profile-image/",
         UploadProfileImage.as_view(),
         name="Upload Profile Image",
+    ),
+    path(
+        "search-my-blogs/",
+        SearchMyBlogPosts.as_view(),
+        name="Search My Blog Posts",
     ),
 ]
