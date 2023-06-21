@@ -10,6 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from Auth.models import User
+from Auth.models.user_model import UserRole
 from helpers.email_sender import send_email
 from helpers.status_codes import (PasswordMismatch, WrongCode,
                                   WrongCredentials, WrongPassword,
@@ -30,6 +31,7 @@ class RegisterView(APIView):
             raise duplicate_data_exception("User with email")
         except User.DoesNotExist:
             if "password" in data:
+                user_role = UserRole.objects.get(name="Content Creator")
                 check_required_fields(
                     data,
                     [
@@ -47,8 +49,10 @@ class RegisterView(APIView):
                 else:
                     raise PasswordMismatch()
             else:
+                user_role = UserRole.objects.get(name="Guest")
                 data["account_type"] = "Guest"
-
+            
+            data["role_id"] = user_role.id
             user = User.objects.create(**data)
 
             # Send welcome mail to user

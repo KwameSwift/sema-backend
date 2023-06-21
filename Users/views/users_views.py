@@ -13,8 +13,8 @@ from Events.models.events_model import Events
 from helpers.functions import delete_file, local_file_upload, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action)
-from Utilities.models.documents_model import UserDocuments
 from helpers.validations import check_required_fields
+from Utilities.models.documents_model import UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -173,10 +173,9 @@ class GetUserBlogPosts(APIView):
         )
 
         for blog_post in blog_posts:
-            total_comments = (
-                BlogComment.objects.filter(blog_id=blog_post["id"])
-                .values()
-            )
+            total_comments = BlogComment.objects.filter(
+                blog_id=blog_post["id"]
+            ).values()
             blog_post["total_comments"] = total_comments.count()
 
         data = paginate_data(blog_posts, page_number, 10)
@@ -248,7 +247,6 @@ class GetAuthorStatistics(APIView):
             },
             safe=False,
         )
-
 
 
 # Search blogs

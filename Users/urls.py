@@ -1,8 +1,9 @@
 from django.urls import path
 
 from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
-                                GetUserBlogPosts, ProfileView, SearchMyBlogPosts,
-                                UploadProfileImage, UploadUserDocuments)
+                                GetUserBlogPosts, ProfileView,
+                                SearchMyBlogPosts, UploadProfileImage,
+                                UploadUserDocuments)
 
 urlpatterns = [
     # Users
