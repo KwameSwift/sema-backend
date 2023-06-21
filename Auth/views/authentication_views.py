@@ -10,6 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from Auth.models import User
+from Auth.models.permissions_model import Permission
 from Auth.models.user_model import UserRole
 from helpers.email_sender import send_email
 from helpers.status_codes import (PasswordMismatch, WrongCode,
@@ -78,6 +79,10 @@ class RegisterView(APIView):
 
             data["user"]["user_key"] = user.user_key
             data["user"]["role_id"] = user.role_id
+            permissions = list(
+                    Permission.objects.filter(role_id=user.role_id).
+                    values("id", "module_id", "module__name", "access_level")
+                )
             try:
                 data["user"]["role_name"] = user.role.name
             except AttributeError:
@@ -85,6 +90,7 @@ class RegisterView(APIView):
             data["user"]["email"] = user.email
             data["user"]["account_type"] = user.account_type
             data["user"]["is_admin"] = user.is_admin
+            data["permissions"] = permissions
 
             return JsonResponse(
                 {
@@ -122,6 +128,11 @@ class LoginView(APIView):
 
                 data["user"]["user_key"] = user.user_key
                 data["user"]["role_id"] = user.role_id
+                
+                permissions = list(
+                    Permission.objects.filter(role_id=user.role_id).
+                    values("id", "module_id", "module__name", "access_level")
+                )
                 try:
                     data["user"]["role_name"] = user.role.name
                 except AttributeError:
@@ -129,6 +140,7 @@ class LoginView(APIView):
                 data["user"]["email"] = user.email
                 data["user"]["account_type"] = user.account_type
                 data["user"]["is_admin"] = user.is_admin
+                data["permissions"] = permissions
 
                 return JsonResponse(
                     {"status": "success", "detail": "Login successful", "data": data},
