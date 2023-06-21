@@ -1,9 +1,11 @@
 import ftplib
 import os
 import random
+import re
 import string
 
 from better_profanity import profanity
+from bs4 import BeautifulSoup
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.timezone import make_aware
 
@@ -179,9 +181,23 @@ def delete_local_file(full_directory):
     return True
 
 
+def convert_quill_text_to_normal_text(text):
+    # Parse the Quill text as HTML.
+    soup = BeautifulSoup(text, "html.parser")
+
+    # Extract the text from the HTML.
+    text = soup.get_text()
+
+    # Remove all Quill formatting tags.
+    text = re.sub(r"<[^>]+>", "", text)
+
+    return text
+
+
 # Check Abusive words
 def check_abusive_words(content):
+    converted_text = convert_quill_text_to_normal_text(content)
     profanity.load_censor_words()
-    censored_text = profanity.censor(content)
-    is_abusive = profanity.contains_profanity(content)
+    censored_text = profanity.censor(converted_text)
+    is_abusive = profanity.contains_profanity(converted_text)
     return censored_text, is_abusive

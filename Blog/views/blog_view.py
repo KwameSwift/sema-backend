@@ -510,16 +510,16 @@ class SearchBlogPosts(APIView):
     def post(self, request, *args, **kwargs):
         page_number = self.kwargs.get("page_number")
         data = request.data
-        
+
         check_required_fields(data, ["search_query"])
-        
+
         blog_posts = (
             BlogPost.objects.filter(
-                Q(title__icontains=data["search_query"]) |
-                Q(description__icontains=data["search_query"]) |
-                Q(author__first_name__icontains=data["search_query"]) |
-                Q(author__last_name__icontains=data["search_query"]) 
-                )
+                Q(title__icontains=data["search_query"])
+                | Q(description__icontains=data["search_query"])
+                | Q(author__first_name__icontains=data["search_query"])
+                | Q(author__last_name__icontains=data["search_query"])
+            )
             .values(
                 "id",
                 "title",

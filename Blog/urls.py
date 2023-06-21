@@ -3,8 +3,8 @@ from django.urls import path
 from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
-                              LikeABlogPost, ShareABlogPost, UpdateBlogPost,
-                              UploadBlogDocument, SearchBlogPosts)
+                              LikeABlogPost, SearchBlogPosts, ShareABlogPost,
+                              UpdateBlogPost, UploadBlogDocument)
 
 urlpatterns = [
     # Blog
@@ -59,5 +59,4 @@ urlpatterns = [
         SearchBlogPosts.as_view(),
         name="Search Blog Posts",
     ),
-    
 ]
