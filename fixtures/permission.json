@@ -89,7 +89,7 @@
         "fields": {
             "role_id": 2,
             "module_id": 1,
-            "access_level": 1,
+            "access_level": 2,
             "created_on": "2023-06-06 08:13:06.256899+00"
         }
     },
@@ -99,7 +99,7 @@
         "fields": {
             "role_id": 2,
             "module_id": 2,
-            "access_level": 1,
+            "access_level": 2,
             "created_on": "2023-06-06 08:13:06.256899+00"
         }
     },
@@ -109,7 +109,7 @@
         "fields": {
             "role_id":2,
             "module_id": 3,
-            "access_level": 1,
+            "access_level": 2,
             "created_on": "2023-06-06 08:13:06.256899+00"
         }
     },
@@ -119,7 +119,7 @@
         "fields": {
             "role_id": 2,
             "module_id": 4,
-            "access_level": 1,
+            "access_level": 2,
             "created_on": "2023-06-06 08:13:06.256899+00"
         }
     },
@@ -129,7 +129,7 @@
         "fields": {
             "role_id": 2,
             "module_id": 5,
-            "access_level": 1,
+            "access_level": 2,
             "created_on": "2023-06-06 08:13:06.256899+00"
         }
     },
@@ -139,7 +139,7 @@
         "fields": {
             "role_id": 2,
             "module_id": 6,
-            "access_level": 1,
+            "access_level": 2,
             "created_on": "2023-06-06 08:13:06.256899+00"
         }
     },

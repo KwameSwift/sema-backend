@@ -246,8 +246,9 @@ class GetAllPublishedBlogPost(APIView):
                 "reference",
                 "author_id",
                 "author__first_name",
-                "author__is_verified",
                 "author__last_name",
+                "author__is_verified",
+                "author__organization",
                 "created_on",
             )
             .order_by("-created_on")
