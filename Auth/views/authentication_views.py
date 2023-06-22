@@ -52,7 +52,7 @@ class RegisterView(APIView):
             else:
                 user_role = UserRole.objects.get(name="Guest")
                 data["account_type"] = "Guest"
-            
+
             data["role_id"] = user_role.id
             user = User.objects.create(**data)
 
@@ -80,9 +80,10 @@ class RegisterView(APIView):
             data["user"]["user_key"] = user.user_key
             data["user"]["role_id"] = user.role_id
             permissions = list(
-                    Permission.objects.filter(role_id=user.role_id).
-                    values("id", "module_id", "module__name", "access_level")
+                Permission.objects.filter(role_id=user.role_id).values(
+                    "id", "module_id", "module__name", "access_level"
                 )
+            )
             try:
                 data["user"]["role_name"] = user.role.name
             except AttributeError:
@@ -128,10 +129,11 @@ class LoginView(APIView):
 
                 data["user"]["user_key"] = user.user_key
                 data["user"]["role_id"] = user.role_id
-                
+
                 permissions = list(
-                    Permission.objects.filter(role_id=user.role_id).
-                    values("id", "module_id", "module__name", "access_level")
+                    Permission.objects.filter(role_id=user.role_id).values(
+                        "id", "module_id", "module__name", "access_level"
+                    )
                 )
                 try:
                     data["user"]["role_name"] = user.role.name

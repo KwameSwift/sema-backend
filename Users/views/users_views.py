@@ -10,7 +10,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
-from helpers.functions import convert_quill_text_to_normal_text, delete_file, local_file_upload, paginate_data, truncate_text
+from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
+                               local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action)
 from helpers.validations import check_required_fields

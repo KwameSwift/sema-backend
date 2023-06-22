@@ -193,11 +193,12 @@ def convert_quill_text_to_normal_text(text):
 
     return text
 
+
 def truncate_text(text, max_length):
     if len(text) <= max_length:
         return text
     else:
-        return text[:max_length].rsplit(' ', 1)[0] + '...'
+        return text[:max_length].rsplit(" ", 1)[0] + "..."
 
 
 # Check Abusive words

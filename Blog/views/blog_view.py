@@ -9,8 +9,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.blog_helper import create_cover_image, create_other_blog_documents
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (check_abusive_words, convert_quill_text_to_normal_text, delete_local_file,
-                               local_file_upload, paginate_data, truncate_text)
+from helpers.functions import (check_abusive_words,
+                               convert_quill_text_to_normal_text,
+                               delete_local_file, local_file_upload,
+                               paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
