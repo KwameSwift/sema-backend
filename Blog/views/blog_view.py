@@ -9,8 +9,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.blog_helper import create_cover_image, create_other_blog_documents
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (check_abusive_words, delete_local_file,
-                               local_file_upload, paginate_data)
+from helpers.functions import (check_abusive_words, convert_quill_text_to_normal_text, delete_local_file,
+                               local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
@@ -199,6 +199,8 @@ class GetAllBlogPostsAsAdmin(APIView):
         )
 
         for blog_post in blog_posts:
+            converted_text = convert_quill_text_to_normal_text(blog_post["content"])
+            blog_post["preview_text"] = truncate_text(converted_text, 200)
             total_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).count()
             blog_post["total_comments"] = total_comments
             blog_post["documents"] = list(
@@ -250,6 +252,8 @@ class GetAllPublishedBlogPost(APIView):
         )
 
         for blog_post in blog_posts:
+            converted_text = convert_quill_text_to_normal_text(blog_post["content"])
+            blog_post["preview_text"] = truncate_text(converted_text, 200)
             comments = (
                 BlogComment.objects.filter(blog_id=blog_post["id"])
                 .values(

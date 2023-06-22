@@ -8,7 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import aware_datetime, paginate_data
+from helpers.functions import aware_datetime, convert_quill_text_to_normal_text, paginate_data, truncate_text
 from helpers.status_codes import (action_authorization_exception,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields, check_super_admin
@@ -94,6 +94,8 @@ class GetAllBlogPostsAsAdmin(APIView):
         )
 
         for blog_post in blog_posts:
+            converted_text = convert_quill_text_to_normal_text(blog_post["content"])
+            blog_post["preview_text"] = truncate_text(converted_text, 200)
             total_comments = (
                 BlogComment.objects.filter(blog_id=blog_post["id"])
                 .values(
