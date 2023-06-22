@@ -11,7 +11,8 @@ LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
 def create_cover_image(cover_image, blog, user):
     base_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}"
-    full_directory = f"{base_directory}/Blog_Documents/{blog.title}"
+    blog_title = str(blog.title).replace(" ", "_")
+    full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
     image_file_extensions = [
         ".jpg",
         ".jpeg",
@@ -56,7 +57,7 @@ def create_cover_image(cover_image, blog, user):
                 }
 
                 BlogDocuments.objects.create(**file_docs)
-                thumbnail_path=f"{base_directory}/Blog_Documents/{blog.title}/thumbnail.jpg"
+                thumbnail_path=f"{base_directory}/Blog_Documents/{blog_title}/thumbnail.jpg"
                 
                 # Load the first page of the PDF using PyMuPDF
                 size=(368, 300)

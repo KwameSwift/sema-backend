@@ -31,11 +31,11 @@ class CreateBlogPost(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
-        files = request.FILES.getlist("files")
+        files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
-
+        
         if files:
-            files = data.pop("files", None)
+            files = data.pop("files[]", None)
         if cover_image:
             cover_image = data.pop("cover_image", None)
 
