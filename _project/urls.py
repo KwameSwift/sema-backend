@@ -14,14 +14,27 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+
 
 def trigger_error(request):
     division_by_zero = 1 / 0
     return division_by_zero
 
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('sentry-debug/', trigger_error),
+    path("admin/", admin.site.urls),
+    path("sentry-debug/", trigger_error),
+    path("auth/", include("Auth.urls")),
+    path("users/", include("Users.urls")),
+    path("utilities/", include("Utilities.urls")),
+    path("blog/", include("Blog.urls")),
+    path("super-admin/", include("Admin.urls")),
+    path("events/", include("Events.urls")),
+    path("polls/", include("Polls.urls")),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

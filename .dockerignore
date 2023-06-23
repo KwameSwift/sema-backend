@@ -1,0 +1,4 @@
+# Directories
+.git
+.vscode
+__pycache__

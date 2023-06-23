@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: ./deploy.sh
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/app:rw
+      - static_volume:/home/sema-backend/app/static
+    depends_on:
+      - pg_db
+    ports:
+      - "8001:8001"
+    networks:
+      - web
+    env_file:
+      - .env
+
+  pg_db:
+    image: postgres:latest
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_HOST=${DB_HOST}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  static_volume:
+  postgres_data:
+
+networks:
+  web:
