@@ -1,10 +1,11 @@
 import os
-from PIL import Image
+
 import fitz
+from PIL import Image
 
 from helpers.functions import local_file_upload
-from Utilities.models.documents_model import BlogDocuments
 from helpers.status_codes import cannot_perform_action
+from Utilities.models.documents_model import BlogDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -28,7 +29,7 @@ def create_cover_image(cover_image, blog, user):
         for image in cover_image:
             # Get the file extension
             file_extension = os.path.splitext(image.name)[1]
-            
+
             if file_extension.lower() in image_file_extensions:
                 cover_image_path = local_file_upload(full_directory, image)
 
@@ -42,8 +43,9 @@ def create_cover_image(cover_image, blog, user):
                 }
 
                 BlogDocuments.objects.create(**blog_image)
-            elif file_extension.lower() == '.pdf':
+            elif file_extension.lower() == ".pdf":
                 from django.core.files.storage import FileSystemStorage
+
                 file_name = str(image.name)
 
                 new_filename = file_name.replace(" ", "_")
@@ -57,10 +59,12 @@ def create_cover_image(cover_image, blog, user):
                 }
 
                 BlogDocuments.objects.create(**file_docs)
-                thumbnail_path=f"{base_directory}/Blog_Documents/{blog_title}/thumbnail.jpg"
-                
+                thumbnail_path = (
+                    f"{base_directory}/Blog_Documents/{blog_title}/thumbnail.jpg"
+                )
+
                 # Load the first page of the PDF using PyMuPDF
-                size=(368, 300)
+                size = (368, 300)
                 doc = fitz.open(file_path)
                 page = doc.load_page(0)
                 pix = page.get_pixmap()
@@ -73,10 +77,10 @@ def create_cover_image(cover_image, blog, user):
 
                 # Save the thumbnail image
                 image.save(thumbnail_path)
-                
+
                 blog.cover_image = thumbnail_path
                 blog.save()
-                
+
                 file_doc = {
                     "owner_id": user.user_key,
                     "blog_id": blog.id,
@@ -84,11 +88,10 @@ def create_cover_image(cover_image, blog, user):
                 }
 
                 BlogDocuments.objects.create(**file_doc)
-                
+
             else:
                 raise cannot_perform_action("Invalid file type")
-            
-            
+
     except TypeError:
         pass
 

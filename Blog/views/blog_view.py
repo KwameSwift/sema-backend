@@ -33,7 +33,7 @@ class CreateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
-        
+
         if files:
             files = data.pop("files[]", None)
         if cover_image:
