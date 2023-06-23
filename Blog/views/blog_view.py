@@ -372,11 +372,16 @@ class UpdateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files")
         cover_image = request.FILES.get("cover_image")
+        
+        links = data.pop("links[]", None)
 
         if files:
             files = data.pop("files", None)
         if cover_image:
             cover_image = data.pop("cover_image", None)
+            
+        if links:
+            data["links"] = links
 
         data = json.dumps(data)
         data = json.loads(data)
