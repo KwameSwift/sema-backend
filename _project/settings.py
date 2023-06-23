@@ -67,7 +67,7 @@ def sentry_error(environment):
 
 
 sentry_error(os.environ.get("ENVIRONMENT"))
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*", os.environ.get("AZURE_WEBAPP")]
 
 
 # Application definition
