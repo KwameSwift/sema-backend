@@ -108,8 +108,6 @@ class CommentOnBlogPost(APIView):
 
 # Get Single Blog Post
 class GetSingleBlogPost(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
         blog_post_id = self.kwargs["blog_post_id"]
