@@ -80,7 +80,6 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "cover_image",
                 "censored_content",
                 "is_abusive",
-                "links",
                 "is_approved",
                 "is_published",
                 "reference",
