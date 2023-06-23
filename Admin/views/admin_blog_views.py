@@ -101,7 +101,7 @@ class GetAllBlogPostsAsAdmin(APIView):
             total_comments = (
                 BlogComment.objects.filter(blog_id=blog_post["id"])
                 .values(
-                    "id", "comment", "commentor__first_name", "commentor__last_name"
+                    "id", "comment", "commentor__first_name", "commentor__last_name", "created_on"
                 )
                 .order_by("-created_on")
             )
