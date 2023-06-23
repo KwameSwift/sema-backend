@@ -280,6 +280,7 @@ class SearchMyBlogPosts(APIView):
                 "approved_and_published_by__first_name",
                 "approved_and_published_by__last_name",
                 "cover_image",
+                "links",
                 "censored_content",
                 "is_abusive",
                 "reference",

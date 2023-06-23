@@ -33,6 +33,8 @@ class CreateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
+        
+        links = data.pop("links[]", None)
 
         if files:
             files = data.pop("files[]", None)
@@ -42,6 +44,8 @@ class CreateBlogPost(APIView):
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
         
+        if links:
+            data["links"] = links
 
         data = json.dumps(data)
         data = json.loads(data)
@@ -122,6 +126,7 @@ class GetSingleBlogPost(APIView):
                     "total_likes",
                     "total_shares",
                     "cover_image",
+                    "links",
                     "censored_content",
                     "is_abusive",
                     "is_approved",
@@ -184,6 +189,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "total_shares",
                 "censored_content",
                 "is_abusive",
+                "links",
                 "is_approved",
                 "is_published",
                 "cover_image",
@@ -239,6 +245,7 @@ class GetAllPublishedBlogPost(APIView):
                 "approved_and_published_by__first_name",
                 "approved_and_published_by__last_name",
                 "cover_image",
+                "links",
                 "censored_content",
                 "is_abusive",
                 "reference",
