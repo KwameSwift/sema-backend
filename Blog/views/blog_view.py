@@ -9,15 +9,24 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.blog_helper import create_cover_image, create_other_blog_documents
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (check_abusive_words,
-                               convert_quill_text_to_normal_text,
-                               delete_local_file, local_file_upload,
-                               paginate_data, truncate_text)
-from helpers.status_codes import (action_authorization_exception,
-                                  duplicate_data_exception,
-                                  non_existing_data_exception)
-from helpers.validations import (check_permission, check_required_fields,
-                                 check_super_admin)
+from helpers.functions import (
+    check_abusive_words,
+    convert_quill_text_to_normal_text,
+    delete_local_file,
+    local_file_upload,
+    paginate_data,
+    truncate_text,
+)
+from helpers.status_codes import (
+    action_authorization_exception,
+    duplicate_data_exception,
+    non_existing_data_exception,
+)
+from helpers.validations import (
+    check_permission,
+    check_required_fields,
+    check_super_admin,
+)
 from Utilities.models.documents_model import BlogDocuments, UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
@@ -44,6 +53,11 @@ class CreateBlogPost(APIView):
 
         data = json.dumps(data)
         data = json.loads(data)
+
+        links = data.pop("links[]", None)
+
+        if links is not None:
+            data["links"] = dict(request.data).get("links[]")
 
         check_required_fields(data, ["title", "content"])
         abusive_words_check = check_abusive_words(content=data["content"])
@@ -365,7 +379,7 @@ class UpdateBlogPost(APIView):
     def put(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
-        files = request.FILES.getlist("files")
+        files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
 
         if files:
@@ -375,6 +389,10 @@ class UpdateBlogPost(APIView):
 
         data = json.dumps(data)
         data = json.loads(data)
+        links = data.pop("links[]", None)
+
+        if links is not None:
+            data["links"] = dict(request.data).get("links[]")
 
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
