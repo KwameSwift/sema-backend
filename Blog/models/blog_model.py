@@ -17,6 +17,7 @@ class BlogPost(models.Model):
     description = models.CharField(max_length=255, null=True, blank=True)
     links = models.JSONField(null=True, blank=True)
     cover_image = models.CharField(max_length=255, null=True, blank=True)
+    image_key = models.CharField(max_length=255, null=True, blank=True)
     reference = models.JSONField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)
     is_published = models.BooleanField(default=False)
