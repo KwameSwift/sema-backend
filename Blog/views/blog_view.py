@@ -42,6 +42,8 @@ class CreateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
+        
+        links = data.pop("links[]", None)
 
         if files:
             files = data.pop("files[]", None)
@@ -50,6 +52,9 @@ class CreateBlogPost(APIView):
 
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
+        
+        if links:
+            data["links"] = links
 
         data = json.dumps(data)
         data = json.loads(data)
@@ -117,8 +122,6 @@ class CommentOnBlogPost(APIView):
 
 # Get Single Blog Post
 class GetSingleBlogPost(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
         blog_post_id = self.kwargs["blog_post_id"]
