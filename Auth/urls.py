@@ -4,12 +4,13 @@ from rest_framework_simplejwt import views as jwt_views
 from .views.authentication_views import (ChangePasswordView, LoginView,
                                          PasswordResetView, RegisterView,
                                          SendResetPasswordMailView,
-                                         VerifyPasswordResetCode)
+                                         VerifyPasswordResetCode, GuestLoginView)
 
 urlpatterns = [
     # User authentication
     path("register/", RegisterView.as_view(), name="Register User"),
     path("login/", LoginView.as_view(), name="Login User"),
+    path("guest-login/", GuestLoginView.as_view(), name="Guest Login"),
     path("change-password/", ChangePasswordView.as_view(), name="Change Password"),
     path(
         "send-reset-password-mail/",

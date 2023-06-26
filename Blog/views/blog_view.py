@@ -155,7 +155,8 @@ class GetSingleBlogPost(APIView):
                 .first()
             )
             blog_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).values(
-                "commentor__first_name", "commentor__last_name", "comment", "created_on"
+                "commentor__first_name", "commentor__last_name", 
+                "comment", "commentor__is_verified", "created_on"
             )
             blog_post["total_comments"] = blog_comments.count()
             blog_post["comments"] = list(blog_comments)
