@@ -518,9 +518,6 @@ class LikeABlogPost(APIView):
 
 # Share a Blog
 class ShareABlogPost(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
     def put(self, request, *args, **kwargs):
         blog_id = self.kwargs["blog_id"]
 
