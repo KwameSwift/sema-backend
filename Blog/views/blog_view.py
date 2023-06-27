@@ -502,9 +502,14 @@ class LikeABlogPost(APIView):
 
             blog.total_likes = likes
             blog.save()
+            
+            liked_blogs = user.blog_likers.all()
+            blog_ids = [blog.id for blog in liked_blogs]
+            
 
             return JsonResponse(
-                {"status": "success", "detail": message, "total_likes": likes},
+                {"status": "success", "detail": message, 
+                 "total_likes": likes, "liked_blogs": blog_ids},
                 safe=False,
             )
         except BlogPost.DoesNotExist:
