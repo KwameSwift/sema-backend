@@ -1,3 +1,4 @@
+import json
 import os
 
 from django.db.models import Count, Q
@@ -10,10 +11,11 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
+from Users.users_helper import upload_profile_image
 from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
                                local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action)
+                                  cannot_perform_action, duplicate_data_exception)
 from helpers.validations import check_required_fields
 from Utilities.models.documents_model import UserDocuments
 
@@ -254,6 +256,8 @@ class GetAuthorStatistics(APIView):
 
 # Search blogs
 class SearchMyBlogPosts(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
     def post(self, request, *args, **kwargs):
         user = self.request.user
         page_number = self.kwargs.get("page_number")
@@ -304,5 +308,33 @@ class SearchMyBlogPosts(APIView):
         data = paginate_data(blog_posts, page_number, 10)
         return JsonResponse(
             data,
+            safe=False,
+        )
+
+
+# Update User Profile
+class UpdateUserProfile(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        data = request.data
+        profile_image = request.FILES.get("profile_image")
+        
+        user = User.objects.get(user_key=user.user_key)
+        if profile_image:
+            upload_profile_image(profile_image, user)
+            profile_image = data.pop("profile_image", None)
+            
+        data = json.dumps(data)
+        data = json.loads(data)
+        
+        User.objects.filter(user_key=user.user_key).update(**data)
+            
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "User profile updated successfully"
+            },
             safe=False,
         )
