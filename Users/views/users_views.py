@@ -84,6 +84,8 @@ class ProfileView(APIView):
                 "bio",
                 "links",
                 "organization",
+                "mobile_number",
+                "account_type",
                 "country__name",
                 "is_verified",
             )
