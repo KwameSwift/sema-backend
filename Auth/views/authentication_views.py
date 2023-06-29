@@ -306,7 +306,7 @@ class ChangePasswordView(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def put(self, request, *args, **kwargs):
-        data = request
+        data = request.data
         user = self.request.user
 
         check_required_fields(
@@ -322,7 +322,7 @@ class ChangePasswordView(APIView):
                     return JsonResponse(
                         {
                             "status": "success",
-                            "detail": "Password change successful",
+                            "detail": "Password changed successfully",
                         },
                         safe=False,
                     )
