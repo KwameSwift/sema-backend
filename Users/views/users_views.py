@@ -86,6 +86,8 @@ class ProfileView(APIView):
                 "organization",
                 "mobile_number",
                 "account_type",
+                "country__calling_code",
+                "country__flag",
                 "country__name",
                 "is_verified",
             )
