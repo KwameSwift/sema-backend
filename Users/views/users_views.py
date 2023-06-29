@@ -88,7 +88,7 @@ class ProfileView(APIView):
                 "account_type",
                 "country__calling_code",
                 "country__flag",
-                "country__name",
+                "country_id",
                 "is_verified",
             )
             .first()
