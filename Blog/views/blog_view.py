@@ -9,24 +9,15 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.blog_helper import create_cover_image, create_other_blog_documents
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.functions import (
-    check_abusive_words,
-    convert_quill_text_to_normal_text,
-    delete_local_file,
-    local_file_upload,
-    paginate_data,
-    truncate_text,
-)
-from helpers.status_codes import (
-    action_authorization_exception,
-    duplicate_data_exception,
-    non_existing_data_exception,
-)
-from helpers.validations import (
-    check_permission,
-    check_required_fields,
-    check_super_admin,
-)
+from helpers.functions import (check_abusive_words,
+                               convert_quill_text_to_normal_text,
+                               delete_local_file, local_file_upload,
+                               paginate_data, truncate_text)
+from helpers.status_codes import (action_authorization_exception,
+                                  duplicate_data_exception,
+                                  non_existing_data_exception)
+from helpers.validations import (check_permission, check_required_fields,
+                                 check_super_admin)
 from Utilities.models.documents_model import BlogDocuments, UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
@@ -42,7 +33,7 @@ class CreateBlogPost(APIView):
         user = self.request.user
         files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
-        
+
         links = data.pop("links[]", None)
 
         if files:
@@ -52,7 +43,7 @@ class CreateBlogPost(APIView):
 
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
-        
+
         if links:
             data["links"] = links
 
@@ -122,7 +113,6 @@ class CommentOnBlogPost(APIView):
 
 # Get Single Blog Post
 class GetSingleBlogPost(APIView):
-
     def get(self, request, *args, **kwargs):
         blog_post_id = self.kwargs["blog_post_id"]
 
@@ -155,8 +145,11 @@ class GetSingleBlogPost(APIView):
                 .first()
             )
             blog_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).values(
-                "commentor__first_name", "commentor__last_name", 
-                "comment", "commentor__is_verified", "created_on"
+                "commentor__first_name",
+                "commentor__last_name",
+                "comment",
+                "commentor__is_verified",
+                "created_on",
             )
             blog_post["total_comments"] = blog_comments.count()
             blog_post["comments"] = list(blog_comments)
@@ -502,14 +495,17 @@ class LikeABlogPost(APIView):
 
             blog.total_likes = likes
             blog.save()
-            
+
             liked_blogs = user.blog_likers.all()
             blog_ids = [blog.id for blog in liked_blogs]
-            
 
             return JsonResponse(
-                {"status": "success", "detail": message, 
-                 "total_likes": likes, "liked_blogs": blog_ids},
+                {
+                    "status": "success",
+                    "detail": message,
+                    "total_likes": likes,
+                    "liked_blogs": blog_ids,
+                },
                 safe=False,
             )
         except BlogPost.DoesNotExist:

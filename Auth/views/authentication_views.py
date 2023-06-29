@@ -2,13 +2,13 @@ import datetime
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils.timezone import make_aware
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Q
 
 from Auth.models import User
 from Auth.models.permissions_model import Permission
@@ -115,7 +115,7 @@ class LoginView(APIView):
             if user.check_password(data["password"]):
                 # Generate a token for authenticated user
                 refresh = RefreshToken.for_user(user)
-                
+
                 liked_blogs = user.blog_likers.all()
                 blog_ids = [blog.id for blog in liked_blogs]
 
@@ -158,8 +158,8 @@ class LoginView(APIView):
                 raise WrongCredentials()
         except User.DoesNotExist:
             raise non_existing_data_exception("User with email")
-        
-        
+
+
 class GuestLoginView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -169,7 +169,7 @@ class GuestLoginView(APIView):
             user = User.objects.get(email=data["email"])
             if user.account_type == "Guest":
                 refresh = RefreshToken.for_user(user)
-                
+
                 liked_blogs = user.blog_likers.all()
                 blog_ids = [blog.id for blog in liked_blogs]
 

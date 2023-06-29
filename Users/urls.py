@@ -2,8 +2,8 @@ from django.urls import path
 
 from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
                                 GetUserBlogPosts, ProfileView,
-                                SearchMyBlogPosts, UploadProfileImage,
-                                UploadUserDocuments, UpdateUserProfile)
+                                SearchMyBlogPosts, UpdateUserProfile,
+                                UploadUserDocuments)
 
 urlpatterns = [
     # Users
@@ -31,11 +31,6 @@ urlpatterns = [
         "my-statistics/",
         GetAuthorStatistics.as_view(),
         name="Get My Statistics",
-    ),
-    path(
-        "upload-profile-image/",
-        UploadProfileImage.as_view(),
-        name="Upload Profile Image",
     ),
     path(
         "search-my-blogs/",
