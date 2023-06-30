@@ -145,12 +145,28 @@ class GetSingleBlogPost(APIView):
                 .first()
             )
             blog_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).values(
+                "commentor_id",
                 "commentor__first_name",
                 "commentor__last_name",
                 "comment",
                 "commentor__is_verified",
                 "created_on",
             )
+            profile_images = UserDocuments.objects.filter(
+                owner_id__in=[comment["commentor_id"] for comment in blog_comments],
+                document_type="Profile Image",
+            ).values("owner_id", "document_location")
+
+            profile_images_mapping = {
+                profile_image["owner_id"]: profile_image["document_location"]
+                for profile_image in profile_images
+            }
+
+            for comment in blog_comments:
+                comment["commentor_profile_image"] = profile_images_mapping.get(
+                    comment["commentor_id"]
+                )
+
             blog_post["total_comments"] = blog_comments.count()
             blog_post["comments"] = list(blog_comments)
             blog_post["documents"] = list(
@@ -165,7 +181,7 @@ class GetSingleBlogPost(APIView):
             )
 
             return JsonResponse(
-                {"status": "success", "detail": "Comment posted", "data": blog_post},
+                {"status": "success", "detail": "Blog retrieved successfully", "data": blog_post},
                 safe=False,
             )
         except BlogPost.DoesNotExist:
