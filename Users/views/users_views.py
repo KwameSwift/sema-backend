@@ -11,6 +11,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
+from Polls.models.poll_models import Poll
 from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
                                local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
@@ -182,8 +183,7 @@ class GetAuthorStatistics(APIView):
 
         total_blogs = BlogPost.objects.filter(author=user).count()
         total_events = Events.objects.filter(created_by=user).count()
-        total_polls = 0
-        total_donations = 0
+        total_polls = Poll.objects.filter(author=user).count()
         total_forums = 0
 
         blogs = (
@@ -198,9 +198,9 @@ class GetAuthorStatistics(APIView):
         ]
 
         data = {
-            "total_blogs_and_polls": total_blogs + total_polls,
+            "total_polls": total_polls,
+            "total_blogs": total_blogs,
             "total_events": total_events,
-            "total_donations": total_donations,
             "total_forums": total_forums,
             "blog_data": blog_data,
         }
