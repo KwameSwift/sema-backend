@@ -4,6 +4,7 @@ from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
                                 GetUserBlogPosts, ProfileView,
                                 SearchMyBlogPosts, UpdateUserProfile,
                                 UploadUserDocuments)
+from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
 
 urlpatterns = [
     # Users
@@ -41,5 +42,15 @@ urlpatterns = [
         "update-my-profile/",
         UpdateUserProfile.as_view(),
         name="Update My Profile",
+    ),
+    path(
+        "approved-polls/",
+        GetAllApprovedPollsByUser.as_view(),
+        name="Authenticated User Approved Polls",
+    ),
+    path(
+        "my-polls/<int:data_type>/",
+        GetMyPolls.as_view(),
+        name="Get My Polls",
     ),
 ]
