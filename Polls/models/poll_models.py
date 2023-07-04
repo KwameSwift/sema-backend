@@ -18,6 +18,13 @@ class Poll(models.Model):
     start_date = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     end_date = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     is_approved = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="poll_approver",
+    )
     is_ended = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)

@@ -11,6 +11,7 @@ from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
                                       GetAllUsers, GetSingleUser,
                                       GetSystemStatistics, SearchAllUsers,
                                       VerifyUsers)
+from .views.admin_poll_views import ApprovePoll,AdminViewSinglePoll
 
 urlpatterns = [
     # System Statistics
@@ -100,5 +101,17 @@ urlpatterns = [
         "search-users/<int:page_number>/",
         SearchAllUsers.as_view(),
         name="Search All Users",
+    ),
+    
+    # Polls
+    path(
+        "approve-poll/<int:poll_id>/",
+        ApprovePoll.as_view(),
+        name="Approve Poll",
+    ),
+    path(
+        "single-poll/<int:poll_id>/",
+        AdminViewSinglePoll.as_view(),
+        name="Admin Single Poll",
     ),
 ]

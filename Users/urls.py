@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
-                                GetUserBlogPosts, ProfileView,
+                                GetUserBlogPosts, ProfileView, GetMySinglePoll,
                                 SearchMyBlogPosts, UpdateUserProfile,
                                 UploadUserDocuments)
 from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
@@ -52,5 +52,10 @@ urlpatterns = [
         "my-polls/<int:data_type>/",
         GetMyPolls.as_view(),
         name="Get My Polls",
+    ),
+    path(
+        "my-single-polls/<int:poll_id>/",
+        GetMySinglePoll.as_view(),
+        name="Get My Single Poll",
     ),
 ]

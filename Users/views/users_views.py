@@ -12,10 +12,11 @@ from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
 from Polls.models.poll_models import Poll
+from Polls.poll_helper import retrieve_poll_with_choices
 from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
                                local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action)
+                                  cannot_perform_action, non_existing_data_exception)
 from helpers.validations import check_required_fields
 from Users.users_helper import upload_profile_image
 from Utilities.models.documents_model import UserDocuments
@@ -298,3 +299,27 @@ class UpdateUserProfile(APIView):
             {"status": "success", "detail": "User profile updated successfully"},
             safe=False,
         )
+
+       
+class GetMySinglePoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        poll_id = self.kwargs.get("poll_id")
+        
+        try:
+            poll = Poll.objects.get(id=poll_id, author=user)
+            poll_data = retrieve_poll_with_choices(poll.id)
+            
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Poll retrieved successfully",
+                    "data": poll_data,
+                },
+                safe=False,
+            )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")
