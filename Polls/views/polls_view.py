@@ -260,13 +260,11 @@ class GetMyPolls(APIView):
             "end_date",
             "is_approved",
             "is_ended",
-            "author__first_name",
-            "author__last_name",
             "created_on",
         )
 
-        for poll in polls:
-            poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+        # for poll in polls:
+        #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
 
         return JsonResponse(
             {

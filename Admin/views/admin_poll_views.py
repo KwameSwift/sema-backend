@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from helpers.functions import aware_datetime
+from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
@@ -69,3 +69,45 @@ class AdminViewSinglePoll(APIView):
             )
         except Poll.DoesNotExist:
             raise non_existing_data_exception("Poll")
+        
+# Get All Polls and their results
+class AdminGetAllPolls(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        data_type = self.kwargs["data_type"]
+        page_number = self.kwargs["page_number"]
+        user = self.request.user
+
+        if not check_permission(user, "Polls", [1, 2]):
+            raise action_authorization_exception("Unauthorized to view poll results")
+
+        Poll.objects.filter(end_date__lt=aware_datetime(datetime.datetime.now())).update(is_ended=True)
+        query = Q()
+        if data_type == 1:
+            query &= Q(is_approved=True)
+        elif data_type == 2:
+            query &= Q(is_approved=False)
+            
+        polls = Poll.objects.filter(query).values(
+            "id",
+            "title",
+            "description",
+            "question",
+            "start_date",
+            "end_date",
+            "is_approved",
+            "author__first_name",
+            "author__last_name",
+            "is_ended",
+            "created_on",
+        )
+
+        # for poll in polls:
+        #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+        data = paginate_data(polls, page_number, 10)
+        return JsonResponse(
+            data,
+            safe=False,
+        )
