@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views.polls_view import (CreatePoll, GetAllApprovedPolls,
-                               GetAllPollResults, VoteOnAPoll)
+                               GetAllPollResults, VoteOnAPoll, UpdatePoll)
 
 urlpatterns = [
     path(
@@ -23,5 +23,10 @@ urlpatterns = [
         "all-approved-polls/",
         GetAllApprovedPolls.as_view(),
         name="Get All Approved Polls",
+    ),
+    path(
+        "update-poll/<int:poll_id>/",
+        UpdatePoll.as_view(),
+        name="Update Poll",
     ),
 ]

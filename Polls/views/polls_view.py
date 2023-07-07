@@ -290,3 +290,38 @@ class GetMyPolls(APIView):
             },
             safe=False,
         )
+        
+        
+class UpdatePoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        poll_id = self.kwargs["poll_id"]
+        user = self.request.user
+        data = request.data
+        
+        if not check_permission(user, "Polls", [2]):
+            raise action_authorization_exception("Unauthorized to view poll results")
+        
+        try:
+            Poll.objects.get(id=poll_id)
+            
+            if "choices" in data:
+                PollChoices.objects.filter(poll_id=poll_id).delete()
+                for choice in data["choices"]:
+                    PollChoices.objects.create(poll_id=poll_id, choice=choice)
+                    
+                data.pop("choices", None)
+            data["updated_on"] = aware_datetime(datetime.datetime.now())
+            Poll.objects.filter(id=poll_id).update(**data)
+            
+            return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Polls updated successfully"
+            },
+            safe=False,
+        )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")
