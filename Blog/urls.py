@@ -4,9 +4,11 @@ from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               DeleteBlogDocuments, DeleteBlogPost,
                               GetAllPublishedBlogPost, GetSingleBlogPost,
                               LikeABlogPost, SearchBlogPosts, ShareABlogPost,
-                              UpdateBlogPost, UploadBlogDocument)
+                              UploadThumbnailsToAzure, UpdateBlogPost,
+                              UploadBlogDocument)
 
 urlpatterns = [
+    path("upload-thumbnail/", UploadThumbnailsToAzure.as_view(), name="TestPDFImageCreator"),
     # Blog
     path("create-blog/", CreateBlogPost.as_view(), name="Create Blog"),
     path(

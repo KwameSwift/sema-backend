@@ -84,3 +84,12 @@ def action_authorization_exception(message):
         default_detail = {"status": "error", "code": status_code, "detail": message}
 
     return InvalidAction
+
+
+class FileAlreadyExists(APIException):
+    status_code = 317
+    default_detail = {
+        "status": "error",
+        "code": status_code,
+        "detail": "File already exists",
+    }

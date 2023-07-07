@@ -15,6 +15,7 @@ class UserDocuments(models.Model):
     )
     document_type = models.CharField(max_length=255, blank=True, null=True)
     document_location = models.CharField(max_length=255, blank=True, null=True)
+    document_key = models.CharField(max_length=255, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -38,7 +39,7 @@ class BlogDocuments(models.Model):
         related_name="blog_document",
     )
     document_location = models.CharField(max_length=255, blank=True, null=True)
-
+    document_key = models.CharField(max_length=255, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -62,7 +63,7 @@ class EventDocuments(models.Model):
         related_name="event_document",
     )
     document_location = models.CharField(max_length=255, blank=True, null=True)
-
+    document_key = models.CharField(max_length=255, null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -17,9 +17,9 @@ from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields
+from helpers.azure_file_handling import delete_blob, upload_profile_image
 from Polls.models.poll_models import Poll
 from Polls.poll_helper import retrieve_poll_with_choices
-from Users.users_helper import upload_profile_image
 from Utilities.models.documents_model import UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
@@ -287,7 +287,16 @@ class UpdateUserProfile(APIView):
         profile_image = request.FILES.get("profile_image")
 
         user = User.objects.get(user_key=user.user_key)
+        container = f"{user.first_name}-{user.last_name}"
+
+
         if profile_image:
+            try:
+                user_doc = UserDocuments.objects.get(owner=user, document_type="Profile Image")
+                delete_blob(container, user_doc.document_key)
+                user_doc.delete()
+            except UserDocuments.DoesNotExist:
+                pass
             upload_profile_image(profile_image, user)
             profile_image = data.pop("profile_image", None)
 

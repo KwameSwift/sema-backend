@@ -1,5 +1,8 @@
 import json
 import os
+import shutil
+from os import path
+import requests
 
 from django.db.models import Q
 from django.http import JsonResponse
@@ -7,8 +10,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Blog.blog_helper import create_cover_image, create_other_blog_documents
 from Blog.models.blog_model import BlogComment, BlogPost
+from helpers.azure_file_handling import (delete_blob, upload_cover_image, upload_thumbnail,
+                                         upload_image_cover_or_pdf_to_azure, create_other_blog_documents)
 from helpers.functions import (check_abusive_words,
                                convert_quill_text_to_normal_text,
                                delete_local_file, local_file_upload,
@@ -68,8 +72,15 @@ class CreateBlogPost(APIView):
 
             blog = BlogPost.objects.create(**data)
 
-            create_cover_image(cover_image, blog, user)
-            create_other_blog_documents(files, blog, user)
+            if cover_image:
+                for item in cover_image:
+                    res_data = upload_image_cover_or_pdf_to_azure(item, blog, user)
+                
+                if type(res_data) is tuple:
+                    user_name = (f"{user.first_name}-{user.last_name}").lower()
+                    upload_cover_image(request, res_data, blog, user_name)
+            if files:
+                create_other_blog_documents(files, blog, user)
 
             blog_data = BlogPost.objects.filter(id=blog.id).values().first()
             blog_data["documents"] = list(
@@ -85,6 +96,29 @@ class CreateBlogPost(APIView):
                 },
                 safe=False,
             )
+
+
+class UploadThumbnailsToAzure(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+
+        resp_data = upload_thumbnail(
+            data["file_path"],
+            data["blog_title"],
+            data["container_name"]
+        )
+        user_name = data["user_name"]
+        if path.exists(f"media/{user_name}"):
+            shutil.rmtree(f"media/{user_name}")
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Blog created and submitted for review",
+                "resp_data": resp_data
+            },
+            safe=False,
+        )
 
 
 # Comment on Post
@@ -415,10 +449,13 @@ class UpdateBlogPost(APIView):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         check_required_fields(data, ["blog_post_id"])
+        
 
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
+            user_name = (f"{blog.author.first_name}-{blog.author.last_name}").lower()
             blog_id = data.pop("blog_post_id", None)
+            
             if "content" in data:
                 abusive_words_check = check_abusive_words(content=data["content"])
                 data["censored_content"] = abusive_words_check[0]
@@ -426,11 +463,13 @@ class UpdateBlogPost(APIView):
             BlogPost.objects.filter(id=blog_id).update(**data)
 
             if cover_image:
-                delete_local_file(blog.cover_image)
-                BlogDocuments.objects.filter(
-                    document_location=blog.cover_image
-                ).delete()
-                create_cover_image(cover_image, blog, user)
+                delete_blob(user_name, blog.image_key)
+                
+                for item in cover_image:
+                    res_data = upload_image_cover_or_pdf_to_azure(item, blog, user)
+                
+                    if type(res_data) is tuple:
+                        upload_cover_image(request, res_data, blog, user_name)
 
             if files:
                 create_other_blog_documents(files, blog, user)
@@ -473,9 +512,9 @@ class DeleteBlogPost(APIView):
             docs = BlogDocuments.objects.filter(blog_id=blog.id).values(
                 "document_location"
             )
-
+            container = f"{blog.author.first_name}-{blog.author.last_name}"
             for doc in docs:
-                delete_local_file(doc["document_location"])
+                delete_blob(container, doc["document_key"])
 
             BlogDocuments.objects.filter(blog_id=blog.id).delete()
 
