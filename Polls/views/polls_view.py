@@ -5,9 +5,8 @@ from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from Utilities.models.documents_model import UserDocuments
 
-from helpers.functions import aware_datetime
+from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
@@ -17,6 +16,7 @@ from helpers.validations import (check_permission, check_required_fields,
 from Polls.models.poll_models import Poll, PollChoices, PollVote
 from Polls.poll_helper import (get_polls_by_logged_in_user,
                                retrieve_poll_with_choices)
+from Utilities.models.documents_model import UserDocuments
 
 
 # Create a new Poll
@@ -222,9 +222,13 @@ class GetAllApprovedPolls(APIView):
         )
 
         for poll in polls:
-            image =  UserDocuments.objects.filter(
-                owner_id=poll["author_id"], document_type="Profile Image"
-            ).values("document_location").first()
+            image = (
+                UserDocuments.objects.filter(
+                    owner_id=poll["author_id"], document_type="Profile Image"
+                )
+                .values("document_location")
+                .first()
+            )
             poll["author_profile_image"] = image["document_location"]
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
@@ -291,8 +295,8 @@ class GetMyPolls(APIView):
             },
             safe=False,
         )
-        
-        
+
+
 class UpdatePoll(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
@@ -301,28 +305,107 @@ class UpdatePoll(APIView):
         poll_id = self.kwargs["poll_id"]
         user = self.request.user
         data = request.data
-        
+
         if not check_permission(user, "Polls", [2]):
             raise action_authorization_exception("Unauthorized to view poll results")
-        
+
         try:
             Poll.objects.get(id=poll_id)
-            
+
             if "choices" in data:
                 PollChoices.objects.filter(poll_id=poll_id).delete()
                 for choice in data["choices"]:
                     PollChoices.objects.create(poll_id=poll_id, choice=choice)
-                    
+
                 data.pop("choices", None)
             data["updated_on"] = aware_datetime(datetime.datetime.now())
             Poll.objects.filter(id=poll_id).update(**data)
-            
+
             return JsonResponse(
-            {
-                "status": "success",
-                "detail": "Polls updated successfully"
-            },
-            safe=False,
-        )
+                {"status": "success", "detail": "Poll updated successfully"},
+                safe=False,
+            )
         except Poll.DoesNotExist:
             raise non_existing_data_exception("Poll")
+
+
+class DeletePoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def delete(self, request, *args, **kwargs):
+        poll_id = self.kwargs["poll_id"]
+        user = self.request.user
+
+        if not check_permission(user, "Polls", [2]):
+            raise action_authorization_exception("Unauthorized to view poll results")
+
+        try:
+            poll = Poll.objects.get(id=poll_id)
+            PollChoices.objects.filter(poll_id=poll_id).delete()
+            PollVote.objects.filter(poll_id=poll_id).delete()
+            poll.delete()
+
+            return JsonResponse(
+                {"status": "success", "detail": "Poll deleted successfully"},
+                safe=False,
+            )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")
+
+
+class SearchPolls(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        page_number = self.kwargs.get("page_number")
+        user = self.request.user
+        data = request.data
+
+        if not check_permission(user, "Polls", [1, 2]):
+            raise action_authorization_exception("Unauthorized to view poll results")
+
+        check_required_fields(data, ["search_query"])
+
+        polls = Poll.objects.filter(
+            Q(title__icontains=data["search_query"])
+            | Q(description__icontains=data["search_query"])
+            | Q(question__icontains=data["search_query"])
+            | Q(author__first_name__icontains=data["search_query"])
+            | Q(author__last_name__icontains=data["search_query"])
+        ).values(
+            "id",
+            "title",
+            "description",
+            "question",
+            "start_date",
+            "end_date",
+            "is_approved",
+            "author_id",
+            "author__first_name",
+            "author__last_name",
+            "approved_by__first_name",
+            "approved_by__last_name",
+            "approved_on",
+            "is_ended",
+            "created_on",
+        )
+
+        if user.is_admin:
+            for poll in polls:
+                image = (
+                    UserDocuments.objects.filter(
+                        owner_id=poll["author_id"], document_type="Profile Image"
+                    )
+                    .values("document_location")
+                    .first()
+                )
+                poll["author_profile_image"] = image["document_location"]
+
+        data = paginate_data(polls, page_number, 10)
+
+        return JsonResponse(
+            data,
+            safe=False,
+        )
