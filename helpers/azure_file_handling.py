@@ -226,10 +226,10 @@ def delete_blob(container_name, blob_name):
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
     # Get a reference to the container
-    container_client = blob_service_client.get_container_client(container_name)
+    container_client = blob_service_client.get_container_client(str(container_name).lower())
     try:
         # Delete the blob
-        blob_client = container_client.get_blob_client(f"{blob_name}")
+        blob_client = container_client.get_blob_client(blob_name)
         blob_client.delete_blob()
     except ResourceNotFoundError:
         pass
@@ -268,7 +268,7 @@ def upload_profile_image(file, user):
         "owner_id": user.user_key,
         "document_type": "Profile Image",
         "document_location": file_url,
-        "document_key": f"{container_name}/{blob_name}",
+        "document_key": f"{blob_name}",
     }
 
     UserDocuments.objects.create(**pro_image)
