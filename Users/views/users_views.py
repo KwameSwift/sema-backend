@@ -300,6 +300,7 @@ class UpdateUserProfile(APIView):
             image = upload_profile_image(profile_image, user)
             user.profile_image = image
             profile_image = data.pop("profile_image", None)
+            user.save()
 
         data = json.dumps(data)
         data = json.loads(data)
