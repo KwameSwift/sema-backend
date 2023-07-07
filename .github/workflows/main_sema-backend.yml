@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'sema-backend'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8867A0E8863B4E1089D3C3F1A5C0D474 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E4202A7E5FB547839D052A6044C84E10 }}
