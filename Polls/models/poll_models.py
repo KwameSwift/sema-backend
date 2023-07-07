@@ -25,6 +25,7 @@ class Poll(models.Model):
         blank=True,
         related_name="poll_approver",
     )
+    approved_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     is_ended = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)

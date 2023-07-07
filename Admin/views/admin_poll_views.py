@@ -34,6 +34,7 @@ class ApprovePoll(APIView):
             poll = Poll.objects.get(id=poll_id)
             poll.is_approved = True
             poll.approved_by = user
+            poll.approved_on = aware_datetime(datetime.datetime.now())
             poll.updated_on = aware_datetime(datetime.datetime.now())
             poll.save()
 
@@ -110,6 +111,7 @@ class AdminGetAllPolls(APIView):
             "author__last_name",
             "approved_by__first_name",
             "approved_by__last_name",
+            "approved_on",
             "is_ended",
             "created_on",
         )

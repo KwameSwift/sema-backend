@@ -275,6 +275,7 @@ class GetMyPolls(APIView):
             "start_date",
             "end_date",
             "is_approved",
+            "approved_on",
             "is_ended",
             "created_on",
         )
