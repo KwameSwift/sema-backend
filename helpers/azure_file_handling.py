@@ -48,7 +48,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
 
     container_client = blob_service_client.get_container_client(container_name)
     if not container_client.exists():
-        container_client.create_container()
+        container_client.create_container(public_access='blob')
 
     fs = FileSystemStorage(location=full_directory)
     fs.save(new_filename, file)
@@ -136,7 +136,7 @@ def upload_thumbnail(file_path, blog_title, container_name):
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     container_client = blob_service_client.get_container_client(container_name)
     if not container_client.exists():
-        container_client.create_container()
+        container_client.create_container(public_access='blob')
         
     # Upload a file to the container
     with open(file_path, "rb") as data:
@@ -191,7 +191,7 @@ def create_other_blog_documents(files, blog, user):
 
             container_client = blob_service_client.get_container_client(container_name)
             if not container_client.exists():
-                container_client.create_container()
+                container_client.create_container(public_access='blob')
                 
             fs = FileSystemStorage(location=full_directory)
             fs.save(new_filename, img)
@@ -247,7 +247,7 @@ def upload_profile_image(file, user):
 
     container_client = blob_service_client.get_container_client(container_name)
     if not container_client.exists():
-        container_client.create_container()
+        container_client.create_container(public_access='blob')
 
     fs = FileSystemStorage(location=full_directory)
     fs.save(new_filename, file)
