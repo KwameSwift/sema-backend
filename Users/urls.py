@@ -1,10 +1,11 @@
 from django.urls import path
 
+from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
+
 from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
-                                GetUserBlogPosts, ProfileView, GetMySinglePoll,
+                                GetMySinglePoll, GetUserBlogPosts, ProfileView,
                                 SearchMyBlogPosts, UpdateUserProfile,
                                 UploadUserDocuments)
-from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
 
 urlpatterns = [
     # Users

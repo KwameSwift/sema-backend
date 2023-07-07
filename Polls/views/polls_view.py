@@ -11,9 +11,11 @@ from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
-from helpers.validations import check_permission, check_required_fields, unique_list
+from helpers.validations import (check_permission, check_required_fields,
+                                 unique_list)
 from Polls.models.poll_models import Poll, PollChoices, PollVote
-from Polls.poll_helper import get_polls_by_logged_in_user, retrieve_poll_with_choices
+from Polls.poll_helper import (get_polls_by_logged_in_user,
+                               retrieve_poll_with_choices)
 
 
 # Create a new Poll
@@ -40,7 +42,7 @@ class CreatePoll(APIView):
                 "question": data["question"],
                 "author": user,
                 "start_date": aware_datetime(start_date),
-                "end_date": aware_datetime(end_date)
+                "end_date": aware_datetime(end_date),
             }
             poll = Poll.objects.create(**poll_details)
 
@@ -101,7 +103,7 @@ class VoteOnAPoll(APIView):
                     poll_choice.votes += 1
                     poll_choice.updated_on = aware_datetime(datetime.datetime.now())
                     poll_choice.save()
-                    
+
                     PollVote.objects.create(
                         poll=poll, voter=user, poll_choice=poll_choice
                     )
@@ -134,7 +136,9 @@ class GetAllPollResults(APIView):
         if not check_permission(user, "Polls", [2]):
             raise action_authorization_exception("Unauthorized to view poll results")
 
-        Poll.objects.filter(end_date__lt=aware_datetime(datetime.datetime.now())).update(is_ended=True)
+        Poll.objects.filter(
+            end_date__lt=aware_datetime(datetime.datetime.now())
+        ).update(is_ended=True)
 
         polls = Poll.objects.all().values("id")
 
@@ -155,7 +159,7 @@ class GetAllApprovedPollsByUser(APIView):
 
     def get(self, request, *args, **kwargs):
         user = self.request.user
-        
+
         data = []
         Poll.objects.filter(
             end_date__lt=aware_datetime(datetime.datetime.now())
@@ -177,10 +181,13 @@ class GetAllApprovedPollsByUser(APIView):
 
         poll_data = get_polls_by_logged_in_user(user)
         for item in poll_data:
-            if item["is_ended"] and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists():
+            if (
+                item["is_ended"]
+                and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
+            ):
                 item = retrieve_poll_with_choices(item["id"])
-            data.append(item) 
-                
+            data.append(item)
+
         return JsonResponse(
             {
                 "status": "success",
@@ -189,11 +196,10 @@ class GetAllApprovedPollsByUser(APIView):
             },
             safe=False,
         )
-        
-        
+
+
 # Get All Polls and their results
 class GetAllApprovedPolls(APIView):
-
     def get(self, request, *args, **kwargs):
         Poll.objects.filter(
             end_date__lt=aware_datetime(datetime.datetime.now())
@@ -216,12 +222,14 @@ class GetAllApprovedPolls(APIView):
         for poll in polls:
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
-                
+
             else:
-               poll["choices"] = list(
-                PollChoices.objects.filter(poll_id=poll["id"]).values("id", "choice")
-            )
-            
+                poll["choices"] = list(
+                    PollChoices.objects.filter(poll_id=poll["id"]).values(
+                        "id", "choice"
+                    )
+                )
+
         return JsonResponse(
             {
                 "status": "success",
@@ -244,13 +252,15 @@ class GetMyPolls(APIView):
         if not check_permission(user, "Polls", [1, 2]):
             raise action_authorization_exception("Unauthorized to view poll results")
 
-        Poll.objects.filter(end_date__lt=aware_datetime(datetime.datetime.now())).update(is_ended=True)
+        Poll.objects.filter(
+            end_date__lt=aware_datetime(datetime.datetime.now())
+        ).update(is_ended=True)
         query = Q(author=user)
         if data_type == 1:
             query &= Q(is_approved=True)
         elif data_type == 2:
             query &= Q(is_approved=False)
-            
+
         polls = Poll.objects.filter(query).values(
             "id",
             "title",

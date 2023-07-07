@@ -3,6 +3,8 @@ from django.urls import path
 from .views.admin_blog_views import (ApproveAndPublishBlogs,
                                      GetAllBlogPostsAsAdmin)
 from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
+from .views.admin_poll_views import (AdminGetAllPolls, AdminViewSinglePoll,
+                                     ApprovePoll)
 from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
                                            AssignUserRoleToUser,
                                            DeleteUserRole, GetAllUserRoles,
@@ -11,7 +13,6 @@ from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
                                       GetAllUsers, GetSingleUser,
                                       GetSystemStatistics, SearchAllUsers,
                                       VerifyUsers)
-from .views.admin_poll_views import ApprovePoll,AdminViewSinglePoll, AdminGetAllPolls
 
 urlpatterns = [
     # System Statistics
@@ -102,7 +103,6 @@ urlpatterns = [
         SearchAllUsers.as_view(),
         name="Search All Users",
     ),
-    
     # Polls
     path(
         "approve-poll/<int:poll_id>/",

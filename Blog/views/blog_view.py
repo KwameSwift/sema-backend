@@ -181,7 +181,11 @@ class GetSingleBlogPost(APIView):
             )
 
             return JsonResponse(
-                {"status": "success", "detail": "Blog retrieved successfully", "data": blog_post},
+                {
+                    "status": "success",
+                    "detail": "Blog retrieved successfully",
+                    "data": blog_post,
+                },
                 safe=False,
             )
         except BlogPost.DoesNotExist:
