@@ -252,7 +252,7 @@ def upload_profile_image(file, user):
     fs = FileSystemStorage(location=full_directory)
     fs.save(new_filename, file)
     file_path = f"{full_directory}/{new_filename}"
-    blob_name = f"/Profile_Image/{new_filename}"
+    blob_name = f"Profile_Image/{new_filename}"
     try:
         # Upload a file to the container
         with open(file_path, "rb") as data:
