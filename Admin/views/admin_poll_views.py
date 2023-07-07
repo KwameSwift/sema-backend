@@ -114,8 +114,8 @@ class AdminGetAllPolls(APIView):
 
         for poll in polls:
             image =  UserDocuments.objects.filter(
-                owner_id=poll["owner_id"], document_type="Profile Image"
-            ).values("document_location")
+                owner_id=poll["author_id"], document_type="Profile Image"
+            ).values("document_location").first()
             poll["author_profile_image"] = image["document_location"]
         #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
         data = paginate_data(polls, page_number, 10)
