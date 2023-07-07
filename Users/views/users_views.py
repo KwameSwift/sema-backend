@@ -297,7 +297,8 @@ class UpdateUserProfile(APIView):
                 user_doc.delete()
             except UserDocuments.DoesNotExist:
                 pass
-            upload_profile_image(profile_image, user)
+            image = upload_profile_image(profile_image, user)
+            user.profile_image = image
             profile_image = data.pop("profile_image", None)
 
         data = json.dumps(data)

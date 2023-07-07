@@ -275,3 +275,5 @@ def upload_profile_image(file, user):
     
     if path.exists(f"media/{user_name}"):
         shutil.rmtree(f"media/{user_name}")
+        
+    return file_url
