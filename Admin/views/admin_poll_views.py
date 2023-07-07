@@ -108,6 +108,8 @@ class AdminGetAllPolls(APIView):
             "author_id",
             "author__first_name",
             "author__last_name",
+            "approved_by__first_name",
+            "approved_by__last_name",
             "is_ended",
             "created_on",
         )
