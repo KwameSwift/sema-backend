@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from Utilities.models.documents_model import UserDocuments
 
 from helpers.functions import aware_datetime
 from helpers.status_codes import (action_authorization_exception,
@@ -214,12 +215,17 @@ class GetAllApprovedPolls(APIView):
             "end_date",
             "is_approved",
             "is_ended",
+            "author_id",
             "author__first_name",
             "author__last_name",
             "created_on",
         )
 
         for poll in polls:
+            image =  UserDocuments.objects.filter(
+                owner_id=poll["author_id"], document_type="Profile Image"
+            ).values("document_location").first()
+            poll["author_profile_image"] = image["document_location"]
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
 
