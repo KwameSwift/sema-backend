@@ -289,7 +289,6 @@ class UpdateUserProfile(APIView):
         user = User.objects.get(user_key=user.user_key)
         container = f"{user.first_name}-{user.last_name}"
 
-
         if profile_image:
             try:
                 user_doc = UserDocuments.objects.get(owner=user, document_type="Profile Image")
