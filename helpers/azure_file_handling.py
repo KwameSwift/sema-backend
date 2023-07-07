@@ -4,7 +4,7 @@ import shutil
 from os import path
 
 import fitz
-from azure.core.exceptions import ResourceExistsError
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from django.core.files.storage import FileSystemStorage
 from pdf2image import convert_from_path
@@ -12,7 +12,7 @@ from pdf2image import convert_from_path
 import requests
 
 from helpers.status_codes import cannot_perform_action
-from Utilities.models.documents_model import BlogDocuments
+from Utilities.models.documents_model import BlogDocuments, UserDocuments
 
 STORAGE_ACCOUNT = os.environ.get("STORAGE_ACCOUNT")
 STORAGE_ACCOUNT_PROTOCOL = os.environ.get("STORAGE_ACCOUNT_PROTOCOL")
@@ -110,7 +110,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
                 images = convert_from_path(
                     file_path,
                     dpi=300,
-                    poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+                    # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
                 )
                 if images:
                     images[0].save(thumbnail_path, format="JPEG", quality=100)
@@ -167,7 +167,7 @@ def upload_cover_image(request, res_data, blog, user_name):
     }
     
     # Send a GET request to the same server
-    response = requests.post(f"http://{current_host}/blog/test-pdf/", data=json.dumps(data), headers=headers)
+    response = requests.post(f"http://{current_host}/blog/upload-thumbnail/", data=json.dumps(data), headers=headers)
     response_data = response.json()
     
     if response.status_code == 200:
@@ -227,6 +227,51 @@ def delete_blob(container_name, blob_name):
 
     # Get a reference to the container
     container_client = blob_service_client.get_container_client(container_name)
-    # Delete the blob
-    blob_client = container_client.get_blob_client(f"{blob_name}")
-    blob_client.delete_blob()
+    try:
+        # Delete the blob
+        blob_client = container_client.get_blob_client(f"{blob_name}")
+        blob_client.delete_blob()
+    except ResourceNotFoundError:
+        pass
+    
+    
+def upload_profile_image(file, user):
+    file_name = str(file.name).lower()
+    new_filename = file_name.replace(" ", "_")
+    user_name = (f"{user.first_name}-{user.last_name}").lower()
+    base_directory = f"{LOCAL_FILE_PATH}{user_name}"
+    full_directory = f"{base_directory}/Profile_Image"
+    file_url = ""
+
+    container_name = user_name
+
+    container_client = blob_service_client.get_container_client(container_name)
+    if not container_client.exists():
+        container_client.create_container()
+
+    fs = FileSystemStorage(location=full_directory)
+    fs.save(new_filename, file)
+    file_path = f"{full_directory}/{new_filename}"
+    blob_name = f"/Profile_Image/{new_filename}"
+    try:
+        # Upload a file to the container
+        with open(file_path, "rb") as data:
+            container_client.upload_blob(name=blob_name, data=data)
+    except ResourceExistsError:
+        if path.exists(f"media/{user_name}"):
+            shutil.rmtree(f"media/{user_name}")
+        pass
+    
+   # Return blob url
+    file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+    pro_image = {
+        "owner_id": user.user_key,
+        "document_type": "Profile Image",
+        "document_location": file_url,
+        "document_key": f"{container_name}/{blob_name}",
+    }
+
+    UserDocuments.objects.create(**pro_image)
+    
+    if path.exists(f"media/{user_name}"):
+        shutil.rmtree(f"media/{user_name}")

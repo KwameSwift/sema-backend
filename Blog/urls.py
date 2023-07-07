@@ -8,7 +8,7 @@ from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
                               UploadBlogDocument)
 
 urlpatterns = [
-    path("test-pdf/", UploadThumbnailsToAzure.as_view(), name="TestPDFImageCreator"),
+    path("upload-thumbnail/", UploadThumbnailsToAzure.as_view(), name="TestPDFImageCreator"),
     # Blog
     path("create-blog/", CreateBlogPost.as_view(), name="Create Blog"),
     path(
