@@ -1,3 +1,4 @@
+import json
 import os
 
 from django.db.models import Count, Q
@@ -13,54 +14,15 @@ from Events.models.events_model import Events
 from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
                                local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action)
+                                  cannot_perform_action,
+                                  non_existing_data_exception)
 from helpers.validations import check_required_fields
+from helpers.azure_file_handling import delete_blob, upload_profile_image
+from Polls.models.poll_models import Poll
+from Polls.poll_helper import retrieve_poll_with_choices
 from Utilities.models.documents_model import UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
-
-
-# Upload profile image
-class UploadProfileImage(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
-    def post(self, request, *args, **kwargs):
-        file = request.FILES["file"]
-        user = self.request.user
-
-        try:
-            profile_image = UserDocuments.objects.get(
-                owner=user, document_type="Profile Image"
-            )
-            url = profile_image.document_location
-            if os.path.exists(url):
-                os.remove(url)
-            profile_image.delete()
-        except UserDocuments.DoesNotExist:
-            pass
-
-        full_directory = (
-            f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Profile_Image"
-        )
-        file_path = local_file_upload(full_directory, file)
-
-        new_profile_image = {
-            "owner": user,
-            "document_type": "Profile Image",
-            "document_location": file_path,
-        }
-
-        UserDocuments.objects.create(**new_profile_image)
-
-        return JsonResponse(
-            {
-                "status": "success",
-                "detail": "File(s) uploaded successfully",
-                "profile_image": file_path,
-            },
-            safe=False,
-        )
 
 
 # View my profile
@@ -82,6 +44,10 @@ class ProfileView(APIView):
                 "bio",
                 "links",
                 "organization",
+                "mobile_number",
+                "account_type",
+                "country__calling_code",
+                "country__flag",
                 "country__name",
                 "is_verified",
             )
@@ -219,8 +185,7 @@ class GetAuthorStatistics(APIView):
 
         total_blogs = BlogPost.objects.filter(author=user).count()
         total_events = Events.objects.filter(created_by=user).count()
-        total_polls = 0
-        total_donations = 0
+        total_polls = Poll.objects.filter(author=user).count()
         total_forums = 0
 
         blogs = (
@@ -235,9 +200,9 @@ class GetAuthorStatistics(APIView):
         ]
 
         data = {
-            "total_blogs_and_polls": total_blogs + total_polls,
+            "total_polls": total_polls,
+            "total_blogs": total_blogs,
             "total_events": total_events,
-            "total_donations": total_donations,
             "total_forums": total_forums,
             "blog_data": blog_data,
         }
@@ -254,6 +219,9 @@ class GetAuthorStatistics(APIView):
 
 # Search blogs
 class SearchMyBlogPosts(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
     def post(self, request, *args, **kwargs):
         user = self.request.user
         page_number = self.kwargs.get("page_number")
@@ -306,3 +274,62 @@ class SearchMyBlogPosts(APIView):
             data,
             safe=False,
         )
+
+
+# Update User Profile
+class UpdateUserProfile(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        data = request.data
+        profile_image = request.FILES.get("profile_image")
+
+        user = User.objects.get(user_key=user.user_key)
+        container = f"{user.first_name}-{user.last_name}"
+
+
+        if profile_image:
+            try:
+                user_doc = UserDocuments.objects.get(owner=user, document_type="Profile Image")
+                delete_blob(container, user_doc.document_key)
+                user_doc.delete()
+            except UserDocuments.DoesNotExist:
+                pass
+            upload_profile_image(profile_image, user)
+            profile_image = data.pop("profile_image", None)
+
+        data = json.dumps(data)
+        data = json.loads(data)
+
+        User.objects.filter(user_key=user.user_key).update(**data)
+
+        return JsonResponse(
+            {"status": "success", "detail": "User profile updated successfully"},
+            safe=False,
+        )
+
+
+class GetMySinglePoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        poll_id = self.kwargs.get("poll_id")
+
+        try:
+            poll = Poll.objects.get(id=poll_id, author=user)
+            poll_data = retrieve_poll_with_choices(poll.id)
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Poll retrieved successfully",
+                    "data": poll_data,
+                },
+                safe=False,
+            )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")

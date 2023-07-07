@@ -2,6 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils.timezone import make_aware
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from Auth.models import User
 from Auth.models.permissions_model import Permission
 from Auth.models.user_model import UserRole
+from Blog.models.blog_model import BlogPost
 from helpers.email_sender import send_email
 from helpers.status_codes import (PasswordMismatch, WrongCode,
                                   WrongCredentials, WrongPassword,
@@ -114,6 +116,9 @@ class LoginView(APIView):
                 # Generate a token for authenticated user
                 refresh = RefreshToken.for_user(user)
 
+                liked_blogs = user.blog_likers.all()
+                blog_ids = [blog.id for blog in liked_blogs]
+
                 # Construct user object with tokens and necessary details
                 data = {
                     "refresh": str(refresh),
@@ -142,6 +147,7 @@ class LoginView(APIView):
                 data["user"]["email"] = user.email
                 data["user"]["account_type"] = user.account_type
                 data["user"]["is_admin"] = user.is_admin
+                data["liked_blogs"] = blog_ids
                 data["permissions"] = permissions
 
                 return JsonResponse(
@@ -150,6 +156,60 @@ class LoginView(APIView):
                 )
             else:
                 raise WrongCredentials()
+        except User.DoesNotExist:
+            raise non_existing_data_exception("User with email")
+
+
+class GuestLoginView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        check_required_fields(data, ["email"])
+
+        try:
+            user = User.objects.get(email=data["email"])
+            if user.account_type == "Guest":
+                refresh = RefreshToken.for_user(user)
+
+                liked_blogs = user.blog_likers.all()
+                blog_ids = [blog.id for blog in liked_blogs]
+
+                # Construct user object with tokens and necessary details
+                data = {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                    "user": {},
+                }
+
+                settings.TIME_ZONE
+                naive_datetime = datetime.datetime.now()
+                aware_datetime = make_aware(naive_datetime)
+                user.last_login = aware_datetime
+                user.save()
+
+                data["user"]["user_key"] = user.user_key
+                data["user"]["role_id"] = user.role_id
+
+                permissions = list(
+                    Permission.objects.filter(role_id=user.role_id).values(
+                        "id", "module_id", "module__name", "access_level"
+                    )
+                )
+                try:
+                    data["user"]["role_name"] = user.role.name
+                except AttributeError:
+                    data["user"]["role_name"] = None
+                data["user"]["email"] = user.email
+                data["user"]["account_type"] = user.account_type
+                data["user"]["is_admin"] = user.is_admin
+                data["liked_blogs"] = blog_ids
+                data["permissions"] = permissions
+
+                return JsonResponse(
+                    {"status": "success", "detail": "Login successful", "data": data},
+                    safe=False,
+                )
+            else:
+                raise cannot_perform_action("Account is not a Guest Account")
         except User.DoesNotExist:
             raise non_existing_data_exception("User with email")
 
@@ -246,7 +306,7 @@ class ChangePasswordView(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def put(self, request, *args, **kwargs):
-        data = request
+        data = request.data
         user = self.request.user
 
         check_required_fields(
@@ -262,7 +322,7 @@ class ChangePasswordView(APIView):
                     return JsonResponse(
                         {
                             "status": "success",
-                            "detail": "Password change successful",
+                            "detail": "Password changed successfully",
                         },
                         safe=False,
                     )

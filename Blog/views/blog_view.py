@@ -54,6 +54,11 @@ class CreateBlogPost(APIView):
         data = json.dumps(data)
         data = json.loads(data)
 
+        links = data.pop("links[]", None)
+
+        if links is not None:
+            data["links"] = dict(request.data).get("links[]")
+
         check_required_fields(data, ["title", "content"])
         abusive_words_check = check_abusive_words(content=data["content"])
         data["censored_content"] = abusive_words_check[0]
@@ -174,8 +179,28 @@ class GetSingleBlogPost(APIView):
                 .first()
             )
             blog_comments = BlogComment.objects.filter(blog_id=blog_post["id"]).values(
-                "commentor__first_name", "commentor__last_name", "comment", "created_on"
+                "commentor_id",
+                "commentor__first_name",
+                "commentor__last_name",
+                "comment",
+                "commentor__is_verified",
+                "created_on",
             )
+            profile_images = UserDocuments.objects.filter(
+                owner_id__in=[comment["commentor_id"] for comment in blog_comments],
+                document_type="Profile Image",
+            ).values("owner_id", "document_location")
+
+            profile_images_mapping = {
+                profile_image["owner_id"]: profile_image["document_location"]
+                for profile_image in profile_images
+            }
+
+            for comment in blog_comments:
+                comment["commentor_profile_image"] = profile_images_mapping.get(
+                    comment["commentor_id"]
+                )
+
             blog_post["total_comments"] = blog_comments.count()
             blog_post["comments"] = list(blog_comments)
             blog_post["documents"] = list(
@@ -190,7 +215,11 @@ class GetSingleBlogPost(APIView):
             )
 
             return JsonResponse(
-                {"status": "success", "detail": "Comment posted", "data": blog_post},
+                {
+                    "status": "success",
+                    "detail": "Blog retrieved successfully",
+                    "data": blog_post,
+                },
                 safe=False,
             )
         except BlogPost.DoesNotExist:
@@ -401,7 +430,7 @@ class UpdateBlogPost(APIView):
     def put(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
-        files = request.FILES.getlist("files")
+        files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
 
         if files:
@@ -411,6 +440,10 @@ class UpdateBlogPost(APIView):
 
         data = json.dumps(data)
         data = json.loads(data)
+        links = data.pop("links[]", None)
+
+        if links is not None:
+            data["links"] = dict(request.data).get("links[]")
 
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
@@ -479,9 +512,9 @@ class DeleteBlogPost(APIView):
             docs = BlogDocuments.objects.filter(blog_id=blog.id).values(
                 "document_location"
             )
-
+            container = f"{blog.author.first_name}-{blog.author.last_name}"
             for doc in docs:
-                delete_local_file(doc["document_location"])
+                delete_blob(container, doc["document_key"])
 
             BlogDocuments.objects.filter(blog_id=blog.id).delete()
 
@@ -522,8 +555,16 @@ class LikeABlogPost(APIView):
             blog.total_likes = likes
             blog.save()
 
+            liked_blogs = user.blog_likers.all()
+            blog_ids = [blog.id for blog in liked_blogs]
+
             return JsonResponse(
-                {"status": "success", "detail": message, "total_likes": likes},
+                {
+                    "status": "success",
+                    "detail": message,
+                    "total_likes": likes,
+                    "liked_blogs": blog_ids,
+                },
                 safe=False,
             )
         except BlogPost.DoesNotExist:
@@ -532,9 +573,6 @@ class LikeABlogPost(APIView):
 
 # Share a Blog
 class ShareABlogPost(APIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (JWTAuthentication,)
-
     def put(self, request, *args, **kwargs):
         blog_id = self.kwargs["blog_id"]
 

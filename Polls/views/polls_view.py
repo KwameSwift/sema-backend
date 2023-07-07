@@ -11,9 +11,11 @@ from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
-from helpers.validations import check_permission, check_required_fields
-from Polls.models.poll_models import Poll, PollChoices, PollVotes
-from Polls.poll_helper import retrieve_poll_with_choices
+from helpers.validations import (check_permission, check_required_fields,
+                                 unique_list)
+from Polls.models.poll_models import Poll, PollChoices, PollVote
+from Polls.poll_helper import (get_polls_by_logged_in_user,
+                               retrieve_poll_with_choices)
 
 
 # Create a new Poll
@@ -34,11 +36,13 @@ class CreatePoll(APIView):
             Poll.objects.get(question=data["question"])
             raise duplicate_data_exception("Poll")
         except Poll.DoesNotExist:
+            start_date = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d")
+            end_date = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d")
             poll_details = {
                 "question": data["question"],
                 "author": user,
-                "start_date": data["start_date"],
-                "end_date": data["end_date"],
+                "start_date": aware_datetime(start_date),
+                "end_date": aware_datetime(end_date),
             }
             poll = Poll.objects.create(**poll_details)
 
@@ -81,39 +85,32 @@ class VoteOnAPoll(APIView):
         data = request.data
         user = self.request.user
 
-        check_required_fields(data, ["poll_id", "choice_id"])
+        check_required_fields(data, ["poll_id", "choice"])
 
         try:
             poll = Poll.objects.get(id=data["poll_id"])
             if poll.is_ended:
                 raise cannot_perform_action("Cannot vote. Poll has ended")
 
-            exists = Poll.voters.through.objects.filter(
-                Q(poll_id=poll.id) & Q(user_id=user.user_key)
-            )
-            if exists:
-                return JsonResponse(
-                    {
-                        "status": "success",
-                        "detail": "User already voted for this poll",
-                    },
-                    safe=False,
-                )
-            else:
+            try:
+                PollVote.objects.get(poll=poll, voter=user)
+                raise cannot_perform_action("User already voted for this poll")
+            except PollVote.DoesNotExist:
                 try:
-                    poll_vote = PollVotes.objects.get(
-                        poll=poll, poll_choice_id=data["choice_id"]
+                    poll_choice = PollChoices.objects.get(
+                        poll=poll, choice=data["choice"]
                     )
-                    poll_vote.votes += 1
-                    poll_vote.updated_on = aware_datetime(datetime.datetime.now())
-                    poll_vote.save()
-                except PollVotes.DoesNotExist:
-                    poll_vote = PollVotes.objects.create(
-                        poll_id=poll.id, poll_choice_id=data["choice_id"], votes=1
-                    )
-                poll.voters.add(user)
-                poll.save()
+                    poll_choice.votes += 1
+                    poll_choice.updated_on = aware_datetime(datetime.datetime.now())
+                    poll_choice.save()
 
+                    PollVote.objects.create(
+                        poll=poll, voter=user, poll_choice=poll_choice
+                    )
+                except PollChoices.DoesNotExist:
+                    raise non_existing_data_exception("Poll Choice")
+
+                # poll_choice = get_polls_by_logged_in_user(user)
                 poll_stats = retrieve_poll_with_choices(poll.id)
 
                 return JsonResponse(
@@ -139,7 +136,9 @@ class GetAllPollResults(APIView):
         if not check_permission(user, "Polls", [2]):
             raise action_authorization_exception("Unauthorized to view poll results")
 
-        Poll.objects.filter(end_date__lt=datetime.datetime.now()).update(is_ended=True)
+        Poll.objects.filter(
+            end_date__lt=aware_datetime(datetime.datetime.now())
+        ).update(is_ended=True)
 
         polls = Poll.objects.all().values("id")
 
@@ -154,10 +153,53 @@ class GetAllPollResults(APIView):
 
 
 # Get All Polls and their results
-class GetAllApprovedPolls(APIView):
+class GetAllApprovedPollsByUser(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+
+        data = []
+        Poll.objects.filter(
+            end_date__lt=aware_datetime(datetime.datetime.now())
+        ).update(is_ended=True)
+
+        polls = Poll.objects.filter(is_approved=True).values(
+            "id",
+            "title",
+            "description",
+            "question",
+            "start_date",
+            "end_date",
+            "is_approved",
+            "is_ended",
+            "author__first_name",
+            "author__last_name",
+            "created_on",
+        )
+
+        poll_data = get_polls_by_logged_in_user(user)
+        for item in poll_data:
+            if (
+                item["is_ended"]
+                and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
+            ):
+                item = retrieve_poll_with_choices(item["id"])
+            data.append(item)
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Polls retrieved successfully",
+                "data": data,
+            },
+            safe=False,
+        )
+
+
+# Get All Polls and their results
+class GetAllApprovedPolls(APIView):
     def get(self, request, *args, **kwargs):
         Poll.objects.filter(
             end_date__lt=aware_datetime(datetime.datetime.now())
@@ -165,6 +207,8 @@ class GetAllApprovedPolls(APIView):
 
         polls = Poll.objects.filter(is_approved=True).values(
             "id",
+            "title",
+            "description",
             "question",
             "start_date",
             "end_date",
@@ -178,6 +222,13 @@ class GetAllApprovedPolls(APIView):
         for poll in polls:
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+
+            else:
+                poll["choices"] = list(
+                    PollChoices.objects.filter(poll_id=poll["id"]).values(
+                        "id", "choice"
+                    )
+                )
 
         return JsonResponse(
             {
@@ -195,28 +246,35 @@ class GetMyPolls(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
+        data_type = self.kwargs["data_type"]
         user = self.request.user
 
         if not check_permission(user, "Polls", [1, 2]):
             raise action_authorization_exception("Unauthorized to view poll results")
 
-        Poll.objects.filter(end_date__lt=datetime.datetime.now()).update(is_ended=True)
+        Poll.objects.filter(
+            end_date__lt=aware_datetime(datetime.datetime.now())
+        ).update(is_ended=True)
+        query = Q(author=user)
+        if data_type == 1:
+            query &= Q(is_approved=True)
+        elif data_type == 2:
+            query &= Q(is_approved=False)
 
-        polls = Poll.objects.filter(author=user).values(
+        polls = Poll.objects.filter(query).values(
             "id",
+            "title",
+            "description",
             "question",
             "start_date",
             "end_date",
             "is_approved",
             "is_ended",
-            "author__first_name",
-            "author__last_name",
             "created_on",
         )
 
-        for poll in polls:
-            poll_stats = retrieve_poll_with_choices(poll["id"])
-            poll["stats"] = poll_stats
+        # for poll in polls:
+        #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
 
         return JsonResponse(
             {

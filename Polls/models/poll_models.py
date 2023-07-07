@@ -12,14 +12,19 @@ class Poll(models.Model):
         blank=True,
         related_name="poll_author",
     )
-    voters = models.ManyToManyField(
-        User,
-        related_name="poll_voters",
-    )
+    title = models.CharField(max_length=255, null=True, blank=True)
+    description = models.CharField(max_length=255, null=True, blank=True)
     question = models.TextField(blank=True, null=True)
     start_date = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     end_date = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     is_approved = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="poll_approver",
+    )
     is_ended = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
@@ -39,6 +44,7 @@ class PollChoices(models.Model):
         related_name="poll",
     )
     choice = models.CharField(max_length=255, null=True, blank=True)
+    votes = models.IntegerField(default=0)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
@@ -47,7 +53,7 @@ class PollChoices(models.Model):
         db_table = "Poll_Choices"
 
 
-class PollVotes(models.Model):
+class PollVote(models.Model):
     poll = models.ForeignKey(
         Poll,
         on_delete=models.CASCADE,
@@ -62,7 +68,13 @@ class PollVotes(models.Model):
         blank=True,
         related_name="poll_choice",
     )
-    votes = models.IntegerField(default=0)
+    voter = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="choice_voter",
+    )
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
