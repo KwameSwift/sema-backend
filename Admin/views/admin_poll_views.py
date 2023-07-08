@@ -124,7 +124,7 @@ class AdminGetAllPolls(APIView):
                 .values("document_location")
                 .first()
             )
-            poll["author_profile_image"] = image["document_location"]
+            poll["author_profile_image"] = image["document_location"] if image else None
         #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
         data = paginate_data(polls, page_number, 10)
         return JsonResponse(
