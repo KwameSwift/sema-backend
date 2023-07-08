@@ -166,20 +166,6 @@ class GetAllApprovedPollsByUser(APIView):
             end_date__lt=aware_datetime(datetime.datetime.now())
         ).update(is_ended=True)
 
-        polls = Poll.objects.filter(is_approved=True).values(
-            "id",
-            "title",
-            "description",
-            "question",
-            "start_date",
-            "end_date",
-            "is_approved",
-            "is_ended",
-            "author__first_name",
-            "author__last_name",
-            "created_on",
-        )
-
         poll_data = get_polls_by_logged_in_user(user)
         for item in poll_data:
             if (
@@ -257,6 +243,7 @@ class GetMyPolls(APIView):
 
     def get(self, request, *args, **kwargs):
         data_type = self.kwargs["data_type"]
+        page_number = self.kwargs["page_number"]
         user = self.request.user
 
         if not check_permission(user, "Polls", [1, 2]):
@@ -286,14 +273,10 @@ class GetMyPolls(APIView):
 
         # for poll in polls:
         #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
-
+        data = paginate_data(polls, page_number, 10)
         return JsonResponse(
-            {
-                "status": "success",
-                "detail": "Polls retrieved successfully",
-                "data": list(polls),
-            },
-            safe=False,
+            data,
+            safe=False
         )
 
 

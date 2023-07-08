@@ -50,7 +50,7 @@ urlpatterns = [
         name="Authenticated User Approved Polls",
     ),
     path(
-        "my-polls/<int:data_type>/",
+        "my-polls/<int:data_type>/<int:page_number>/",
         GetMyPolls.as_view(),
         name="Get My Polls",
     ),
