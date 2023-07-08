@@ -188,8 +188,9 @@ class GetAllApprovedPollsByUser(APIView):
 # Get All Polls and their results
 class GetAllApprovedPolls(APIView):
     def get(self, request, *args, **kwargs):
+        page_number = self.kwargs.get('page_number')
         Poll.objects.filter(
-            end_date__lt=aware_datetime(datetime.datetime.now())
+            end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
         ).update(is_ended=True)
 
         polls = Poll.objects.filter(is_approved=True).values(
@@ -225,13 +226,9 @@ class GetAllApprovedPolls(APIView):
                         "id", "choice"
                     )
                 )
-
+        data = paginate_data(polls, page_number, 10)
         return JsonResponse(
-            {
-                "status": "success",
-                "detail": "Polls retrieved successfully",
-                "data": list(polls),
-            },
+            data,
             safe=False,
         )
 

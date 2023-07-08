@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views.utilities_view import AddCountries, DropDowns
+from .views.utilities_view import AddCountries, DropDowns, GetFeed
 
 urlpatterns = [
     # Dropdowns
@@ -14,5 +14,12 @@ urlpatterns = [
         "add-countries/",
         AddCountries.as_view(),
         name="Add Countries",
+    ),
+    
+    # Feed
+    path(
+        "get-feed/<int:page_number>/",
+        GetFeed.as_view(),
+        name="Get Feed",
     ),
 ]
