@@ -205,6 +205,7 @@ class GetAllApprovedPolls(APIView):
             "author_id",
             "author__first_name",
             "author__last_name",
+            "approved_on",
             "created_on",
         )
 
