@@ -354,7 +354,12 @@ class SearchPolls(APIView):
             | Q(question__icontains=data["search_query"])
             | Q(author__first_name__icontains=data["search_query"])
             | Q(author__last_name__icontains=data["search_query"])
-        ).values(
+        )
+        
+        if not user.is_admin:
+            polls = polls.filter(Q(author=user))
+
+        polls = polls.values(
             "id",
             "title",
             "description",
