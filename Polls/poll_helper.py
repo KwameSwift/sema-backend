@@ -56,8 +56,10 @@ def retrieve_poll_with_choices(poll_id, type=None):
             "start_date": poll.start_date,
             "end_date": poll.end_date,
             "is_ended": poll.is_ended,
+            "author_id": poll.author_id,
             "author__first_name": poll.author.first_name,
             "author__last_name": poll.author.last_name,
+            "approved_on": poll.approved_on,
             "created_on": poll.created_on,
             "choices": [
                 {
@@ -84,12 +86,12 @@ def get_polls_by_logged_in_user(user):
     for poll in polls:
         poll_vote = (
             PollVote.objects.filter(voter=user, poll_id=poll["id"])
-            .values("poll_choice__choice")
+            .values("poll_choice_id")
             .first()
         )
         if poll_vote:
             new_poll = retrieve_poll_with_choices(poll["id"])
-            new_poll["voter_choice"] = poll_vote["poll_choice__choice"]
+            new_poll["voter_choice"] = poll_vote["poll_choice_id"]
             data.append(new_poll)
         else:
             poll["choices"] = list(

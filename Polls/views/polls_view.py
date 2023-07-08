@@ -86,7 +86,7 @@ class VoteOnAPoll(APIView):
         data = request.data
         user = self.request.user
 
-        check_required_fields(data, ["poll_id", "choice"])
+        check_required_fields(data, ["poll_id", "choice_id"])
 
         try:
             poll = Poll.objects.get(id=data["poll_id"])
@@ -99,7 +99,7 @@ class VoteOnAPoll(APIView):
             except PollVote.DoesNotExist:
                 try:
                     poll_choice = PollChoices.objects.get(
-                        poll=poll, choice=data["choice"]
+                        poll=poll, id=data["choice_id"]
                     )
                     poll_choice.votes += 1
                     poll_choice.updated_on = aware_datetime(datetime.datetime.now())
@@ -173,6 +173,16 @@ class GetAllApprovedPollsByUser(APIView):
                 and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
             ):
                 item = retrieve_poll_with_choices(item["id"])
+                
+            image = (
+                UserDocuments.objects.filter(
+                    owner_id=item["author_id"], document_type="Profile Image"
+                )
+                .values("document_location")
+                .first()
+            )
+            item["total_votes"] = PollChoices.objects.filter(poll_id=item["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
+            item["author_profile_image"] = image["document_location"] if image else None
             data.append(item)
 
         return JsonResponse(
@@ -300,9 +310,14 @@ class UpdatePoll(APIView):
                     PollChoices.objects.create(poll_id=poll_id, choice=choice)
 
                 data.pop("choices", None)
+            if "start_date" in data:
+                data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d")
+            if "end_date" in data:
+                data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d")
+                if data["end_date"] > datetime.datetime.now():
+                    data["is_ended"] = False
             data["updated_on"] = aware_datetime(datetime.datetime.now())
             Poll.objects.filter(id=poll_id).update(**data)
-
             return JsonResponse(
                 {"status": "success", "detail": "Poll updated successfully"},
                 safe=False,
