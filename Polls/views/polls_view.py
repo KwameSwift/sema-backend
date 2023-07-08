@@ -216,7 +216,7 @@ class GetAllApprovedPolls(APIView):
                 .values("document_location")
                 .first()
             )
-            poll["author_profile_image"] = image["document_location"]
+            poll["author_profile_image"] = image["document_location"] if image else None
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
 
