@@ -37,8 +37,8 @@ class CreatePoll(APIView):
             Poll.objects.get(question=data["question"])
             raise duplicate_data_exception("Poll")
         except Poll.DoesNotExist:
-            start_date = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d")
-            end_date = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d")
+            start_date = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+            end_date = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
             poll_details = {
                 "question": data["question"],
                 "author": user,
