@@ -42,8 +42,8 @@ class CreatePoll(APIView):
             poll_details = {
                 "question": data["question"],
                 "author": user,
-                "start_date": aware_datetime(start_date),
-                "end_date": aware_datetime(end_date),
+                "start_date": start_date,
+                "end_date": end_date
             }
             poll = Poll.objects.create(**poll_details)
 
@@ -311,9 +311,9 @@ class UpdatePoll(APIView):
 
                 data.pop("choices", None)
             if "start_date" in data:
-                data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d")
+                data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
             if "end_date" in data:
-                data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d")
+                data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
                 if data["end_date"] >= datetime.datetime.now().date():
                     data["is_ended"] = False
             data["updated_on"] = aware_datetime(datetime.datetime.now())

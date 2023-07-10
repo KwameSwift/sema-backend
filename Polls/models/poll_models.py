@@ -15,8 +15,8 @@ class Poll(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
     question = models.TextField(blank=True, null=True)
-    start_date = models.DateTimeField(auto_now_add=False, null=True, blank=True)
-    end_date = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+    start_date = models.DateField(auto_now_add=False, null=True, blank=True)
+    end_date = models.DateField(auto_now_add=False, null=True, blank=True)
     is_approved = models.BooleanField(default=False)
     approved_by = models.ForeignKey(
         User,
