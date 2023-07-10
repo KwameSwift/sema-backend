@@ -1,4 +1,5 @@
 import datetime
+from itertools import chain
 import os
 
 import requests
@@ -129,7 +130,6 @@ class GetFeed(APIView):
                 .values("id", "document_location")
                 .first()
             )
-        blog_data = paginate_data(blog_posts, page_number, 10)
             
         Poll.objects.filter(
             end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
@@ -170,9 +170,11 @@ class GetFeed(APIView):
                         "id", "choice"
                     )
                 )
-        poll_data = paginate_data(polls, page_number, 10)
+        combined_results = sorted(chain(blog_posts, polls), key=lambda x: x["created_on"], reverse=True)
+
+        data = paginate_data(combined_results, page_number, 10)
         return JsonResponse(
-            [{"blog_data": blog_data}, {"poll_data": poll_data}],
+            data,
             safe=False,
         )
         
