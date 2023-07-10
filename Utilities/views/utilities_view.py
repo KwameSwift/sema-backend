@@ -2,6 +2,7 @@ import datetime
 import os
 
 import requests
+from django.db.models import Sum
 from django.http import JsonResponse
 from rest_framework.views import APIView
 
@@ -150,6 +151,7 @@ class GetFeed(APIView):
         )
 
         for poll in polls:
+            poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
             image = (
                 UserDocuments.objects.filter(
                     owner_id=poll["author_id"], document_type="Profile Image"
