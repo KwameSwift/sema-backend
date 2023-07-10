@@ -151,26 +151,39 @@ class GetFeed(APIView):
             "created_on",
         ).order_by("-created_on")
 
+        modified_polls = []
         for poll in polls:
-            poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
-            image = (
-                UserDocuments.objects.filter(
-                    owner_id=poll["author_id"], document_type="Profile Image"
-                )
-                .values("document_location")
-                .first()
-            )
-            poll["author_profile_image"] = image["document_location"] if image else None
             if poll["is_ended"]:
-                poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+                modified_poll = retrieve_poll_with_choices(poll["id"])
+                modified_poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
+                image = (
+                    UserDocuments.objects.filter(
+                        owner_id=poll["author_id"], document_type="Profile Image"
+                    )
+                    .values("document_location")
+                    .first()
+                )
+                modified_poll["author_profile_image"] = image["document_location"] if image else None
+                modified_polls.append(modified_poll)
+                # poll["stats"] = retrieve_poll_with_choices(poll["id"])
 
             else:
+                poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
+                image = (
+                    UserDocuments.objects.filter(
+                        owner_id=poll["author_id"], document_type="Profile Image"
+                    )
+                    .values("document_location")
+                    .first()
+                )
+                poll["author_profile_image"] = image["document_location"] if image else None
                 poll["choices"] = list(
                     PollChoices.objects.filter(poll_id=poll["id"]).values(
                         "id", "choice"
                     )
                 )
-        combined_results = sorted(chain(blog_posts, polls), key=lambda x: x["created_on"], reverse=True)
+                modified_polls.append(poll)
+        combined_results = sorted(chain(blog_posts, modified_polls), key=lambda x: x["created_on"], reverse=True)
 
         data = paginate_data(combined_results, page_number, 10)
         return JsonResponse(
