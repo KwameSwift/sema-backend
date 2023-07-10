@@ -308,6 +308,7 @@ class UpdatePoll(APIView):
                 PollChoices.objects.filter(poll_id=poll_id).delete()
                 for choice in data["choices"]:
                     PollChoices.objects.create(poll_id=poll_id, choice=choice)
+                PollVote.objects.filter(poll_id=poll_id).delete()
 
                 data.pop("choices", None)
             if "start_date" in data:
