@@ -149,7 +149,7 @@ class GetFeed(APIView):
             "author__last_name",
             "author__is_verified",
             "created_on",
-        )
+        ).order_by("-created_on")
 
         for poll in polls:
             poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
