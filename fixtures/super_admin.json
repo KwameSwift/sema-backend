@@ -36,5 +36,24 @@
           "account_type": "Content Creator",
           "created_on": "2023-06-06 08:12:39.835536+00"
         }
+      },
+      {
+        "model": "Auth.User",
+        "pk": 2,
+        "fields": {
+          "user_key": "552dc9c4-cfed-4f17-a330-797c166106c5",
+          "role_id": 3,
+          "email": "guest@africanchildprojects.com",
+          "password": "pbkdf2_sha256$600000$HI4C8wJtr5xNlvhRE3a3XH$tNeVbkb3e8EA0fXaOttrnY2oCqobyE45wvOrA2n7o3I=",
+          "first_name": "Guest",
+          "last_name": "User",
+          "organization": "SEMA Tanzania",
+          "country": 224,
+          "is_admin": false,
+          "is_active": true,
+          "is_verified": true,
+          "account_type": "Guest",
+          "created_on": "2023-06-06 08:12:39.835536+00"
+        }
       }
 ]

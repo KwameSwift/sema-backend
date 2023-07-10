@@ -63,7 +63,7 @@ def retrieve_poll_with_choices(poll_id, type=None):
             "created_on": poll.created_on,
             "choices": [
                 {
-                    "choice_id": choice.id,
+                    "id": choice.id,
                     "choice": choice.choice,
                     "votes": choice.votes or 0,
                     "vote_percentage": round(choice.vote_percentage, 1)

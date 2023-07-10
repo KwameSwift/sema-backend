@@ -314,7 +314,7 @@ class UpdatePoll(APIView):
                 data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d")
             if "end_date" in data:
                 data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d")
-                if data["end_date"] > datetime.datetime.now():
+                if data["end_date"] >= datetime.datetime.now().date():
                     data["is_ended"] = False
             data["updated_on"] = aware_datetime(datetime.datetime.now())
             Poll.objects.filter(id=poll_id).update(**data)
