@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import shutil
 
@@ -9,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from helpers.azure_file_handling import upload_poll_document, delete_blob
+from helpers.azure_file_handling import upload_poll_document, delete_blob, shorten_url
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
@@ -38,6 +39,9 @@ class CreatePoll(APIView):
         if files:
             files = data.pop("files", None)
 
+        data = json.dumps(data)
+        data = json.loads(data)
+
         if not check_permission(user, "Polls", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
@@ -49,21 +53,23 @@ class CreatePoll(APIView):
         except Poll.DoesNotExist:
             data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
             data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
-            data["user"] = user
+            data["author_id"] = user.user_key
+            choices = data.pop("choices", None)
             poll = Poll.objects.create(**data)
 
             if files:
                 for file in files:
                     file_url = upload_poll_document(file, user, poll.question)
+                    shortened_url = shorten_url(file_url[0])
                     Poll.objects.filter(id=poll.id).update(
-                        file_location=file_url[0],
+                        file_location=shortened_url,
                         file_key=file_url[1]
                     )
                 user_name = f"{user.first_name}-{user.last_name}".lower()
                 if os.path.exists(f"media/{user_name}"):
                     shutil.rmtree(f"media/{user_name}")
 
-            for choice in data["choices"]:
+            for choice in choices:
                 PollChoices.objects.create(poll_id=poll.id, choice=choice)
             poll_data = (
                 Poll.objects.filter(id=poll.id)

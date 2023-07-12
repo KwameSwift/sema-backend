@@ -1,6 +1,6 @@
 from django.urls import path
 
-from views.polls_view import (CreatePoll, DeletePoll, GetAllApprovedPolls,
+from .views.polls_view import (CreatePoll, DeletePoll, GetAllApprovedPolls,
                               GetAllPollResults, SearchPolls, UpdatePoll,
                               VoteOnAPoll)
 

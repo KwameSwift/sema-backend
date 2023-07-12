@@ -149,16 +149,15 @@ def upload_thumbnail(file_path, blog_title, container_name):
 def upload_poll_document(file, user, poll_question):
     file_name = str(file.name).lower()
     new_filename = file_name.replace(" ", "_")
+    question = str(poll_question).replace(" ", "_").strip("?")
     user_name = f"{user.first_name}-{user.last_name}".lower()
     base_directory = f"{LOCAL_FILE_PATH}{user_name}"
-    full_directory = f"{base_directory}/Poll_Documents/{poll_question}"
+    full_directory = f"{base_directory}/Poll_Documents/{question}"
 
     fs = FileSystemStorage(location=full_directory)
     fs.save(new_filename, file)
     file_path = f"{full_directory}/{new_filename}"
-    blob_name = f"Poll_Documents/{poll_question}/{new_filename}"
-    poll_question = str(poll_question).replace(" ", "_")
-    blob_name = f"Poll_Documents/{poll_question}/{file_name}"
+    blob_name = f"Poll_Documents/{question}/{new_filename}"
     container_client = blob_service_client.get_container_client(user_name)
     if not container_client.exists():
         container_client.create_container(public_access="blob")
@@ -167,8 +166,7 @@ def upload_poll_document(file, user, poll_question):
     with open(file_path, "rb") as data:
         container_client.upload_blob(
             name=blob_name,
-            data=data,
-            content_settings=ContentSettings(content_type="image/jpeg"),
+            data=data
         )
 
     file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
@@ -305,3 +303,14 @@ def upload_profile_image(file, user):
         shutil.rmtree(f"media/{user_name}")
 
     return file_url
+
+
+def shorten_url(url):
+    import pyshorteners
+
+    # Create an instance of the Shortener class
+    shortener = pyshorteners.Shortener()
+
+    # Shorten the URL using the default shortening service (TinyURL)
+    short_url = shortener.tinyurl.short(url)
+    return short_url
