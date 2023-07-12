@@ -87,7 +87,7 @@ def get_polls_by_logged_in_user(user):
     for poll in polls:
         poll_vote = (
             PollVote.objects.filter(voter=user, poll_id=poll["id"])
-            .values("poll_choice_id")
+            .values("poll_choice_id", "comments")
             .first()
         )
         if poll_vote:
