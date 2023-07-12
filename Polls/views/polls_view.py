@@ -380,6 +380,8 @@ class DeletePoll(APIView):
 
         try:
             poll = Poll.objects.get(id=poll_id)
+            container_name = f"{poll.author.first_name}-{poll.author.last_name}".lower()
+            delete_blob(container_name, poll.file_key)
             PollChoices.objects.filter(poll_id=poll_id).delete()
             PollVote.objects.filter(poll_id=poll_id).delete()
             poll.delete()
