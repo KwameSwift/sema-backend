@@ -138,7 +138,7 @@ class GetFeed(APIView):
         polls = Poll.objects.filter(is_approved=True).values(
             "id",
             "title",
-            "description",
+            "file_location",
             "question",
             "start_date",
             "end_date",

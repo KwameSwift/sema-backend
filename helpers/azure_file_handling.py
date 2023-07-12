@@ -129,8 +129,6 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
 
 def upload_thumbnail(file_path, blog_title, container_name):
     blob_name = f"Blog_Documents/{blog_title}/cover_image.jpg"
-    # Create a blob service client
-    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     container_client = blob_service_client.get_container_client(container_name)
     if not container_client.exists():
         container_client.create_container(public_access="blob")
@@ -144,6 +142,36 @@ def upload_thumbnail(file_path, blog_title, container_name):
         )
 
     file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+
+    return file_url, blob_name
+
+
+def upload_poll_document(file, user, poll_question):
+    file_name = str(file.name).lower()
+    new_filename = file_name.replace(" ", "_")
+    user_name = f"{user.first_name}-{user.last_name}".lower()
+    base_directory = f"{LOCAL_FILE_PATH}{user_name}"
+    full_directory = f"{base_directory}/Poll_Documents/{poll_question}"
+
+    fs = FileSystemStorage(location=full_directory)
+    fs.save(new_filename, file)
+    file_path = f"{full_directory}/{new_filename}"
+    blob_name = f"Poll_Documents/{poll_question}/{new_filename}"
+    poll_question = str(poll_question).replace(" ", "_")
+    blob_name = f"Poll_Documents/{poll_question}/{file_name}"
+    container_client = blob_service_client.get_container_client(user_name)
+    if not container_client.exists():
+        container_client.create_container(public_access="blob")
+
+    # Upload a file to the container
+    with open(file_path, "rb") as data:
+        container_client.upload_blob(
+            name=blob_name,
+            data=data,
+            content_settings=ContentSettings(content_type="image/jpeg"),
+        )
+
+    file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
 
     return file_url, blob_name
 
@@ -182,7 +210,7 @@ def create_other_blog_documents(files, blog, user):
             file_name = str(img.name).lower()
             new_filename = file_name.replace(" ", "_")
             blog_title = str(blog.title).replace(" ", "_")
-            user_name = (f"{user.first_name}-{user.last_name}").lower()
+            user_name = f"{user.first_name}-{user.last_name}".lower()
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
             container_name = user_name

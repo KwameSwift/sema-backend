@@ -51,7 +51,7 @@ def retrieve_poll_with_choices(poll_id, type=None):
         poll_data = {
             "id": poll.id,
             "title": poll.title,
-            "description": poll.description,
+            "file_location": poll.file_location,
             "question": poll.question,
             "start_date": poll.start_date,
             "end_date": poll.end_date,
@@ -60,6 +60,7 @@ def retrieve_poll_with_choices(poll_id, type=None):
             "author__first_name": poll.author.first_name,
             "author__last_name": poll.author.last_name,
             "author__is_verified": poll.author.is_verified,
+            "comments": poll.comments,
             "approved_on": poll.approved_on,
             "created_on": poll.created_on,
             "choices": [
@@ -93,6 +94,7 @@ def get_polls_by_logged_in_user(user):
         if poll_vote:
             new_poll = retrieve_poll_with_choices(poll["id"])
             new_poll["voter_choice"] = poll_vote["poll_choice_id"]
+            new_poll["voter_comments"] = poll_vote["comments"]
             data.append(new_poll)
         else:
             poll["choices"] = list(

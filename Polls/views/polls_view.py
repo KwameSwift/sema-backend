@@ -1,11 +1,15 @@
 import datetime
+import os
+import shutil
 
+from django.core.files.storage import FileSystemStorage
 from django.db.models import Q, Sum
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from helpers.azure_file_handling import upload_poll_document, delete_blob
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
@@ -18,6 +22,8 @@ from Polls.poll_helper import (get_polls_by_logged_in_user,
                                retrieve_poll_with_choices)
 from Utilities.models.documents_model import UserDocuments
 
+LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
+
 
 # Create a new Poll
 class CreatePoll(APIView):
@@ -27,6 +33,10 @@ class CreatePoll(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
+        files = request.FILES.get("files")
+
+        if files:
+            files = data.pop("files", None)
 
         if not check_permission(user, "Polls", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
@@ -37,15 +47,21 @@ class CreatePoll(APIView):
             Poll.objects.get(question=data["question"])
             raise duplicate_data_exception("Poll")
         except Poll.DoesNotExist:
-            start_date = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
-            end_date = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
-            poll_details = {
-                "question": data["question"],
-                "author": user,
-                "start_date": start_date,
-                "end_date": end_date
-            }
-            poll = Poll.objects.create(**poll_details)
+            data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+            data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            data["user"] = user
+            poll = Poll.objects.create(**data)
+
+            if files:
+                for file in files:
+                    file_url = upload_poll_document(file, user, poll.question)
+                    Poll.objects.filter(id=poll.id).update(
+                        file_location=file_url[0],
+                        file_key=file_url[1]
+                    )
+                user_name = f"{user.first_name}-{user.last_name}".lower()
+                if os.path.exists(f"media/{user_name}"):
+                    shutil.rmtree(f"media/{user_name}")
 
             for choice in data["choices"]:
                 PollChoices.objects.create(poll_id=poll.id, choice=choice)
@@ -55,6 +71,7 @@ class CreatePoll(APIView):
                     "id",
                     "question",
                     "start_date",
+                    "file_location",
                     "end_date",
                     "is_approved",
                     "is_ended",
@@ -169,11 +186,11 @@ class GetAllApprovedPollsByUser(APIView):
         poll_data = get_polls_by_logged_in_user(user)
         for item in poll_data:
             if (
-                item["is_ended"]
-                and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
+                    item["is_ended"]
+                    and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
             ):
                 item = retrieve_poll_with_choices(item["id"])
-                
+
             image = (
                 UserDocuments.objects.filter(
                     owner_id=item["author_id"], document_type="Profile Image"
@@ -181,7 +198,8 @@ class GetAllApprovedPollsByUser(APIView):
                 .values("document_location")
                 .first()
             )
-            item["total_votes"] = PollChoices.objects.filter(poll_id=item["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
+            item["total_votes"] = PollChoices.objects.filter(poll_id=item["id"]).aggregate(total_votes=Sum('votes'))[
+                'total_votes']
             item["author_profile_image"] = image["document_location"] if image else None
             data.append(item)
 
@@ -206,13 +224,12 @@ class GetAllApprovedPolls(APIView):
         polls = Poll.objects.filter(is_approved=True).values(
             "id",
             "title",
-            "description",
+            "file_location",
             "question",
             "start_date",
             "end_date",
             "is_approved",
             "is_ended",
-            "author_id",
             "author__first_name",
             "author__last_name",
             "author__is_verified",
@@ -221,7 +238,8 @@ class GetAllApprovedPolls(APIView):
         )
 
         for poll in polls:
-            poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
+            poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))[
+                'total_votes']
             image = (
                 UserDocuments.objects.filter(
                     owner_id=poll["author_id"], document_type="Profile Image"
@@ -271,13 +289,12 @@ class GetMyPolls(APIView):
         polls = Poll.objects.filter(query).values(
             "id",
             "title",
-            "description",
+            "file_location",
             "question",
             "start_date",
             "end_date",
             "is_approved",
             "approved_on",
-            "is_ended",
             "created_on",
         )
 
@@ -296,6 +313,7 @@ class UpdatePoll(APIView):
 
     def put(self, request, *args, **kwargs):
         poll_id = self.kwargs["poll_id"]
+        files = request.FILES.get("files")
         user = self.request.user
         data = request.data
 
@@ -303,8 +321,20 @@ class UpdatePoll(APIView):
             raise action_authorization_exception("Unauthorized to view poll results")
 
         try:
-            Poll.objects.get(id=poll_id)
-
+            poll = Poll.objects.get(id=poll_id)
+            user_name = f"{user.first_name}-{user.last_name}".lower()
+            if files:
+                for file in files:
+                    delete_blob(user_name, poll.file_key)
+                    file_url = upload_poll_document(file, user, poll.question)
+                    Poll.objects.filter(id=poll.id).update(
+                        file_location=file_url[0],
+                        file_key=file_url[1]
+                    )
+                user_name = f"{user.first_name}-{user.last_name}".lower()
+                if os.path.exists(f"media/{user_name}"):
+                    shutil.rmtree(f"media/{user_name}")
+                data.pop("files", None)
             if "choices" in data:
                 PollChoices.objects.filter(poll_id=poll_id).delete()
                 for choice in data["choices"]:
@@ -373,7 +403,7 @@ class SearchPolls(APIView):
             | Q(author__first_name__icontains=data["search_query"])
             | Q(author__last_name__icontains=data["search_query"])
         )
-        
+
         if not user.is_admin:
             polls = polls.filter(Q(author=user))
 

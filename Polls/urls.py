@@ -1,8 +1,8 @@
 from django.urls import path
 
-from .views.polls_view import (CreatePoll, DeletePoll, GetAllApprovedPolls,
-                               GetAllPollResults, SearchPolls, UpdatePoll,
-                               VoteOnAPoll)
+from views.polls_view import (CreatePoll, DeletePoll, GetAllApprovedPolls,
+                              GetAllPollResults, SearchPolls, UpdatePoll,
+                              VoteOnAPoll)
 
 urlpatterns = [
     path(

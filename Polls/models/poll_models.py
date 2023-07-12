@@ -13,7 +13,8 @@ class Poll(models.Model):
         related_name="poll_author",
     )
     title = models.CharField(max_length=255, null=True, blank=True)
-    description = models.CharField(max_length=255, null=True, blank=True)
+    file_location = models.CharField(max_length=255, null=True, blank=True)
+    file_key = models.CharField(max_length=255, null=True, blank=True)
     question = models.TextField(blank=True, null=True)
     start_date = models.DateField(auto_now_add=False, null=True, blank=True)
     end_date = models.DateField(auto_now_add=False, null=True, blank=True)
@@ -69,6 +70,7 @@ class PollVote(models.Model):
         blank=True,
         related_name="poll_choice",
     )
+    comments = models.CharField(max_length=255, null=True, blank=True)
     voter = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

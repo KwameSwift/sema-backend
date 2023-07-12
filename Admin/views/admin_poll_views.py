@@ -101,7 +101,7 @@ class AdminGetAllPolls(APIView):
         polls = Poll.objects.filter(query).values(
             "id",
             "title",
-            "description",
+            "file_location",
             "question",
             "start_date",
             "end_date",
@@ -113,7 +113,6 @@ class AdminGetAllPolls(APIView):
             "approved_by__first_name",
             "approved_by__last_name",
             "approved_on",
-            "is_ended",
             "created_on",
         )
 
