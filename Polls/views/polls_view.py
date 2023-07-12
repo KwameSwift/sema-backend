@@ -120,6 +120,9 @@ class VoteOnAPoll(APIView):
                 PollVote.objects.get(poll=poll, voter=user)
                 raise cannot_perform_action("User already voted for this poll")
             except PollVote.DoesNotExist:
+                comments = None
+                if "comments" in data:
+                    comments = data["comments"]
                 try:
                     poll_choice = PollChoices.objects.get(
                         poll=poll, id=data["choice_id"]
@@ -129,7 +132,7 @@ class VoteOnAPoll(APIView):
                     poll_choice.save()
 
                     PollVote.objects.create(
-                        poll=poll, voter=user, poll_choice=poll_choice
+                        poll=poll, voter=user, poll_choice=poll_choice, comments=comments
                     )
                 except PollChoices.DoesNotExist:
                     raise non_existing_data_exception("Poll Choice")
