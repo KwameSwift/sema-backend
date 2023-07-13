@@ -69,7 +69,8 @@ class CreatePoll(APIView):
                 if os.path.exists(f"media/{user_name}"):
                     shutil.rmtree(f"media/{user_name}")
 
-            for choice in choices:
+            new_choices = eval(choices)
+            for choice in new_choices:
                 PollChoices.objects.create(poll_id=poll.id, choice=choice)
             poll_data = (
                 Poll.objects.filter(id=poll.id)
