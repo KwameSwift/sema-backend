@@ -246,19 +246,17 @@ def create_other_blog_documents(files, blog, user):
 
 
 def delete_blob(container_name, blob_name):
-    # Create a BlobServiceClient object
-    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-
-    # Get a reference to the container
-    container_client = blob_service_client.get_container_client(
-        str(container_name).lower()
-    )
-    try:
-        # Delete the blob
-        blob_client = container_client.get_blob_client(blob_name)
-        blob_client.delete_blob()
-    except ResourceNotFoundError:
-        pass
+    if blob_name:
+        # Get a reference to the container
+        container_client = blob_service_client.get_container_client(container_name)
+        try:
+            # Delete the blob
+            blob_client = container_client.get_blob_client(blob_name)
+            blob_client.delete_blob()
+        except ResourceNotFoundError:
+            pass
+    else:
+        return False
 
 
 def upload_profile_image(file, user):
