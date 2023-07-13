@@ -334,30 +334,44 @@ class UpdatePoll(APIView):
         try:
             poll = Poll.objects.get(id=poll_id)
             user_name = f"{user.first_name}-{user.last_name}".lower()
+            container_name = f"{poll.author.first_name}-{poll.author.last_name}".lower()
+
             if files:
+                files = data.pop("files", None)
                 for file in files:
-                    delete_blob(user_name, poll.file_key)
+                    delete_blob(container_name, poll.file_key)
                     file_url = upload_poll_document(file, user, poll.question)
                     Poll.objects.filter(id=poll.id).update(
                         file_location=file_url[0],
                         file_key=file_url[1]
                     )
-                user_name = f"{user.first_name}-{user.last_name}".lower()
                 if os.path.exists(f"media/{user_name}"):
                     shutil.rmtree(f"media/{user_name}")
-                data.pop("files", None)
-            if "choices" in data:
-                PollChoices.objects.filter(poll_id=poll_id).delete()
-                for choice in data["choices"]:
-                    PollChoices.objects.create(poll_id=poll_id, choice=choice)
 
+            data = json.dumps(data)
+            data = json.loads(data)
+
+            if "choices" in data:
+                new_choices = eval(data["choices"])
+                PollChoices.objects.filter(poll_id=poll_id).delete()
+                for choice in new_choices:
+                    PollChoices.objects.create(poll_id=poll_id, choice=choice)
                 data.pop("choices", None)
+
+            if "is_document_deleted" in data and data["is_document_deleted"]:
+                delete_blob(container_name, poll.file_key)
+                poll.file_key = None
+                poll.file_location = None
+                poll.save()
+                data.pop("is_document_deleted", None)
+
             if "start_date" in data:
                 data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
             if "end_date" in data:
                 data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
                 if data["end_date"] >= datetime.datetime.now().date():
                     data["is_ended"] = False
+
             data["updated_on"] = aware_datetime(datetime.datetime.now())
             Poll.objects.filter(id=poll_id).update(**data)
             return JsonResponse(
