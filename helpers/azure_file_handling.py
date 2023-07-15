@@ -51,11 +51,8 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
     user_name = f"{user.first_name}-{user.last_name}".lower()
     base_directory = f"{LOCAL_FILE_PATH}{user_name}"
     full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
-    file_url = ""
 
-    container_name = user_name
-
-    container_client = blob_service_client.get_container_client(container_name)
+    container_client = blob_service_client.get_container_client(user_name)
     if not container_client.exists():
         container_client.create_container(public_access="blob")
 
@@ -85,7 +82,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
                 container_client.upload_blob(name=blob_name, data=data)
 
             # Return blob url
-            file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
             blog.cover_image = shortened_url
             blog.image_key = blob_name
@@ -93,7 +90,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
 
             if path.exists(f"media/{user_name}"):
                 shutil.rmtree(f"media/{user_name}")
-            return file_url
+            return shortened_url
         except ResourceExistsError:
             if path.exists(f"media/{user_name}"):
                 shutil.rmtree(f"media/{user_name}")
@@ -106,7 +103,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
                 container_client.upload_blob(name=blob_name, data=data)
 
             # Return blob url
-            file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
             file_docs = {
                 "owner_id": user.user_key,
@@ -121,7 +118,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
             images = convert_from_path(
                 file_path,
                 dpi=300,
-                # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+                poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
             )
             if images:
                 images[0].save(thumbnail_path, format="JPEG", quality=100)
@@ -129,7 +126,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
             return (
                 thumbnail_path,
                 blob_name,
-                container_name,
+                user_name,
             )
 
         except ResourceExistsError:
@@ -318,9 +315,8 @@ def create_other_blog_documents(files, blog, user):
             user_name = f"{user.first_name}-{user.last_name}".lower()
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
-            container_name = user_name
 
-            container_client = blob_service_client.get_container_client(container_name)
+            container_client = blob_service_client.get_container_client(user_name)
             if not container_client.exists():
                 container_client.create_container(public_access="blob")
 
@@ -334,13 +330,13 @@ def create_other_blog_documents(files, blog, user):
                 container_client.upload_blob(name=blob_name, data=data)
 
             # Return blob url
-            file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
             new_blog_doc = {
                 "owner_id": user.user_key,
                 "blog_id": blog.id,
                 "document_location": shortened_url,
-                "document_key": f"{container_name}/{blob_name}",
+                "document_key": blob_name,
             }
 
             BlogDocuments.objects.create(**new_blog_doc)
@@ -348,6 +344,7 @@ def create_other_blog_documents(files, blog, user):
             if path.exists(f"media/{user_name}"):
                 shutil.rmtree(f"media/{user_name}")
     except ResourceExistsError:
+        print("File already exists")
         if path.exists(f"media/{user_name}"):
             shutil.rmtree(f"media/{user_name}")
         pass

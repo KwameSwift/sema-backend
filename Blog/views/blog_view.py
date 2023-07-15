@@ -40,7 +40,7 @@ class CreateBlogPost(APIView):
         files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
 
-        links = data.pop("links[]", None)
+        links = None
 
         if files:
             files = data.pop("files[]", None)
@@ -50,13 +50,11 @@ class CreateBlogPost(APIView):
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
-        if links:
-            data["links"] = links
+        if "links[]" in data:
+            links = data.pop("links[]", None)
 
         data = json.dumps(data)
         data = json.loads(data)
-
-        links = data.pop("links[]", None)
 
         if links is not None:
             data["links"] = dict(request.data).get("links[]")
@@ -75,9 +73,9 @@ class CreateBlogPost(APIView):
             blog = BlogPost.objects.create(**data)
 
             if cover_image:
+                res_data = None
                 for item in cover_image:
                     res_data = upload_image_cover_or_pdf_to_azure(item, blog, user)
-
                 if type(res_data) is tuple:
                     upload_cover_image(request, res_data, blog=blog)
             if files:
