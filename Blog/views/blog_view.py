@@ -460,12 +460,11 @@ class UpdateBlogPost(APIView):
 
             if cover_image:
                 delete_blob(user_name, blog.image_key)
-
                 for item in cover_image:
                     res_data = upload_image_cover_or_pdf_to_azure(item, blog, user)
 
                     if type(res_data) is tuple:
-                        upload_cover_image(request, res_data, blog, user_name)
+                        upload_cover_image(request, res_data, blog=blog)
 
             if files:
                 create_other_blog_documents(files, blog, user)
