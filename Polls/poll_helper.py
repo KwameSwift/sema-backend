@@ -52,6 +52,7 @@ def retrieve_poll_with_choices(poll_id, type=None):
             "id": poll.id,
             "title": poll.title,
             "file_location": poll.file_location,
+            "snapshot_location": poll.snapshot_location,
             "question": poll.question,
             "start_date": poll.start_date,
             "end_date": poll.end_date,

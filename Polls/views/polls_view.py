@@ -226,7 +226,7 @@ class GetAllApprovedPolls(APIView):
             "id",
             "title",
             "file_location",
-            "question",
+            "snapshot_location",
             "start_date",
             "end_date",
             "is_approved",
@@ -292,7 +292,7 @@ class GetMyPolls(APIView):
             "id",
             "title",
             "file_location",
-            "question",
+            "snapshot_location",
             "start_date",
             "end_date",
             "is_approved",
@@ -390,6 +390,7 @@ class DeletePoll(APIView):
             poll = Poll.objects.get(id=poll_id)
             container_name = f"{poll.author.first_name}-{poll.author.last_name}".lower()
             delete_blob(container_name, poll.file_key)
+            delete_blob(container_name, poll.snapshot_key)
             PollChoices.objects.filter(poll_id=poll_id).delete()
             PollVote.objects.filter(poll_id=poll_id).delete()
             poll.delete()
@@ -417,8 +418,7 @@ class SearchPolls(APIView):
         check_required_fields(data, ["search_query"])
 
         polls = Poll.objects.filter(
-            Q(title__icontains=data["search_query"])
-            | Q(description__icontains=data["search_query"])
+            Q(description__icontains=data["search_query"])
             | Q(question__icontains=data["search_query"])
             | Q(author__first_name__icontains=data["search_query"])
             | Q(author__last_name__icontains=data["search_query"])
@@ -429,10 +429,9 @@ class SearchPolls(APIView):
 
         polls = polls.values(
             "id",
-            "title",
             "description",
-            "question",
-            "start_date",
+            "file_location",
+            "snapshot_location",
             "end_date",
             "is_approved",
             "author_id",
