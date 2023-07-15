@@ -1,28 +1,24 @@
 import datetime
 import json
 import os
-import shutil
 
-from django.core.files.storage import FileSystemStorage
 from django.db.models import Q, Sum
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from helpers.azure_file_handling import upload_poll_document, delete_blob, shorten_url, \
-    upload_poll_file_or_pdf_to_azure, upload_cover_image
+from Polls.models.poll_models import Poll, PollChoices, PollVote
+from Polls.poll_helper import (get_polls_by_logged_in_user,
+                               retrieve_poll_with_choices)
+from Utilities.models.documents_model import UserDocuments
+from helpers.azure_file_handling import delete_blob, upload_poll_file_or_pdf_to_azure, upload_cover_image
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   duplicate_data_exception,
                                   non_existing_data_exception)
-from helpers.validations import (check_permission, check_required_fields,
-                                 unique_list)
-from Polls.models.poll_models import Poll, PollChoices, PollVote
-from Polls.poll_helper import (get_polls_by_logged_in_user,
-                               retrieve_poll_with_choices)
-from Utilities.models.documents_model import UserDocuments
+from helpers.validations import (check_permission, check_required_fields)
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -36,7 +32,6 @@ class CreatePoll(APIView):
         data = request.data
         user = self.request.user
         files = request.FILES.get("files")
-        user_name = f"{user.first_name}-{user.last_name}".lower()
 
         if files:
             files = data.pop("files", None)
@@ -62,7 +57,6 @@ class CreatePoll(APIView):
             if files:
                 for file in files:
                     res_data = upload_poll_file_or_pdf_to_azure(file, user, poll)
-
                     if type(res_data) is tuple:
                         upload_cover_image(request, res_data, poll=poll)
 
@@ -76,7 +70,7 @@ class CreatePoll(APIView):
                     "question",
                     "start_date",
                     "file_location",
-                    "end_date",
+                    "snapshot_location",
                     "is_approved",
                     "is_ended",
                     "author__first_name",

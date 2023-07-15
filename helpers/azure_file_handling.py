@@ -33,6 +33,17 @@ connection_string = (
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 
+def shorten_url(url):
+    import pyshorteners
+
+    # Create an instance of the Shortener class
+    shortener = pyshorteners.Shortener()
+
+    # Shorten the URL using the default shortening service (TinyURL)
+    short_url = shortener.tinyurl.short(url)
+    return short_url
+
+
 def upload_image_cover_or_pdf_to_azure(file, blog, user):
     file_name = str(file.name).lower()
     new_filename = file_name.replace(" ", "_")
@@ -75,7 +86,8 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
 
             # Return blob url
             file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
-            blog.cover_image = file_url
+            shortened_url = shorten_url(file_url)
+            blog.cover_image = shortened_url
             blog.image_key = blob_name
             blog.save()
 
@@ -93,31 +105,32 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
             with open(file_path, "rb") as data:
                 container_client.upload_blob(name=blob_name, data=data)
 
-                # Return blob url
-                file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
-                file_docs = {
-                    "owner_id": user.user_key,
-                    "blog_id": blog.id,
-                    "document_location": file_url,
-                    "document_key": blob_name,
-                }
-                BlogDocuments.objects.create(**file_docs)
+            # Return blob url
+            file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
+            file_docs = {
+                "owner_id": user.user_key,
+                "blog_id": blog.id,
+                "document_location": shortened_url,
+                "document_key": blob_name,
+            }
+            BlogDocuments.objects.create(**file_docs)
 
-                thumbnail_path = f"{full_directory}/cover_image.jpg"
+            thumbnail_path = f"{full_directory}/cover_image.jpg"
 
-                images = convert_from_path(
-                    file_path,
-                    dpi=300,
-                    # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
-                )
-                if images:
-                    images[0].save(thumbnail_path, format="JPEG", quality=100)
-
-                return (
-                    thumbnail_path,
-                    blob_name,
-                    container_name,
-                )
+            images = convert_from_path(
+                file_path,
+                dpi=300,
+                # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+            )
+            if images:
+                images[0].save(thumbnail_path, format="JPEG", quality=100)
+            blob_name = f"Blog_Documents/{blog_title}/cover_image.jpg"
+            return (
+                thumbnail_path,
+                blob_name,
+                container_name,
+            )
 
         except ResourceExistsError:
             if path.exists(f"media/{user_name}"):
@@ -127,40 +140,26 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
         raise cannot_perform_action("Invalid file format")
 
 
-def upload_blog_thumbnail(file_path, blob_name, container_name):
+def upload_thumbnail(file_path, blob_name, container_name):
     container_client = blob_service_client.get_container_client(container_name)
     if not container_client.exists():
-        container_client.create_container(public_access="blob")
+        container_client.create_container()
 
     # Upload a file to the container
-    with open(file_path, "rb") as data:
-        container_client.upload_blob(
-            name=blob_name,
-            data=data,
-            content_settings=ContentSettings(content_type="image/jpeg"),
-        )
+    try:
+        with open(file_path, "rb") as data:
+            container_client.upload_blob(
+                name=blob_name,
+                data=data,
+                content_settings=ContentSettings(content_type="image/jpeg"),
+            )
 
-    file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
-
-    return file_url, blob_name
-
-
-def upload_thumbnail(file_path, container_name, blob_name):
-    container_client = blob_service_client.get_container_client(container_name)
-    if not container_client.exists():
-        container_client.create_container(public_access="blob")
-
-    # Upload a file to the container
-    with open(file_path, "rb") as data:
-        container_client.upload_blob(
-            name=blob_name,
-            data=data,
-            content_settings=ContentSettings(content_type="image/jpeg"),
-        )
-
-    file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
-
-    return file_url, blob_name
+            file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+            return file_url, blob_name
+    except ResourceExistsError:
+        if path.exists(f"media/{container_name}"):
+            shutil.rmtree(f"media/{container_name}")
+        pass
 
 
 def upload_poll_document(file, user, poll_question):
@@ -221,7 +220,6 @@ def upload_poll_file_or_pdf_to_azure(file, user, poll):
     ]
 
     file_extension = os.path.splitext(file.name)[1]
-
     if file_extension.lower() in image_file_extensions:
         try:
             # Upload a file to the container
@@ -231,7 +229,7 @@ def upload_poll_file_or_pdf_to_azure(file, user, poll):
             # Return blob url
             file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
-            poll.file_location = file_url
+            poll.file_location = shortened_url
             poll.file_key = blob_name
             poll.save()
 
@@ -249,25 +247,29 @@ def upload_poll_file_or_pdf_to_azure(file, user, poll):
             with open(file_path, "rb") as data:
                 container_client.upload_blob(name=blob_name, data=data)
 
-                # Return blob url
-                file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
-
-                thumbnail_path = f"{full_directory}/poll_thumbnail.jpg"
-                images = convert_from_path(
-                    file_path,
-                    dpi=300,
-                    # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
-                )
-                if images:
-                    images[0].save(thumbnail_path, format="JPEG", quality=100)
-
-                return (
-                    thumbnail_path,
-                    poll.question,
-                    user_name,
-                )
+            # Return blob url
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
+            poll.file_location = shortened_url
+            poll.file_key = blob_name
+            poll.save()
+            thumbnail_path = f"{full_directory}/poll_thumbnail.jpg"
+            images = convert_from_path(
+                file_path,
+                dpi=300,
+                poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+            )
+            if images:
+                images[0].save(thumbnail_path, format="JPEG", quality=100)
+            blob_name = f"Poll_Documents/{question}/poll_thumbnail.jpg"
+            return (
+                thumbnail_path,
+                blob_name,
+                user_name,
+            )
 
         except ResourceExistsError:
+            print("File already exists")
             if path.exists(f"media/{user_name}"):
                 shutil.rmtree(f"media/{user_name}")
             pass
@@ -293,14 +295,14 @@ def upload_cover_image(request, res_data, blog=None, poll=None):
         headers=headers,
     )
     response_data = response.json()
-
+    shortened_url = shorten_url(response_data["resp_data"][0])
     if response.status_code == 200:
         if blog:
-            blog.cover_image = response_data["resp_data"][0]
+            blog.cover_image = shortened_url
             blog.image_key = response_data["resp_data"][1]
             blog.save()
         if poll:
-            poll.snapshot_location = response_data["resp_data"][0]
+            poll.snapshot_location = shortened_url
             poll.snapshot_key = response_data["resp_data"][1]
             poll.save()
 
@@ -333,10 +335,11 @@ def create_other_blog_documents(files, blog, user):
 
             # Return blob url
             file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
             new_blog_doc = {
                 "owner_id": user.user_key,
                 "blog_id": blog.id,
-                "document_location": file_url,
+                "document_location": shortened_url,
                 "document_key": f"{container_name}/{blob_name}",
             }
 
@@ -393,10 +396,11 @@ def upload_profile_image(file, user):
 
     # Return blob url
     file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+    shortened_url = shorten_url(file_url)
     pro_image = {
         "owner_id": user.user_key,
         "document_type": "Profile Image",
-        "document_location": file_url,
+        "document_location": shortened_url,
         "document_key": f"{blob_name}",
     }
 
@@ -406,14 +410,3 @@ def upload_profile_image(file, user):
         shutil.rmtree(f"media/{user_name}")
 
     return file_url
-
-
-def shorten_url(url):
-    import pyshorteners
-
-    # Create an instance of the Shortener class
-    shortener = pyshorteners.Shortener()
-
-    # Shorten the URL using the default shortening service (TinyURL)
-    short_url = shortener.tinyurl.short(url)
-    return short_url
