@@ -11,7 +11,7 @@ urlpatterns = [
     path(
         "upload-thumbnail/",
         UploadThumbnailsToAzure.as_view(),
-        name="TestPDFImageCreator",
+        name="Upload Thumbnails To Azure",
     ),
     # Blog
     path("create-blog/", CreateBlogPost.as_view(), name="Create Blog"),

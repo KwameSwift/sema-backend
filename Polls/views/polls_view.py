@@ -10,7 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from helpers.azure_file_handling import upload_poll_document, delete_blob, shorten_url
+from helpers.azure_file_handling import upload_poll_document, delete_blob, shorten_url, \
+    upload_poll_file_or_pdf_to_azure, upload_cover_image
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
@@ -35,6 +36,7 @@ class CreatePoll(APIView):
         data = request.data
         user = self.request.user
         files = request.FILES.get("files")
+        user_name = f"{user.first_name}-{user.last_name}".lower()
 
         if files:
             files = data.pop("files", None)
@@ -59,15 +61,10 @@ class CreatePoll(APIView):
 
             if files:
                 for file in files:
-                    file_url = upload_poll_document(file, user, poll.question)
-                    shortened_url = shorten_url(file_url[0])
-                    Poll.objects.filter(id=poll.id).update(
-                        file_location=shortened_url,
-                        file_key=file_url[1]
-                    )
-                user_name = f"{user.first_name}-{user.last_name}".lower()
-                if os.path.exists(f"media/{user_name}"):
-                    shutil.rmtree(f"media/{user_name}")
+                    res_data = upload_poll_file_or_pdf_to_azure(file, user, poll)
+
+                    if type(res_data) is tuple:
+                        upload_cover_image(request, res_data, poll=poll)
 
             new_choices = eval(choices)
             for choice in new_choices:
@@ -333,24 +330,26 @@ class UpdatePoll(APIView):
 
         try:
             poll = Poll.objects.get(id=poll_id)
-            user_name = f"{user.first_name}-{user.last_name}".lower()
             container_name = f"{poll.author.first_name}-{poll.author.last_name}".lower()
 
             if files:
                 files = data.pop("files", None)
+                delete_blob(container_name, poll.file_key)
+                delete_blob(container_name, poll.snapshot_key)
+                poll.file_key = None
+                poll.file_location = None
+                poll.snapshot_key = None
+                poll.snapshot_location = None
+                poll.save()
                 for file in files:
-                    delete_blob(container_name, poll.file_key)
-                    file_url = upload_poll_document(file, user, poll.question)
-                    Poll.objects.filter(id=poll.id).update(
-                        file_location=file_url[0],
-                        file_key=file_url[1]
-                    )
-                if os.path.exists(f"media/{user_name}"):
-                    shutil.rmtree(f"media/{user_name}")
+                    res_data = upload_poll_file_or_pdf_to_azure(file, user, poll)
+
+                    if type(res_data) is tuple:
+                        upload_cover_image(request, res_data, poll=poll)
 
             data = json.dumps(data)
             data = json.loads(data)
-
+            poll.refresh_from_db()
             if "choices" in data:
                 new_choices = eval(data["choices"])
                 PollChoices.objects.filter(poll_id=poll_id).delete()

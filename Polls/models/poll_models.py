@@ -15,6 +15,8 @@ class Poll(models.Model):
     title = models.CharField(max_length=255, null=True, blank=True)
     file_location = models.CharField(max_length=255, null=True, blank=True)
     file_key = models.CharField(max_length=255, null=True, blank=True)
+    snapshot_location = models.CharField(max_length=255, null=True, blank=True)
+    snapshot_key = models.CharField(max_length=255, null=True, blank=True)
     question = models.TextField(blank=True, null=True)
     start_date = models.DateField(auto_now_add=False, null=True, blank=True)
     end_date = models.DateField(auto_now_add=False, null=True, blank=True)

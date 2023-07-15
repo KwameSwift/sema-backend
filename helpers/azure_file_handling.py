@@ -37,7 +37,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
     file_name = str(file.name).lower()
     new_filename = file_name.replace(" ", "_")
     blog_title = str(blog.title).replace(" ", "_")
-    user_name = (f"{user.first_name}-{user.last_name}").lower()
+    user_name = f"{user.first_name}-{user.last_name}".lower()
     base_directory = f"{LOCAL_FILE_PATH}{user_name}"
     full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
     file_url = ""
@@ -115,7 +115,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
 
                 return (
                     thumbnail_path,
-                    blog_title,
+                    blob_name,
                     container_name,
                 )
 
@@ -127,8 +127,25 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
         raise cannot_perform_action("Invalid file format")
 
 
-def upload_thumbnail(file_path, blog_title, container_name):
-    blob_name = f"Blog_Documents/{blog_title}/cover_image.jpg"
+def upload_blog_thumbnail(file_path, blob_name, container_name):
+    container_client = blob_service_client.get_container_client(container_name)
+    if not container_client.exists():
+        container_client.create_container(public_access="blob")
+
+    # Upload a file to the container
+    with open(file_path, "rb") as data:
+        container_client.upload_blob(
+            name=blob_name,
+            data=data,
+            content_settings=ContentSettings(content_type="image/jpeg"),
+        )
+
+    file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
+
+    return file_url, blob_name
+
+
+def upload_thumbnail(file_path, container_name, blob_name):
     container_client = blob_service_client.get_container_client(container_name)
     if not container_client.exists():
         container_client.create_container(public_access="blob")
@@ -174,13 +191,96 @@ def upload_poll_document(file, user, poll_question):
     return file_url, blob_name
 
 
-def upload_cover_image(request, res_data, blog, user_name):
+def upload_poll_file_or_pdf_to_azure(file, user, poll):
+    file_name = str(file.name).lower()
+    new_filename = file_name.replace(" ", "_")
+    question = str(poll.question).replace(" ", "_").strip("?")
+    user_name = f"{user.first_name}-{user.last_name}".lower()
+    base_directory = f"{LOCAL_FILE_PATH}{user_name}"
+    full_directory = f"{base_directory}/Poll_Documents/{question}"
+
+    container_client = blob_service_client.get_container_client(user_name)
+    if not container_client.exists():
+        container_client.create_container(public_access="blob")
+
+    fs = FileSystemStorage(location=full_directory)
+    fs.save(new_filename, file)
+    file_path = f"{full_directory}/{new_filename}"
+    blob_name = f"Poll_Documents/{question}/{new_filename}"
+
+    image_file_extensions = [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".tiff",
+        ".bmp",
+        ".svg",
+        ".raw",
+        ".webp",
+    ]
+
+    file_extension = os.path.splitext(file.name)[1]
+
+    if file_extension.lower() in image_file_extensions:
+        try:
+            # Upload a file to the container
+            with open(file_path, "rb") as data:
+                container_client.upload_blob(name=blob_name, data=data)
+
+            # Return blob url
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
+            poll.file_location = file_url
+            poll.file_key = blob_name
+            poll.save()
+
+            if path.exists(f"media/{user_name}"):
+                shutil.rmtree(f"media/{user_name}")
+            return file_url
+        except ResourceExistsError:
+            if path.exists(f"media/{user_name}"):
+                shutil.rmtree(f"media/{user_name}")
+            pass
+
+    elif file_extension.lower() == ".pdf":
+        try:
+            # Upload a file to the container
+            with open(file_path, "rb") as data:
+                container_client.upload_blob(name=blob_name, data=data)
+
+                # Return blob url
+                file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
+
+                thumbnail_path = f"{full_directory}/poll_thumbnail.jpg"
+                images = convert_from_path(
+                    file_path,
+                    dpi=300,
+                    # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+                )
+                if images:
+                    images[0].save(thumbnail_path, format="JPEG", quality=100)
+
+                return (
+                    thumbnail_path,
+                    poll.question,
+                    user_name,
+                )
+
+        except ResourceExistsError:
+            if path.exists(f"media/{user_name}"):
+                shutil.rmtree(f"media/{user_name}")
+            pass
+    else:
+        raise cannot_perform_action("Invalid file format")
+
+
+def upload_cover_image(request, res_data, blog=None, poll=None):
     current_host = request.get_host()
     data = {
         "file_path": res_data[0],
-        "blog_title": res_data[1],
-        "container_name": res_data[2],
-        "user_name": user_name,
+        "blob_name": res_data[1],
+        "container_name": res_data[2]
     }
 
     # Set the headers
@@ -195,9 +295,14 @@ def upload_cover_image(request, res_data, blog, user_name):
     response_data = response.json()
 
     if response.status_code == 200:
-        blog.cover_image = response_data["resp_data"][0]
-        blog.image_key = response_data["resp_data"][1]
-        blog.save()
+        if blog:
+            blog.cover_image = response_data["resp_data"][0]
+            blog.image_key = response_data["resp_data"][1]
+            blog.save()
+        if poll:
+            poll.snapshot_location = response_data["resp_data"][0]
+            poll.snapshot_key = response_data["resp_data"][1]
+            poll.save()
 
     return True
 
@@ -262,7 +367,7 @@ def delete_blob(container_name, blob_name):
 def upload_profile_image(file, user):
     file_name = str(file.name).lower()
     new_filename = file_name.replace(" ", "_")
-    user_name = (f"{user.first_name}-{user.last_name}").lower()
+    user_name = f"{user.first_name}-{user.last_name}".lower()
     base_directory = f"{LOCAL_FILE_PATH}{user_name}"
     full_directory = f"{base_directory}/Profile_Image"
     file_url = ""
