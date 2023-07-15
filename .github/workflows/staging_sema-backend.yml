@@ -22,11 +22,14 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Install Popeller
+        run: sudo apt-get install poppler-utils
+
       - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-      
+
       - name: Install dependencies
         run: pip install -r requirements.txt
         
