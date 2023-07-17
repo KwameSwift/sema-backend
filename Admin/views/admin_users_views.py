@@ -206,20 +206,19 @@ class GetSingleUser(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
-        data = request.data
+        user_key = self.kwargs['user_key']
 
         if not check_super_admin(self.request.user):
             raise action_authorization_exception("Unauthorized to perform action")
 
-        check_required_fields(data, ["user_key"])
-
         user = (
-            User.objects.filter(user_key=data["user_key"])
+            User.objects.filter(user_key=user_key)
             .values(
                 "user_key",
                 "role_id",
                 "role__name",
                 "email",
+                "mobile_number",
                 "first_name",
                 "last_name",
                 "profile_image",
@@ -228,6 +227,8 @@ class GetSingleUser(APIView):
                 "organization",
                 "country__name",
                 "is_verified",
+                "account_type",
+                "created_on"
             )
             .first()
         )

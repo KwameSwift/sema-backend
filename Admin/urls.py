@@ -44,7 +44,7 @@ urlpatterns = [
         name="Verify Users",
     ),
     path(
-        "get-single-user/",
+        "get-single-user/<slug:user_key>/",
         GetSingleUser.as_view(),
         name="Get Single User",
     ),
