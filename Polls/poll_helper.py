@@ -61,6 +61,7 @@ def retrieve_poll_with_choices(poll_id, type=None):
             "author__first_name": poll.author.first_name,
             "author__last_name": poll.author.last_name,
             "author__is_verified": poll.author.is_verified,
+            "author__profile_image": poll.author.profile_image,
             "approved_on": poll.approved_on,
             "created_on": poll.created_on,
             "choices": [

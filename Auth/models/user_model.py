@@ -122,6 +122,8 @@ class User(AbstractBaseUser):
     password_reset_code = models.CharField(max_length=255, blank=True, null=True)
 
     profile_image = models.CharField(max_length=255, blank=True, null=True)
+    
+    profile_image_key = models.CharField(max_length=255, blank=True, null=True)
 
     account_type = models.CharField(max_length=255, null=False)
 

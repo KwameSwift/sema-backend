@@ -394,16 +394,8 @@ def upload_profile_image(file, user):
     # Return blob url
     file_url = f"{BLOB_BASE_URL}/{container_name}/{blob_name}"
     shortened_url = shorten_url(file_url)
-    pro_image = {
-        "owner_id": user.user_key,
-        "document_type": "Profile Image",
-        "document_location": shortened_url,
-        "document_key": f"{blob_name}",
-    }
-
-    UserDocuments.objects.create(**pro_image)
 
     if path.exists(f"media/{user_name}"):
         shutil.rmtree(f"media/{user_name}")
 
-    return file_url
+    return shortened_url, blob_name

@@ -188,17 +188,8 @@ class GetAllApprovedPollsByUser(APIView):
                     and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
             ):
                 item = retrieve_poll_with_choices(item["id"])
-
-            image = (
-                UserDocuments.objects.filter(
-                    owner_id=item["author_id"], document_type="Profile Image"
-                )
-                .values("document_location")
-                .first()
-            )
             item["total_votes"] = PollChoices.objects.filter(poll_id=item["id"]).aggregate(total_votes=Sum('votes'))[
                 'total_votes']
-            item["author_profile_image"] = image["document_location"] if image else None
             data.append(item)
 
         return JsonResponse(
@@ -232,6 +223,7 @@ class GetAllApprovedPolls(APIView):
             "author__first_name",
             "author__last_name",
             "author__is_verified",
+            "author__profile_image",
             "approved_on",
             "created_on",
         )
@@ -239,14 +231,6 @@ class GetAllApprovedPolls(APIView):
         for poll in polls:
             poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))[
                 'total_votes']
-            image = (
-                UserDocuments.objects.filter(
-                    owner_id=poll["author_id"], document_type="Profile Image"
-                )
-                .values("document_location")
-                .first()
-            )
-            poll["author_profile_image"] = image["document_location"] if image else None
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
 
@@ -287,7 +271,7 @@ class GetMyPolls(APIView):
 
         polls = Poll.objects.filter(query).values(
             "id",
-            "questiion",
+            "question",
             "file_location",
             "snapshot_location",
             "start_date",
@@ -434,23 +418,13 @@ class SearchPolls(APIView):
             "author_id",
             "author__first_name",
             "author__last_name",
+            "author__profile_image",
             "approved_by__first_name",
             "approved_by__last_name",
             "approved_on",
             "is_ended",
             "created_on",
         )
-
-        if user.is_admin:
-            for poll in polls:
-                image = (
-                    UserDocuments.objects.filter(
-                        owner_id=poll["author_id"], document_type="Profile Image"
-                    )
-                    .values("document_location")
-                    .first()
-                )
-                poll["author_profile_image"] = image["document_location"]
 
         data = paginate_data(polls, page_number, 10)
 
