@@ -287,7 +287,7 @@ class GetMyPolls(APIView):
 
         polls = Poll.objects.filter(query).values(
             "id",
-            "title",
+            "questiion",
             "file_location",
             "snapshot_location",
             "start_date",
