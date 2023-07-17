@@ -287,7 +287,7 @@ class UpdateUserProfile(APIView):
         profile_image = request.FILES.get("profile_image")
 
         user = User.objects.get(user_key=user.user_key)
-        container = f"{user.first_name}-{user.last_name}"
+        container = f"{user.first_name}-{user.last_name}".lower()
 
         if profile_image:
             try:
