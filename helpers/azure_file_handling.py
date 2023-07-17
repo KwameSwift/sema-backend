@@ -276,7 +276,6 @@ def upload_poll_file_or_pdf_to_azure(file, user, poll):
 
 def upload_cover_image(request, res_data, blog=None, poll=None):
     current_host = request.get_host()
-    print(current_host)
     data = {
         "file_path": res_data[0],
         "blob_name": res_data[1],
