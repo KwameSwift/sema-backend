@@ -96,7 +96,7 @@ class AdminGetAllPolls(APIView):
 
         polls = Poll.objects.filter(query).values(
             "id",
-            "file_location",
+            "question",
             "snapshot_location",
             "start_date",
             "end_date",

@@ -449,7 +449,7 @@ class UpdateBlogPost(APIView):
 
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
-            user_name = (f"{blog.author.first_name}-{blog.author.last_name}").lower()
+            user_name = f"{blog.author.first_name}-{blog.author.last_name}".lower()
             blog_id = data.pop("blog_post_id", None)
 
             if "content" in data:
