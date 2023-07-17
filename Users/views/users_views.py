@@ -11,13 +11,13 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
+from helpers.azure_file_handling import delete_blob, upload_profile_image
 from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
                                local_file_upload, paginate_data, truncate_text)
 from helpers.status_codes import (action_authorization_exception,
                                   cannot_perform_action,
                                   non_existing_data_exception)
 from helpers.validations import check_required_fields
-from helpers.azure_file_handling import delete_blob, upload_profile_image
 from Polls.models.poll_models import Poll
 from Polls.poll_helper import retrieve_poll_with_choices
 from Utilities.models.documents_model import UserDocuments
@@ -287,12 +287,13 @@ class UpdateUserProfile(APIView):
         profile_image = request.FILES.get("profile_image")
 
         user = User.objects.get(user_key=user.user_key)
-        container = f"{user.first_name}-{user.last_name}"
-
+        container = f"{user.first_name}-{user.last_name}".lower()
 
         if profile_image:
             try:
-                user_doc = UserDocuments.objects.get(owner=user, document_type="Profile Image")
+                user_doc = UserDocuments.objects.get(
+                    owner=user, document_type="Profile Image"
+                )
                 delete_blob(container, user_doc.document_key)
                 user_doc.delete()
             except UserDocuments.DoesNotExist:

@@ -6,17 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from Polls.models.poll_models import Poll
+from Polls.poll_helper import (retrieve_poll_with_choices)
+from Utilities.models.documents_model import UserDocuments
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  duplicate_data_exception,
                                   non_existing_data_exception)
-from helpers.validations import (check_permission, check_required_fields,
-                                 check_super_admin, unique_list)
-from Polls.models.poll_models import Poll, PollChoices, PollVote
-from Polls.poll_helper import (get_polls_by_logged_in_user,
-                               retrieve_poll_with_choices)
-from Utilities.models.documents_model import UserDocuments
+from helpers.validations import (check_permission, check_super_admin)
 
 
 class ApprovePoll(APIView):
@@ -34,6 +30,7 @@ class ApprovePoll(APIView):
             poll = Poll.objects.get(id=poll_id)
             poll.is_approved = True
             poll.approved_by = user
+            poll.approved_on = aware_datetime(datetime.datetime.now())
             poll.updated_on = aware_datetime(datetime.datetime.now())
             poll.save()
 
@@ -99,24 +96,30 @@ class AdminGetAllPolls(APIView):
 
         polls = Poll.objects.filter(query).values(
             "id",
-            "title",
-            "description",
             "question",
+            "snapshot_location",
             "start_date",
             "end_date",
             "is_approved",
             "author_id",
             "author__first_name",
             "author__last_name",
-            "is_ended",
+            "author__is_verified",
+            "approved_by__first_name",
+            "approved_by__last_name",
+            "approved_on",
             "created_on",
         )
 
         for poll in polls:
-            image =  UserDocuments.objects.filter(
-                owner_id=poll["owner_id"], document_type="Profile Image"
-            ).values("document_location")
-            poll["author_profile_image"] = image["document_location"]
+            image = (
+                UserDocuments.objects.filter(
+                    owner_id=poll["author_id"], document_type="Profile Image"
+                )
+                .values("document_location")
+                .first()
+            )
+            poll["author_profile_image"] = image["document_location"] if image else None
         #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
         data = paginate_data(polls, page_number, 10)
         return JsonResponse(

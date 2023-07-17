@@ -3,9 +3,9 @@ from django.urls import path
 from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
 
 from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
-                                GetMySinglePoll, GetUserBlogPosts, ProfileView,
-                                SearchMyBlogPosts, UpdateUserProfile,
-                                UploadUserDocuments)
+                               GetMySinglePoll, GetUserBlogPosts, ProfileView,
+                               SearchMyBlogPosts, UpdateUserProfile,
+                               UploadUserDocuments)
 
 urlpatterns = [
     # Users
@@ -50,7 +50,7 @@ urlpatterns = [
         name="Authenticated User Approved Polls",
     ),
     path(
-        "my-polls/<int:data_type>/",
+        "my-polls/<int:data_type>/<int:page_number>/",
         GetMyPolls.as_view(),
         name="Get My Polls",
     ),

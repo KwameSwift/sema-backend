@@ -2,8 +2,8 @@ import json
 import os
 import shutil
 from os import path
-import requests
 
+import requests
 from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
@@ -11,8 +11,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.models.blog_model import BlogComment, BlogPost
-from helpers.azure_file_handling import (delete_blob, upload_cover_image, upload_thumbnail,
-                                         upload_image_cover_or_pdf_to_azure, create_other_blog_documents)
+from helpers.azure_file_handling import (create_other_blog_documents,
+                                         delete_blob, upload_cover_image,
+                                         upload_image_cover_or_pdf_to_azure,
+                                         upload_thumbnail)
 from helpers.functions import (check_abusive_words,
                                convert_quill_text_to_normal_text,
                                delete_local_file, local_file_upload,
@@ -38,7 +40,7 @@ class CreateBlogPost(APIView):
         files = request.FILES.getlist("files[]")
         cover_image = request.FILES.get("cover_image")
 
-        links = data.pop("links[]", None)
+        links = None
 
         if files:
             files = data.pop("files[]", None)
@@ -48,13 +50,11 @@ class CreateBlogPost(APIView):
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to create blog post")
 
-        if links:
-            data["links"] = links
+        if "links[]" in data:
+            links = data.pop("links[]", None)
 
         data = json.dumps(data)
         data = json.loads(data)
-
-        links = data.pop("links[]", None)
 
         if links is not None:
             data["links"] = dict(request.data).get("links[]")
@@ -73,12 +73,11 @@ class CreateBlogPost(APIView):
             blog = BlogPost.objects.create(**data)
 
             if cover_image:
+                res_data = None
                 for item in cover_image:
                     res_data = upload_image_cover_or_pdf_to_azure(item, blog, user)
-                
                 if type(res_data) is tuple:
-                    user_name = (f"{user.first_name}-{user.last_name}").lower()
-                    upload_cover_image(request, res_data, blog, user_name)
+                    upload_cover_image(request, res_data, blog=blog)
             if files:
                 create_other_blog_documents(files, blog, user)
 
@@ -101,13 +100,11 @@ class CreateBlogPost(APIView):
 class UploadThumbnailsToAzure(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
-
         resp_data = upload_thumbnail(
-            data["file_path"],
-            data["blog_title"],
-            data["container_name"]
+            data["file_path"], data["blob_name"], data["container_name"]
         )
-        user_name = data["user_name"]
+
+        user_name = data["container_name"]
         if path.exists(f"media/{user_name}"):
             shutil.rmtree(f"media/{user_name}")
 
@@ -115,7 +112,7 @@ class UploadThumbnailsToAzure(APIView):
             {
                 "status": "success",
                 "detail": "Blog created and submitted for review",
-                "resp_data": resp_data
+                "resp_data": resp_data,
             },
             safe=False,
         )
@@ -449,13 +446,12 @@ class UpdateBlogPost(APIView):
             raise action_authorization_exception("Unauthorized to create blog post")
 
         check_required_fields(data, ["blog_post_id"])
-        
 
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
-            user_name = (f"{blog.author.first_name}-{blog.author.last_name}").lower()
+            user_name = f"{blog.author.first_name}-{blog.author.last_name}".lower()
             blog_id = data.pop("blog_post_id", None)
-            
+
             if "content" in data:
                 abusive_words_check = check_abusive_words(content=data["content"])
                 data["censored_content"] = abusive_words_check[0]
@@ -464,12 +460,11 @@ class UpdateBlogPost(APIView):
 
             if cover_image:
                 delete_blob(user_name, blog.image_key)
-                
                 for item in cover_image:
                     res_data = upload_image_cover_or_pdf_to_azure(item, blog, user)
-                
+
                     if type(res_data) is tuple:
-                        upload_cover_image(request, res_data, blog, user_name)
+                        upload_cover_image(request, res_data, blog=blog)
 
             if files:
                 create_other_blog_documents(files, blog, user)
