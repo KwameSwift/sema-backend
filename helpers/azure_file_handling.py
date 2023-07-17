@@ -118,7 +118,7 @@ def upload_image_cover_or_pdf_to_azure(file, blog, user):
             images = convert_from_path(
                 file_path,
                 dpi=300,
-                poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+                # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
             )
             if images:
                 images[0].save(thumbnail_path, format="JPEG", quality=100)
@@ -254,7 +254,7 @@ def upload_poll_file_or_pdf_to_azure(file, user, poll):
             images = convert_from_path(
                 file_path,
                 dpi=300,
-                poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
+                # poppler_path=r"C:\Users\MSI\Downloads\poppler-0.68.0\bin",
             )
             if images:
                 images[0].save(thumbnail_path, format="JPEG", quality=100)
