@@ -50,7 +50,6 @@ def retrieve_poll_with_choices(poll_id, type=None):
     else:
         poll_data = {
             "id": poll.id,
-            "title": poll.title,
             "file_location": poll.file_location,
             "snapshot_location": poll.snapshot_location,
             "question": poll.question,

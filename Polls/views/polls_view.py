@@ -221,7 +221,7 @@ class GetAllApprovedPolls(APIView):
 
         polls = Poll.objects.filter(is_approved=True).values(
             "id",
-            "title",
+            "question",
             "file_location",
             "snapshot_location",
             "start_date",
