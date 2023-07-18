@@ -171,6 +171,7 @@ class GetSingleBlogPost(APIView):
                     "author__first_name",
                     "author__last_name",
                     "author__is_verified",
+                    "author__profile_image",
                     "created_on",
                 )
                 .first()
@@ -179,36 +180,17 @@ class GetSingleBlogPost(APIView):
                 "commentor_id",
                 "commentor__first_name",
                 "commentor__last_name",
+                "commentor__profile_image",
                 "comment",
                 "commentor__is_verified",
                 "created_on",
             )
-            profile_images = UserDocuments.objects.filter(
-                owner_id__in=[comment["commentor_id"] for comment in blog_comments],
-                document_type="Profile Image",
-            ).values("owner_id", "document_location")
-
-            profile_images_mapping = {
-                profile_image["owner_id"]: profile_image["document_location"]
-                for profile_image in profile_images
-            }
-
-            for comment in blog_comments:
-                comment["commentor_profile_image"] = profile_images_mapping.get(
-                    comment["commentor_id"]
-                )
-
             blog_post["total_comments"] = blog_comments.count()
             blog_post["comments"] = list(blog_comments)
             blog_post["documents"] = list(
                 BlogDocuments.objects.filter(blog_id=blog_post["id"]).values(
                     "id", "document_location"
                 )
-            )
-            blog_post["author_profile_image"] = list(
-                UserDocuments.objects.filter(
-                    owner=blog_post["author_id"], document_type="Profile Image"
-                ).values("id", "document_location")
             )
 
             return JsonResponse(
@@ -257,6 +239,7 @@ class GetAllBlogPostsAsAdmin(APIView):
                 "author__first_name",
                 "author__last_name",
                 "author__is_verified",
+                "author__profile_image",
                 "created_on",
             )
             .order_by("-created_on")
@@ -269,11 +252,6 @@ class GetAllBlogPostsAsAdmin(APIView):
             blog_post["total_comments"] = total_comments
             blog_post["documents"] = list(
                 BlogDocuments.objects.filter(blog_id=blog_post["id"]).values()
-            )
-            blog_post["author_profile_image"] = list(
-                UserDocuments.objects.filter(
-                    owner=blog_post["author_id"], document_type="Profile Image"
-                ).values("id", "document_location")
             )
 
         data = paginate_data(blog_posts, page_number, 10)
@@ -310,6 +288,7 @@ class GetAllPublishedBlogPost(APIView):
                 "author__first_name",
                 "author__last_name",
                 "author__is_verified",
+                "author__profile_image",
                 "author__organization",
                 "created_on",
             )
@@ -325,6 +304,7 @@ class GetAllPublishedBlogPost(APIView):
                     "id",
                     "commentor__first_name",
                     "commentor__last_name",
+                    "commentor__profile_image",
                     "comment",
                     "created_on",
                 )
@@ -336,13 +316,6 @@ class GetAllPublishedBlogPost(APIView):
                 BlogDocuments.objects.filter(blog_id=blog_post["id"])
                 .values()
                 .order_by("-created_on")
-            )
-            blog_post["author_profile_image"] = (
-                UserDocuments.objects.filter(
-                    owner=blog_post["author_id"], document_type="Profile Image"
-                )
-                .values("id", "document_location")
-                .first()
             )
 
         data = paginate_data(blog_posts, page_number, 10)
@@ -621,6 +594,7 @@ class SearchBlogPosts(APIView):
                 "author__first_name",
                 "author__is_verified",
                 "author__last_name",
+                "author__profile_image",
                 "created_on",
             )
             .order_by("-created_on")
@@ -633,6 +607,7 @@ class SearchBlogPosts(APIView):
                     "id",
                     "commentor__first_name",
                     "commentor__last_name",
+                    "commentor__profile_image",
                     "comment",
                     "created_on",
                 )
@@ -644,13 +619,6 @@ class SearchBlogPosts(APIView):
                 BlogDocuments.objects.filter(blog_id=blog_post["id"])
                 .values()
                 .order_by("-created_on")
-            )
-            blog_post["author_profile_image"] = (
-                UserDocuments.objects.filter(
-                    owner=blog_post["author_id"], document_type="Profile Image"
-                )
-                .values("id", "document_location")
-                .first()
             )
 
         data = paginate_data(blog_posts, page_number, 10)

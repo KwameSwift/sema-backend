@@ -206,7 +206,8 @@ class GetSingleUser(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
-        user_key = self.kwargs['user_key']
+        data = request.data
+        user_key = self.kwargs.get("user_key")
 
         if not check_super_admin(self.request.user):
             raise action_authorization_exception("Unauthorized to perform action")

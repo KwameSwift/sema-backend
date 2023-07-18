@@ -95,6 +95,7 @@ class GetFeed(APIView):
                 "author_id",
                 "author__first_name",
                 "author__last_name",
+                "author__profile_image",
                 "author__is_verified",
                 "author__organization",
                 "created_on",
@@ -111,6 +112,7 @@ class GetFeed(APIView):
                     "id",
                     "commentor__first_name",
                     "commentor__last_name",
+                    "commentor__profile_image",
                     "comment",
                     "created_on",
                 )
@@ -122,13 +124,6 @@ class GetFeed(APIView):
                 BlogDocuments.objects.filter(blog_id=blog_post["id"])
                 .values()
                 .order_by("-created_on")
-            )
-            blog_post["author_profile_image"] = (
-                UserDocuments.objects.filter(
-                    owner=blog_post["author_id"], document_type="Profile Image"
-                )
-                .values("id", "document_location")
-                .first()
             )
             
         Poll.objects.filter(
@@ -147,6 +142,7 @@ class GetFeed(APIView):
             "author_id",
             "author__first_name",
             "author__last_name",
+            "author__profile_image",
             "author__is_verified",
             "created_on",
         ).order_by("-created_on")
@@ -156,27 +152,11 @@ class GetFeed(APIView):
             if poll["is_ended"]:
                 modified_poll = retrieve_poll_with_choices(poll["id"])
                 modified_poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
-                image = (
-                    UserDocuments.objects.filter(
-                        owner_id=poll["author_id"], document_type="Profile Image"
-                    )
-                    .values("document_location")
-                    .first()
-                )
-                modified_poll["author_profile_image"] = image["document_location"] if image else None
                 modified_polls.append(modified_poll)
                 # poll["stats"] = retrieve_poll_with_choices(poll["id"])
 
             else:
                 poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
-                image = (
-                    UserDocuments.objects.filter(
-                        owner_id=poll["author_id"], document_type="Profile Image"
-                    )
-                    .values("document_location")
-                    .first()
-                )
-                poll["author_profile_image"] = image["document_location"] if image else None
                 poll["choices"] = list(
                     PollChoices.objects.filter(poll_id=poll["id"]).values(
                         "id", "choice"
