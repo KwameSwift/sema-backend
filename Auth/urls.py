@@ -28,9 +28,9 @@ urlpatterns = [
         VerifyPasswordResetCode.as_view(),
         name="Verify Reset Password Code",
     ),
-    path(
-        "refresh-token/",
-        jwt_views.TokenRefreshView.as_view(),
-        name="Refresh Access Token",
-    ),
+    # path(
+    #     "refresh-token/",
+    #     jwt_views.TokenRefreshView.as_view(),
+    #     name="Refresh Access Token",
+    # ),
 ]

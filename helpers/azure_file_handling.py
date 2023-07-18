@@ -286,7 +286,7 @@ def upload_cover_image(request, res_data, blog=None, poll=None):
     headers = {"Content-Type": "application/json"}
 
     # Send a POST request to the same server
-    response = requests.POST(
+    response = requests.post(
         f"https://{current_host}/blog/upload-thumbnail/",
         data=json.dumps(data),
         headers=headers,
