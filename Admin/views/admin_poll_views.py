@@ -28,10 +28,13 @@ class ApprovePoll(APIView):
 
         try:
             poll = Poll.objects.get(id=poll_id)
-            poll.is_approved = True
-            poll.approved_by = user
+            poll.is_approved = True if poll.is_approved else False
             poll.approved_on = aware_datetime(datetime.datetime.now())
             poll.updated_on = aware_datetime(datetime.datetime.now())
+            poll.save()
+            poll.refresh_from_db()
+            
+            poll.approved_by = user if poll.is_approved else None
             poll.save()
 
             return JsonResponse(
@@ -105,6 +108,7 @@ class AdminGetAllPolls(APIView):
             "author__first_name",
             "author__last_name",
             "author__is_verified",
+            "author__profile_image",
             "approved_by__first_name",
             "approved_by__last_name",
             "approved_on",
@@ -119,8 +123,6 @@ class AdminGetAllPolls(APIView):
                 .values("document_location")
                 .first()
             )
-            poll["author_profile_image"] = image["document_location"] if image else None
-        #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
         data = paginate_data(polls, page_number, 10)
         return JsonResponse(
             data,
