@@ -28,19 +28,23 @@ class ApprovePoll(APIView):
 
         try:
             poll = Poll.objects.get(id=poll_id)
-            poll.is_approved = True if poll.is_approved else False
-            poll.approved_on = aware_datetime(datetime.datetime.now())
-            poll.updated_on = aware_datetime(datetime.datetime.now())
+            poll.is_approved = False if poll.is_approved else True
             poll.save()
             poll.refresh_from_db()
-            
+            poll.approved_on = aware_datetime(datetime.datetime.now()) if poll.is_approved else None
+            poll.updated_on = aware_datetime(datetime.datetime.now())
             poll.approved_by = user if poll.is_approved else None
             poll.save()
+
+            if poll.is_approved:
+                message = "Poll approved and published successfully"
+            else:
+                message = "Poll unapproved successfully"
 
             return JsonResponse(
                 {
                     "status": "success",
-                    "detail": "Poll approved and published successfully",
+                    "detail": message,
                 },
                 safe=False,
             )
