@@ -406,8 +406,7 @@ class SearchPolls(APIView):
         check_required_fields(data, ["search_query"])
 
         polls = Poll.objects.filter(
-            Q(description__icontains=data["search_query"])
-            | Q(question__icontains=data["search_query"])
+            Q(question__icontains=data["search_query"])
             | Q(author__first_name__icontains=data["search_query"])
             | Q(author__last_name__icontains=data["search_query"])
         )

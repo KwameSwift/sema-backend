@@ -12,7 +12,6 @@ class Poll(models.Model):
         blank=True,
         related_name="poll_author",
     )
-    title = models.CharField(max_length=255, null=True, blank=True)
     file_location = models.CharField(max_length=255, null=True, blank=True)
     file_key = models.CharField(max_length=255, null=True, blank=True)
     snapshot_location = models.CharField(max_length=255, null=True, blank=True)

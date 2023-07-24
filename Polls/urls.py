@@ -38,6 +38,6 @@ urlpatterns = [
     path(
         "search-polls/<int:page_number>/",
         SearchPolls.as_view(),
-        name="Searc Polls",
+        name="Search Polls",
     ),
 ]
