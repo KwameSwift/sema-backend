@@ -35,6 +35,7 @@ urlpatterns = [
     path("super-admin/", include("Admin.urls")),
     path("events/", include("Events.urls")),
     path("polls/", include("Polls.urls")),
+    path("forum/", include("Forum.urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

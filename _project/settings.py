@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "Admin",
     "Events",
     "Polls",
+    "Forum"
 ]
 
 MIDDLEWARE = [
