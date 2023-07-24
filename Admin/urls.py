@@ -4,7 +4,7 @@ from .views.admin_blog_views import (ApproveAndPublishBlogs,
                                      GetAllBlogPostsAsAdmin)
 from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
 from .views.admin_poll_views import (AdminGetAllPolls, AdminViewSinglePoll,
-                                     ApprovePoll)
+                                     ApprovePoll, DeclinePoll)
 from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
                                            AssignUserRoleToUser,
                                            DeleteUserRole, GetAllUserRoles,
@@ -108,6 +108,11 @@ urlpatterns = [
         "approve-poll/<int:poll_id>/",
         ApprovePoll.as_view(),
         name="Approve Poll",
+    ),
+    path(
+        "decline-poll/<int:poll_id>/",
+        DeclinePoll.as_view(),
+        name="Decline Poll",
     ),
     path(
         "single-poll/<int:poll_id>/",

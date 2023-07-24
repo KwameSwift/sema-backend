@@ -52,6 +52,35 @@ class ApprovePoll(APIView):
             raise non_existing_data_exception("Poll")
 
 
+class DeclinePoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        poll_id = self.kwargs.get("poll_id")
+
+        if not check_super_admin(user):
+            raise action_authorization_exception("Unauthorized to decline Poll")
+
+        try:
+            poll = Poll.objects.get(id=poll_id)
+            poll.is_declined = True
+            poll.updated_on = aware_datetime(datetime.datetime.now())
+            poll.declined_by = user
+            poll.save()
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Poll declined successfully",
+                },
+                safe=False,
+            )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")
+
+
 class AdminViewSinglePoll(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
@@ -120,13 +149,8 @@ class AdminGetAllPolls(APIView):
         )
 
         for poll in polls:
-            image = (
-                UserDocuments.objects.filter(
-                    owner_id=poll["author_id"], document_type="Profile Image"
-                )
-                .values("document_location")
-                .first()
-            )
+            poll["is_owner"] = True if poll["author_id"] == user.user_key else False
+
         data = paginate_data(polls, page_number, 10)
         return JsonResponse(
             data,
