@@ -305,6 +305,8 @@ class UpdatePoll(APIView):
 
         try:
             poll = Poll.objects.get(id=poll_id)
+            if poll.author_id != user.user_key:
+                raise action_authorization_exception("Cannot edit this poll")
             container_name = f"{poll.author.first_name}-{poll.author.last_name}".lower()
 
             if files:
@@ -334,8 +336,11 @@ class UpdatePoll(APIView):
 
             if "is_document_deleted" in data and data["is_document_deleted"]:
                 delete_blob(container_name, poll.file_key)
+                delete_blob(container_name, poll.snapshot_key)
                 poll.file_key = None
                 poll.file_location = None
+                poll.snapshot_location = None
+                poll.snapshot_key = None
                 poll.save()
                 data.pop("is_document_deleted", None)
 
