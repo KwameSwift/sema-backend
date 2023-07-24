@@ -268,6 +268,8 @@ class GetMyPolls(APIView):
             query &= Q(is_approved=True)
         elif data_type == 2:
             query &= Q(is_approved=False)
+        elif data_type == 3:
+            query &= Q(is_declined=True)
 
         polls = Poll.objects.filter(query).values(
             "id",
@@ -277,7 +279,7 @@ class GetMyPolls(APIView):
             "start_date",
             "end_date",
             "is_approved",
-            "approved_on",
+            "is_declined",
             "created_on",
         )
 
@@ -420,7 +422,7 @@ class SearchPolls(APIView):
             "snapshot_location",
             "end_date",
             "is_approved",
-            "author_id",
+            "is_declined",
             "author__first_name",
             "author__last_name",
             "author__profile_image",
