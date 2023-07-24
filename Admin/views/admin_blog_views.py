@@ -120,7 +120,7 @@ class GetAllBlogPostsAsAdmin(APIView):
         )
 
 
-class UnapproveBlogs(APIView):
+class DeclineBlogs(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 

@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views.admin_blog_views import (ApproveAndPublishBlogs,
-                                     GetAllBlogPostsAsAdmin)
+                                     GetAllBlogPostsAsAdmin, DeclineBlogs)
 from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
 from .views.admin_poll_views import (AdminGetAllPolls, AdminViewSinglePoll,
                                      ApprovePoll, DeclinePoll)
@@ -31,6 +31,11 @@ urlpatterns = [
         "approve-blog-posts/",
         ApproveAndPublishBlogs.as_view(),
         name="Admin Approve Blog Post",
+    ),
+    path(
+        "decline-blog-posts/",
+        DeclineBlogs.as_view(),
+        name="Admin Decline Blog Post",
     ),
     # Users
     path(
