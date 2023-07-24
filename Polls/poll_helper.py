@@ -1,6 +1,9 @@
+import datetime
+
 from django.db.models import ExpressionWrapper, F, FloatField, Q, Sum
 
 from Polls.models.poll_models import Poll, PollChoices, PollVote
+from helpers.email_sender import send_email
 
 
 def retrieve_poll_with_choices(poll_id, type=None):
@@ -9,10 +12,10 @@ def retrieve_poll_with_choices(poll_id, type=None):
 
     # Calculate the total votes cast for the poll
     total_votes = (
-        PollChoices.objects.filter(poll=poll).aggregate(total_votes=Sum("votes"))[
-            "total_votes"
-        ]
-        or 0
+            PollChoices.objects.filter(poll=poll).aggregate(total_votes=Sum("votes"))[
+                "total_votes"
+            ]
+            or 0
     )
 
     if not total_votes:
@@ -103,3 +106,28 @@ def get_polls_by_logged_in_user(user):
             data.append(poll)
 
     return data
+
+
+def send_poll_declination_mail(poll, comments):
+    subject = "Poll Declined"
+    recipient_email = poll.author.email
+    # Convert the string to a datetime object
+    dt_object = datetime.datetime.fromisoformat(str(poll.created_on).replace("Z", "+00:00"))
+    # Convert the datetime object to the desired format
+    formatted_datetime = dt_object.strftime("%d-%b-%Y %H:%M:%S %Z")
+
+    new_line = "\n"
+    double_new_line = "\n\n"
+    message = (
+        f"Hi, {poll.author.first_name}.{new_line}"
+        f"Your poll with the question: {poll.question}, created on {formatted_datetime} "
+        f"has been declined.{new_line}"
+        f"After a careful review of the poll, we realized it was in breach of our policies.{new_line}"
+        f"Please find the reason for the declination below and act accordingly: {double_new_line}"
+        f"{comments}"
+        f"{double_new_line}"
+        f"Thank you.{new_line}"
+        f"The Sema Team"
+    )
+
+    send_email(recipient_email, subject, message)

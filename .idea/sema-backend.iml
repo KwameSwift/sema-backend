@@ -5,6 +5,7 @@
       <list>
         <option value="$MODULE_DIR$/Admin" />
         <option value="$MODULE_DIR$/Users" />
+        <option value="$MODULE_DIR$/Blog" />
       </list>
     </option>
   </component>

@@ -7,9 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Polls.models.poll_models import Poll
-from Polls.poll_helper import (retrieve_poll_with_choices)
-from Utilities.models.documents_model import UserDocuments
-from helpers.email_sender import send_email
+from Polls.poll_helper import (retrieve_poll_with_choices, send_poll_declination_mail)
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (action_authorization_exception,
                                   non_existing_data_exception)
@@ -74,28 +72,7 @@ class DeclinePoll(APIView):
             poll.declined_by = user
             poll.save()
 
-            subject = "Poll Declined"
-            recipient_email = poll.author.email
-            comments = data["comments"]
-            # Convert the string to a datetime object
-            dt_object = datetime.datetime.fromisoformat(poll.created_on.replace("Z", "+00:00"))
-            # Convert the datetime object to the desired format
-            formatted_datetime = dt_object.strftime("%d-%b-%Y %H:%M:%S %Z")
-
-            new_line = "\n"
-            double_new_line = "\n\n"
-            message = (
-                f"Hi, {poll.author.first_name}.{new_line}"
-                f"Your poll with the question: {poll.question}, created on {formatted_datetime} "
-                f"has been declined.{new_line}"
-                f"After a careful review of the poll, we realized it was in breach of our policies.{new_line}"
-                f"Please find the reason for the declination below and act accordingly: {double_new_line}"
-                f"{comments}"
-                f"{double_new_line}"
-                f"Thank you."
-                f"The Sema Team"
-            )
-            send_email(recipient_email, subject, message)
+            send_poll_declination_mail(poll, data["comments"])
 
             return JsonResponse(
                 {
@@ -165,7 +142,7 @@ class AdminGetAllPolls(APIView):
             "end_date",
             "is_approved",
             "is_declined",
-            "author__first_name",
+            "author_id",
             "author__last_name",
             "author__is_verified",
             "author__profile_image",
