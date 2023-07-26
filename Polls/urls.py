@@ -1,8 +1,8 @@
 from django.urls import path
 
 from .views.polls_view import (CreatePoll, DeletePoll, GetAllApprovedPolls,
-                              GetAllPollResults, SearchPolls, UpdatePoll,
-                              VoteOnAPoll)
+                               GetAllPollResults, SearchPolls, UpdatePoll,
+                               VoteOnAPoll, UpdateUserPollComment)
 
 urlpatterns = [
     path(
@@ -31,9 +31,9 @@ urlpatterns = [
         name="Update Poll",
     ),
     path(
-        "delete-poll/<int:poll_id>/",
-        DeletePoll.as_view(),
-        name="Delete Poll",
+        "update-poll-comment/<int:poll_id>/",
+        UpdateUserPollComment.as_view(),
+        name="Update Poll Comment",
     ),
     path(
         "search-polls/<int:page_number>/",

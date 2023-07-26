@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module version="4">
-  <component name="PyNamespacePackagesService">
-    <option name="namespacePackageFolders">
-      <list>
-        <option value="$MODULE_DIR$/Admin" />
-        <option value="$MODULE_DIR$/Users" />
-        <option value="$MODULE_DIR$/Blog" />
-        <option value="$MODULE_DIR$/Polls" />
-      </list>
-    </option>
+  <component name="NewModuleRootManager">
+    <orderEntry type="jdk" jdkName="Python 3.8 (sema-backend)" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

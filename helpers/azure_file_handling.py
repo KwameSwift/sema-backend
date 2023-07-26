@@ -226,6 +226,8 @@ def upload_poll_file_or_pdf_to_azure(file, user, poll):
             # Return blob url
             file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
+            poll.snapshot_location = shortened_url
+            poll.snapshot_key = blob_name
             poll.file_location = shortened_url
             poll.file_key = blob_name
             poll.save()

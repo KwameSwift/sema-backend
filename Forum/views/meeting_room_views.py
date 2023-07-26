@@ -1,10 +1,7 @@
-import json
 import os
-import shutil
-from os import path
 
-from django.db.models import Q
 from django.http import JsonResponse
+from google_auth_oauthlib.flow import Flow
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -13,6 +10,9 @@ from Forum.models import MeetingRoom
 from helpers.status_codes import action_authorization_exception, duplicate_data_exception, cannot_perform_action, \
     non_existing_data_exception
 from helpers.validations import check_permission, check_required_fields
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 
 
 class CreateMeetingRooms(APIView):
@@ -132,3 +132,88 @@ class UpdateMeetingRoom(APIView):
             )
         except MeetingRoom.DoesNotExist:
             raise non_existing_data_exception("Meeting Room")
+
+
+class GenerateGoogleMeet(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+
+
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+def create_google_meet(request):
+    data = request.data
+    
+    check_required_fields(data, ["event_summary", "start_date", "end_date"])
+
+    # Create the Flow instance
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id":  os.environ.get("GOOGLE_CLIENT_ID"),
+                "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+                "redirect_uris": [os.environ.get("GOOGLE_REDIRECT_URI")],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://accounts.google.com/o/oauth2/token"
+            }
+        },
+        scopes=SCOPES
+    )
+
+    # Check if the user has granted access to their Google Calendar
+    credentials = Credentials.from_authorized_user_info(
+        request.session.get('google_credentials', None),
+        scopes=SCOPES
+    )
+
+    if not credentials or not credentials.valid:
+        # If the token is not valid or not found, redirect the user to the authorization URL
+        auth_url, _ = flow.authorization_url()
+        return JsonResponse(
+                {"status": "success",
+                 "detail": "Meeting updated successfully",
+                 "authorization_url": auth_url
+                 },
+                safe=False,
+            )
+      
+
+    # If the user is authenticated, generate the Google Meet link
+    service = build('calendar', 'v3', credentials=credentials)
+
+    event = {
+        'summary': data["event_summary"],
+        'start': {
+            'dateTime': data["start_date"],
+            'timeZone': 'UTC',
+        },
+        'end': {
+            'dateTime': data["end_date"],
+            'timeZone': 'UTC',
+        },
+        'conferenceData': {
+            'createRequest': {
+                'conferenceSolutionKey': {
+                    'type': 'hangoutsMeet',
+                },
+                'requestId': 'random_string',  # Use a random string here
+            },
+        },
+    }
+
+    event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
+    meet_link = event['hangoutLink']
+
+    # Return event details along with the Meet link
+    return JsonResponse(
+        {"status": "success",
+            "detail": "Meeting updated successfully",
+            "data": meet_link
+            },
+        safe=False,
+    )
+
+    return JsonResponse(event_details, status=201)

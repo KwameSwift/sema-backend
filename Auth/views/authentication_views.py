@@ -332,3 +332,17 @@ class ChangePasswordView(APIView):
                 raise WrongPassword()
         except User.DoesNotExist:
             raise non_existing_data_exception("User")
+
+
+class CallBack(APIView):
+    def get(self, request, *args, **kwargs):
+        message = request.data
+        send_email('charlestontaylor09@gmail.com', "Redirect URL", message)
+        print(message)
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Password changed successfully",
+            },
+            safe=False,
+        )

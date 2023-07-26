@@ -1,5 +1,7 @@
 from django.urls import path
 
+from Auth.views.authentication_views import CallBack
+
 from .views.admin_blog_views import (ApproveAndPublishBlogs,
                                      GetAllBlogPostsAsAdmin, DeclineBlogs)
 from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
@@ -128,5 +130,10 @@ urlpatterns = [
         "get-all-polls/<int:data_type>/<int:page_number>/",
         AdminGetAllPolls.as_view(),
         name="Admin Get All Polls",
+    ),
+    path(
+        "callback/",
+        CallBack.as_view(),
+        name="Call Back",
     ),
 ]

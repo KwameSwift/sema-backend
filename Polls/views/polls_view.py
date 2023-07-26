@@ -355,6 +355,9 @@ class UpdatePoll(APIView):
 
             data["updated_on"] = aware_datetime(datetime.datetime.now())
             Poll.objects.filter(id=poll_id).update(**data)
+            poll.refresh_from_db()
+            poll.is_declined = False if poll.is_declined else False
+            poll.save()
             return JsonResponse(
                 {"status": "success", "detail": "Poll updated successfully"},
                 safe=False,
@@ -438,3 +441,30 @@ class SearchPolls(APIView):
             data,
             safe=False,
         )
+
+
+class UpdateUserPollComment(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        poll_id = self.kwargs["poll_id"]
+        data = request.data
+        check_required_fields(data, ["comments"])
+
+        try:
+            poll = Poll.objects.get(id=poll_id)
+            poll_vote = PollVote.objects.get(poll_id=poll.id, voter=user)
+            poll_vote.comments = data["comments"]
+            poll_vote.updated_on = aware_datetime(datetime.datetime.now())
+            poll_vote.save()
+            return JsonResponse(
+                {"status": "success", "detail": "Poll comment updated successfully"},
+                safe=False,
+            )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")
+        except PollVote.DoesNotExist:
+            raise non_existing_data_exception("Vote")
+
