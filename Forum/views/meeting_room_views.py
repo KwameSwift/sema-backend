@@ -140,80 +140,74 @@ class GenerateGoogleMeet(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
+        SCOPES = ['https://www.googleapis.com/auth/calendar']
+        
+        check_required_fields(data, ["event_summary", "start_date", "end_date"])
 
+        # Create the Flow instance
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id":  os.environ.get("GOOGLE_CLIENT_ID"),
+                    "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+                    "redirect_uris": [os.environ.get("GOOGLE_REDIRECT_URI")],
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://accounts.google.com/o/oauth2/token"
+                }
+            },
+            scopes=SCOPES
+        )
 
-SCOPES = ['https://www.googleapis.com/auth/calendar']
+        # Check if the user has granted access to their Google Calendar
+        credentials = Credentials.from_authorized_user_info(
+            request.session.get('google_credentials', None),
+            scopes=SCOPES
+        )
 
-def create_google_meet(request):
-    data = request.data
-    
-    check_required_fields(data, ["event_summary", "start_date", "end_date"])
+        if not credentials or not credentials.valid:
+            # If the token is not valid or not found, redirect the user to the authorization URL
+            auth_url, _ = flow.authorization_url()
+            return JsonResponse(
+                    {"status": "success",
+                    "detail": "Meeting updated successfully",
+                    "authorization_url": auth_url
+                    },
+                    safe=False,
+                )
+        
 
-    # Create the Flow instance
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id":  os.environ.get("GOOGLE_CLIENT_ID"),
-                "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
-                "redirect_uris": [os.environ.get("GOOGLE_REDIRECT_URI")],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://accounts.google.com/o/oauth2/token"
-            }
-        },
-        scopes=SCOPES
-    )
+        # If the user is authenticated, generate the Google Meet link
+        service = build('calendar', 'v3', credentials=credentials)
 
-    # Check if the user has granted access to their Google Calendar
-    credentials = Credentials.from_authorized_user_info(
-        request.session.get('google_credentials', None),
-        scopes=SCOPES
-    )
-
-    if not credentials or not credentials.valid:
-        # If the token is not valid or not found, redirect the user to the authorization URL
-        auth_url, _ = flow.authorization_url()
-        return JsonResponse(
-                {"status": "success",
-                 "detail": "Meeting updated successfully",
-                 "authorization_url": auth_url
-                 },
-                safe=False,
-            )
-      
-
-    # If the user is authenticated, generate the Google Meet link
-    service = build('calendar', 'v3', credentials=credentials)
-
-    event = {
-        'summary': data["event_summary"],
-        'start': {
-            'dateTime': data["start_date"],
-            'timeZone': 'UTC',
-        },
-        'end': {
-            'dateTime': data["end_date"],
-            'timeZone': 'UTC',
-        },
-        'conferenceData': {
-            'createRequest': {
-                'conferenceSolutionKey': {
-                    'type': 'hangoutsMeet',
+        event = {
+            'summary': data["event_summary"],
+            'start': {
+                'dateTime': data["start_date"],
+                'timeZone': 'UTC',
+            },
+            'end': {
+                'dateTime': data["end_date"],
+                'timeZone': 'UTC',
+            },
+            'conferenceData': {
+                'createRequest': {
+                    'conferenceSolutionKey': {
+                        'type': 'hangoutsMeet',
+                    },
+                    'requestId': 'random_string',  # Use a random string here
                 },
-                'requestId': 'random_string',  # Use a random string here
             },
-        },
-    }
+        }
 
-    event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
-    meet_link = event['hangoutLink']
+        event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
+        meet_link = event['hangoutLink']
 
-    # Return event details along with the Meet link
-    return JsonResponse(
-        {"status": "success",
-            "detail": "Meeting updated successfully",
-            "data": meet_link
-            },
-        safe=False,
-    )
+        # Return event details along with the Meet link
+        return JsonResponse(
+            {"status": "success",
+                "detail": "Meeting updated successfully",
+                "data": meet_link
+                },
+            safe=False,
+        )
 
-    return JsonResponse(event_details, status=201)

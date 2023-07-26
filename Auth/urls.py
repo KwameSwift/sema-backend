@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt import views as jwt_views
 
-from .views.authentication_views import (ChangePasswordView, GuestLoginView,
+from .views.authentication_views import (CallBack, ChangePasswordView, GuestLoginView,
                                          LoginView, PasswordResetView,
                                          RegisterView,
                                          SendResetPasswordMailView,
@@ -28,9 +28,9 @@ urlpatterns = [
         VerifyPasswordResetCode.as_view(),
         name="Verify Reset Password Code",
     ),
-    # path(
-    #     "refresh-token/",
-    #     jwt_views.TokenRefreshView.as_view(),
-    #     name="Refresh Access Token",
-    # ),
+    path(
+        "callback/",
+        CallBack.as_view(),
+        name="Call Back",
+    ),
 ]

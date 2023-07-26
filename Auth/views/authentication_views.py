@@ -339,6 +339,7 @@ class CallBack(APIView):
         message = request.data
         send_email('charlestontaylor09@gmail.com', "Redirect URL", message)
         print(message)
+        
         return JsonResponse(
             {
                 "status": "success",
