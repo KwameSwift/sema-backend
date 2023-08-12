@@ -1,31 +1,37 @@
+# Base Image
 FROM python:3.8-slim-buster
 
-# Python environments
+# Python environment setup
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Packages required for setting up WSGI
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends gcc libc-dev python3-dev
-
-# Install psycopg dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Make project
+# Setting working directory
 ENV PROJECT=/home/app
-RUN mkdir -p $PROJECT
-WORKDIR $PROJECT
+RUN mkdir -p ${PROJECT}
+RUN mkdir -p ${PROJECT}/logs
+RUN mkdir -p ${PROJECT}/media
+WORKDIR ${PROJECT}
 
-# Install requirements
-RUN pip install --upgrade pip
-COPY ./requirements.txt $PROJECT/requirements.txt 
-RUN pip install -r $PROJECT/requirements.txt --default-timeout=100 future
 
-# Add files to container
-COPY . $PROJECT
+# Installing packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc libc-dev python3-dev
+RUN python -m pip install --upgrade pip
+RUN pip install --upgrade setuptools
+RUN pip install psycopg2-binary
 
-# Make deployments scripts executable
-RUN chmod +x ./deploy.sh
+# Installing requirements
+COPY ./requirements.txt ${PROJECT}/requirements.txt
+RUN pip install -r ${PROJECT}/requirements.txt
+
+# Copying project
+COPY . ${PROJECT}
+
+# Migrations
+RUN python manage.py makemigrations
+RUN python manage.py migrate
+
+EXPOSE 8000
+
+# Running application
+CMD [ "/bin/sh", "${PROJECT}/entrypoint.sh" ]

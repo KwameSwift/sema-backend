@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="Black">
+    <option name="enabledOnReformat" value="true" />
+    <option name="enabledOnSave" value="true" />
+    <option name="sdkUUID" value="758e452c-fe5a-4c5e-8394-19d8429376b0" />
+  </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (sema-backend)" project-jdk-type="Python SDK" />
 </project>

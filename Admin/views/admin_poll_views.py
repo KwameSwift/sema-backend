@@ -7,11 +7,17 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Polls.models.poll_models import Poll
-from Polls.poll_helper import (retrieve_poll_with_choices, send_poll_declination_mail)
+from Polls.poll_helper import retrieve_poll_with_choices, send_poll_declination_mail
 from helpers.functions import aware_datetime, paginate_data
-from helpers.status_codes import (action_authorization_exception,
-                                  non_existing_data_exception)
-from helpers.validations import (check_permission, check_super_admin, check_required_fields)
+from helpers.status_codes import (
+    action_authorization_exception,
+    non_existing_data_exception,
+)
+from helpers.validations import (
+    check_permission,
+    check_super_admin,
+    check_required_fields,
+)
 
 
 class ApprovePoll(APIView):
@@ -30,7 +36,9 @@ class ApprovePoll(APIView):
             poll.is_approved = False if poll.is_approved else True
             poll.save()
             poll.refresh_from_db()
-            poll.approved_on = aware_datetime(datetime.datetime.now()) if poll.is_approved else None
+            poll.approved_on = (
+                aware_datetime(datetime.datetime.now()) if poll.is_approved else None
+            )
             poll.updated_on = aware_datetime(datetime.datetime.now())
             poll.approved_by = user if poll.is_approved else None
             poll.save()
@@ -138,6 +146,7 @@ class AdminGetAllPolls(APIView):
             "id",
             "question",
             "snapshot_location",
+            "file_location",
             "start_date",
             "end_date",
             "is_approved",

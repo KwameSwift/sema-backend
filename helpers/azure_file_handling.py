@@ -10,6 +10,7 @@ from azure.storage.blob import BlobServiceClient, ContentSettings
 from django.core.files.storage import FileSystemStorage
 from pdf2image import convert_from_path
 
+from Forum.models import SharedFile, ForumFile
 from helpers.status_codes import cannot_perform_action
 from Utilities.models.documents_model import BlogDocuments, UserDocuments
 
@@ -177,10 +178,7 @@ def upload_poll_document(file, user, poll_question):
 
     # Upload a file to the container
     with open(file_path, "rb") as data:
-        container_client.upload_blob(
-            name=blob_name,
-            data=data
-        )
+        container_client.upload_blob(name=blob_name, data=data)
 
     file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
 
@@ -281,7 +279,7 @@ def upload_cover_image(request, res_data, blog=None, poll=None):
     data = {
         "file_path": res_data[0],
         "blob_name": res_data[1],
-        "container_name": res_data[2]
+        "container_name": res_data[2],
     }
 
     # Set the headers
@@ -401,3 +399,103 @@ def upload_profile_image(file, user):
         shutil.rmtree(f"media/{user_name}")
 
     return shortened_url, blob_name
+
+
+def create_chat_shared_file(files, chat_room, user, description):
+    try:
+        urls = []
+        for img in files:
+            file_name = str(img.name).lower()
+            new_filename = file_name.replace(" ", "_")
+            chat = str(chat_room.room_name).replace(" ", "_")
+            user_name = f"{user.first_name}-{user.last_name}".lower()
+            base_directory = f"{LOCAL_FILE_PATH}{user_name}"
+            full_directory = f"{base_directory}/Chat_Shared_Files/{chat}"
+
+            container_client = blob_service_client.get_container_client(user_name)
+            if not container_client.exists():
+                container_client.create_container(public_access="blob")
+
+            fs = FileSystemStorage(location=full_directory)
+            fs.save(new_filename, img)
+            file_path = f"{full_directory}/{new_filename}"
+            blob_name = f"Chat_Shared_Files/{chat}/{new_filename}"
+
+            # Upload a file to the container
+            with open(file_path, "rb") as data:
+                container_client.upload_blob(name=blob_name, data=data)
+
+            # Return blob url
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
+            urls.append(shortened_url)
+            shared_file = {
+                "file_name": new_filename,
+                "description": description if description else "",
+                "file_type": os.path.splitext(file_name)[1],
+                "file_url": shortened_url,
+                "file_key": blob_name,
+                "uploader_id": user.user_key,
+                "chat_room_id": chat_room.id,
+            }
+
+            SharedFile.objects.create(**shared_file)
+
+            if path.exists(f"media/{user_name}"):
+                shutil.rmtree(f"media/{user_name}")
+        return urls
+    except ResourceExistsError:
+        print("File already exists")
+        if path.exists(f"media/{user_name}"):
+            shutil.rmtree(f"media/{user_name}")
+        pass
+
+
+def create_forum_documents(files, forum, user, description):
+    try:
+        urls = []
+        for img in files:
+            file_name = str(img.name).lower()
+            new_filename = file_name.replace(" ", "_")
+            topic = str(forum.topic).replace(" ", "_")
+            user_name = f"{user.first_name}-{user.last_name}".lower()
+            base_directory = f"{LOCAL_FILE_PATH}{user_name}"
+            full_directory = f"{base_directory}/Forum_Files/{topic}"
+
+            container_client = blob_service_client.get_container_client(user_name)
+            if not container_client.exists():
+                container_client.create_container(public_access="blob")
+
+            fs = FileSystemStorage(location=full_directory)
+            fs.save(new_filename, img)
+            file_path = f"{full_directory}/{new_filename}"
+            blob_name = f"Forum_Files/{topic}/{new_filename}"
+
+            # Upload a file to the container
+            with open(file_path, "rb") as data:
+                container_client.upload_blob(name=blob_name, data=data)
+
+            # Return blob url
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
+            urls.append(shortened_url)
+            forum_file = {
+                "file_name": new_filename,
+                "description": description,
+                "file_type": os.path.splitext(file_name)[1],
+                "file_url": shortened_url,
+                "file_key": blob_name,
+                "uploader_id": user.user_key,
+                "forum_id": forum.id,
+            }
+
+            ForumFile.objects.create(**forum_file)
+
+            if path.exists(f"media/{user_name}"):
+                shutil.rmtree(f"media/{user_name}")
+        return urls
+    except ResourceExistsError:
+        print("File already exists")
+        if path.exists(f"media/{user_name}"):
+            shutil.rmtree(f"media/{user_name}")
+        pass

@@ -11,19 +11,30 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Blog.models.blog_model import BlogComment, BlogPost
 from Utilities.models.documents_model import BlogDocuments
-from helpers.azure_file_handling import (create_other_blog_documents,
-                                         delete_blob, upload_cover_image,
-                                         upload_image_cover_or_pdf_to_azure,
-                                         upload_thumbnail)
-from helpers.functions import (check_abusive_words,
-                               convert_quill_text_to_normal_text,
-                               local_file_upload,
-                               paginate_data, truncate_text)
-from helpers.status_codes import (action_authorization_exception,
-                                  duplicate_data_exception,
-                                  non_existing_data_exception)
-from helpers.validations import (check_permission, check_required_fields,
-                                 check_super_admin)
+from helpers.azure_file_handling import (
+    create_other_blog_documents,
+    delete_blob,
+    upload_cover_image,
+    upload_image_cover_or_pdf_to_azure,
+    upload_thumbnail,
+)
+from helpers.functions import (
+    check_abusive_words,
+    convert_quill_text_to_normal_text,
+    local_file_upload,
+    paginate_data,
+    truncate_text,
+)
+from helpers.status_codes import (
+    action_authorization_exception,
+    duplicate_data_exception,
+    non_existing_data_exception,
+)
+from helpers.validations import (
+    check_permission,
+    check_required_fields,
+    check_super_admin,
+)
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -476,9 +487,7 @@ class DeleteBlogPost(APIView):
         try:
             blog = BlogPost.objects.get(id=blog_post_id)
 
-            docs = BlogDocuments.objects.filter(blog_id=blog.id).values(
-                "document_location"
-            )
+            docs = BlogDocuments.objects.filter(blog_id=blog.id).values("document_key")
             container = f"{blog.author.first_name}-{blog.author.last_name}"
             for doc in docs:
                 delete_blob(container, doc["document_key"])

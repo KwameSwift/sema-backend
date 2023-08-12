@@ -1,11 +1,19 @@
 from django.urls import path
 
-from .views.blog_view import (CommentOnBlogPost, CreateBlogPost,
-                              DeleteBlogDocuments, DeleteBlogPost,
-                              GetAllPublishedBlogPost, GetSingleBlogPost,
-                              LikeABlogPost, SearchBlogPosts, ShareABlogPost,
-                              UpdateBlogPost, UploadBlogDocument,
-                              UploadThumbnailsToAzure)
+from .views.blog_view import (
+    CommentOnBlogPost,
+    CreateBlogPost,
+    DeleteBlogDocuments,
+    DeleteBlogPost,
+    GetAllPublishedBlogPost,
+    GetSingleBlogPost,
+    LikeABlogPost,
+    SearchBlogPosts,
+    ShareABlogPost,
+    UpdateBlogPost,
+    UploadBlogDocument,
+    UploadThumbnailsToAzure,
+)
 
 urlpatterns = [
     path(

@@ -90,8 +90,20 @@ INSTALLED_APPS = [
     "Admin",
     "Events",
     "Polls",
-    "Forum"
+    "Forum",
+    "channels",
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv("REDIS_IP"), int(os.getenv("REDIS_PORT")))],
+        },
+    },
+}
+
+ASGI_APPLICATION = "chat_channels.routing.application"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
