@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Polls.models.poll_models import Poll
+from Polls.models.poll_models import Poll, PollVote
 from Polls.poll_helper import retrieve_poll_with_choices, send_poll_declination_mail
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (
@@ -107,6 +107,18 @@ class AdminViewSinglePoll(APIView):
         try:
             poll = Poll.objects.get(id=poll_id)
             poll_data = retrieve_poll_with_choices(poll.id)
+            poll_data["poll_votes"] = list(
+                (
+                    PollVote.objects.filter(poll_id=poll.id).values(
+                        "id",
+                        "voter__first_name",
+                        "voter__last_name",
+                        "poll_choice__choice",
+                        "poll_choice_id",
+                        "comments",
+                    )
+                )
+            )
 
             return JsonResponse(
                 {
@@ -149,6 +161,7 @@ class AdminGetAllPolls(APIView):
             "file_location",
             "start_date",
             "end_date",
+            "is_ended",
             "is_approved",
             "is_declined",
             "author_id",

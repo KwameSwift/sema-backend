@@ -6,16 +6,16 @@ from Polls.models.poll_models import Poll, PollChoices, PollVote
 from helpers.email_sender import send_email
 
 
-def retrieve_poll_with_choices(poll_id, type=None):
+def retrieve_poll_with_choices(poll_id, poll_type=None):
     # Retrieve the poll
     poll = Poll.objects.get(id=poll_id)
 
     # Calculate the total votes cast for the poll
     total_votes = (
-            PollChoices.objects.filter(poll=poll).aggregate(total_votes=Sum("votes"))[
-                "total_votes"
-            ]
-            or 0
+        PollChoices.objects.filter(poll=poll).aggregate(total_votes=Sum("votes"))[
+            "total_votes"
+        ]
+        or 0
     )
 
     if not total_votes:
@@ -36,7 +36,7 @@ def retrieve_poll_with_choices(poll_id, type=None):
 
     # Create a dictionary representation of the poll
     # with choices and their votes/percentages
-    if type:
+    if poll_type:
         poll_data = {
             "choices": [
                 {
@@ -112,7 +112,9 @@ def send_poll_declination_mail(poll, comments):
     subject = "Poll Declined"
     recipient_email = poll.author.email
     # Convert the string to a datetime object
-    dt_object = datetime.datetime.fromisoformat(str(poll.created_on).replace("Z", "+00:00"))
+    dt_object = datetime.datetime.fromisoformat(
+        str(poll.created_on).replace("Z", "+00:00")
+    )
     # Convert the datetime object to the desired format
     formatted_datetime = dt_object.strftime("%d-%b-%Y %H:%M:%S %Z")
 
