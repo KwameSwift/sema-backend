@@ -153,6 +153,8 @@ class AdminGetAllPolls(APIView):
             query &= Q(is_approved=True)
         elif data_type == 2:
             query &= Q(is_approved=False)
+        elif data_type == 3:
+            query &= Q(is_declined=True)
 
         polls = Poll.objects.filter(query).values(
             "id",
