@@ -297,8 +297,10 @@ class GetMyPolls(APIView):
             "created_on",
         )
 
-        # for poll in polls:
-        #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+        for poll in polls:
+            poll["choices"] = list(
+                PollChoices.objects.filter(poll_id=poll["id"]).values("id", "choice")
+            )
         data = paginate_data(polls, page_number, 10)
         return JsonResponse(data, safe=False)
 

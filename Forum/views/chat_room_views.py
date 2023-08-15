@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Forum.models import ChatRoom, UserChatRoom
+from Forum.models import ChatRoom, UserChatRoom, Forum
 from chat_channels.sender_functions import send_group_message
 from helpers.azure_file_handling import create_chat_shared_file
 from helpers.status_codes import (
@@ -25,6 +25,7 @@ class CreateChatRooms(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
+        forum_id = self.kwargs.get("forum_id")
 
         if not check_permission(user, "Forums", [2]):
             raise action_authorization_exception("Unauthorized to create chat room")
@@ -35,31 +36,37 @@ class CreateChatRooms(APIView):
             ChatRoom.objects.get(room_name=data["room_name"], creator=user)
             raise duplicate_data_exception("Meeting Room")
         except ChatRoom.DoesNotExist:
-            meeting_room = ChatRoom.objects.create(
-                room_name=data["room_name"],
-                description=data["description"],
-                creator=user,
-                total_members=1,
-            )
+            try:
+                forum = Forum.objects.get(id=forum_id)
+                chat_room = ChatRoom.objects.create(
+                    forum=forum,
+                    room_name=data["room_name"],
+                    description=data["description"],
+                    creator=user,
+                    total_members=1,
+                )
 
-            UserChatRoom.objects.create(
-                meeting_room_id=meeting_room.id, member=user, membership_type="Owner"
-            )
+                UserChatRoom.objects.create(
+                    chat_room_id=chat_room.id,
+                    member=user,
+                    membership_type="Owner",
+                )
+                data = {
+                    "id": chat_room.id,
+                    "room_name": chat_room.room_name,
+                    "description": chat_room.description,
+                }
 
-            data = {
-                "id": meeting_room.id,
-                "room_name": meeting_room.room_name,
-                "description": meeting_room.description,
-            }
-
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "detail": "Meeting Room created successfully",
-                    "data": data,
-                },
-                safe=False,
-            )
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Meeting Room created successfully",
+                        "data": data,
+                    },
+                    safe=False,
+                )
+            except Forum.DoesNotExist:
+                raise non_existing_data_exception("Forum")
 
 
 class DeleteChatRoom(APIView):
@@ -223,7 +230,7 @@ class SendMessageToChatRoom(APIView):
         try:
             chat_room = ChatRoom.objects.get(id=room_id)
             try:
-                UserChatRoom.objects.get(meeting_room_id=room_id, member=user)
+                UserChatRoom.objects.get(chat_room_id=room_id, member=user)
                 data = {
                     "chat_room_id": chat_room.id,
                     "sender": f"{user.first_name} {user.last_name}",
@@ -238,9 +245,10 @@ class SendMessageToChatRoom(APIView):
                     data["files"] = urls
                 else:
                     data["message"] = message
-                send_group_message(room_id, data)
+                room_name = str(chat_room.room_name).lower().replace(" ", "_")
+                send_group_message(room_name, data)
                 return JsonResponse(
-                    {"status": "success", "detail": "Message sent"},
+                    {"status": "success", "detail": "Message sent", "data": data},
                     safe=False,
                 )
             except UserChatRoom.DoesNotExist:

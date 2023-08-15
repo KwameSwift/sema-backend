@@ -1,11 +1,16 @@
 from django.urls import path
 from rest_framework_simplejwt import views as jwt_views
 
-from .views.authentication_views import (CallBack, ChangePasswordView, GuestLoginView,
-                                         LoginView, PasswordResetView,
-                                         RegisterView,
-                                         SendResetPasswordMailView,
-                                         VerifyPasswordResetCode)
+from .views.authentication_views import (
+    CallBack,
+    ChangePasswordView,
+    GuestLoginView,
+    LoginView,
+    PasswordResetView,
+    RegisterView,
+    SendResetPasswordMailView,
+    VerifyPasswordResetCode,
+)
 
 urlpatterns = [
     # User authentication
@@ -13,6 +18,7 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="Login User"),
     path("guest-login/", GuestLoginView.as_view(), name="Guest Login"),
     path("change-password/", ChangePasswordView.as_view(), name="Change Password"),
+    path("refresh-token/", jwt_views.TokenRefreshView.as_view(), name="Refresh Token"),
     path(
         "send-reset-password-mail/",
         SendResetPasswordMailView.as_view(),

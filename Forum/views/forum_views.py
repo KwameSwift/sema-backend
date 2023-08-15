@@ -35,10 +35,10 @@ class CreateForum(APIView):
             files = data.pop("files[]", None)
             check_required_fields(data, ["file_description"])
 
-        file_description = data.pop("file_description", None)
-
         data = json.dumps(data)
         data = json.loads(data)
+
+        file_description = data.pop("file_description", None)
 
         check_required_fields(data, ["topic", "description", "tags"])
         data["tags"] = eval(data["tags"])

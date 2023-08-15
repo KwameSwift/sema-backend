@@ -20,7 +20,7 @@ from .views.forum_views import (
 
 urlpatterns = [
     path(
-        "create-chat-room/",
+        "create-chat-room/<int:forum_id>/",
         CreateChatRooms.as_view(),
         name="Create A Chat Room",
     ),
