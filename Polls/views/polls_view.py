@@ -9,16 +9,21 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Polls.models.poll_models import Poll, PollChoices, PollVote
-from Polls.poll_helper import (get_polls_by_logged_in_user,
-                               retrieve_poll_with_choices)
+from Polls.poll_helper import get_polls_by_logged_in_user, retrieve_poll_with_choices
 from Utilities.models.documents_model import UserDocuments
-from helpers.azure_file_handling import delete_blob, upload_poll_file_or_pdf_to_azure, upload_cover_image
+from helpers.azure_file_handling import (
+    delete_blob,
+    upload_poll_file_or_pdf_to_azure,
+    upload_cover_image,
+)
 from helpers.functions import aware_datetime, paginate_data
-from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  duplicate_data_exception,
-                                  non_existing_data_exception)
-from helpers.validations import (check_permission, check_required_fields)
+from helpers.status_codes import (
+    action_authorization_exception,
+    cannot_perform_action,
+    duplicate_data_exception,
+    non_existing_data_exception,
+)
+from helpers.validations import check_permission, check_required_fields
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -48,8 +53,12 @@ class CreatePoll(APIView):
             Poll.objects.get(question=data["question"])
             raise duplicate_data_exception("Poll")
         except Poll.DoesNotExist:
-            data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
-            data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            data["start_date"] = datetime.datetime.strptime(
+                data["start_date"], "%Y-%m-%d"
+            ).date()
+            data["end_date"] = datetime.datetime.strptime(
+                data["end_date"], "%Y-%m-%d"
+            ).date()
             data["author_id"] = user.user_key
             choices = data.pop("choices", None)
             poll = Poll.objects.create(**data)
@@ -121,7 +130,10 @@ class VoteOnAPoll(APIView):
                     poll_choice.save()
 
                     PollVote.objects.create(
-                        poll=poll, voter=user, poll_choice=poll_choice, comments=data["comments"]
+                        poll=poll,
+                        voter=user,
+                        poll_choice=poll_choice,
+                        comments=data["comments"],
                     )
                 except PollChoices.DoesNotExist:
                     raise non_existing_data_exception("Poll Choice")
@@ -184,12 +196,13 @@ class GetAllApprovedPollsByUser(APIView):
         poll_data = get_polls_by_logged_in_user(user)
         for item in poll_data:
             if (
-                    item["is_ended"]
-                    and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
+                item["is_ended"]
+                and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
             ):
                 item = retrieve_poll_with_choices(item["id"])
-            item["total_votes"] = PollChoices.objects.filter(poll_id=item["id"]).aggregate(total_votes=Sum('votes'))[
-                'total_votes']
+            item["total_votes"] = PollChoices.objects.filter(
+                poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
             data.append(item)
 
         return JsonResponse(
@@ -205,7 +218,7 @@ class GetAllApprovedPollsByUser(APIView):
 # Get All Polls and their results
 class GetAllApprovedPolls(APIView):
     def get(self, request, *args, **kwargs):
-        page_number = self.kwargs.get('page_number')
+        page_number = self.kwargs.get("page_number")
         Poll.objects.filter(
             end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
         ).update(is_ended=True)
@@ -229,8 +242,9 @@ class GetAllApprovedPolls(APIView):
         )
 
         for poll in polls:
-            poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))[
-                'total_votes']
+            poll["total_votes"] = PollChoices.objects.filter(
+                poll_id=poll["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
             if poll["is_ended"]:
                 poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
 
@@ -286,10 +300,7 @@ class GetMyPolls(APIView):
         # for poll in polls:
         #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
         data = paginate_data(polls, page_number, 10)
-        return JsonResponse(
-            data,
-            safe=False
-        )
+        return JsonResponse(data, safe=False)
 
 
 class UpdatePoll(APIView):
@@ -347,9 +358,13 @@ class UpdatePoll(APIView):
                 data.pop("is_document_deleted", None)
 
             if "start_date" in data:
-                data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+                data["start_date"] = datetime.datetime.strptime(
+                    data["start_date"], "%Y-%m-%d"
+                ).date()
             if "end_date" in data:
-                data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+                data["end_date"] = datetime.datetime.strptime(
+                    data["end_date"], "%Y-%m-%d"
+                ).date()
                 if data["end_date"] >= datetime.datetime.now().date():
                     data["is_ended"] = False
 
@@ -419,7 +434,6 @@ class SearchPolls(APIView):
 
         polls = polls.values(
             "id",
-            "description",
             "file_location",
             "snapshot_location",
             "end_date",
@@ -467,4 +481,3 @@ class UpdateUserPollComment(APIView):
             raise non_existing_data_exception("Poll")
         except PollVote.DoesNotExist:
             raise non_existing_data_exception("Vote")
-
