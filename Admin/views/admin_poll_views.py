@@ -165,6 +165,7 @@ class AdminGetAllPolls(APIView):
             "is_approved",
             "is_declined",
             "author_id",
+            "author__first_name",
             "author__last_name",
             "author__is_verified",
             "author__profile_image",
