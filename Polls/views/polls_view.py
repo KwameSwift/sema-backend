@@ -246,7 +246,7 @@ class GetAllApprovedPolls(APIView):
                 poll_id=poll["id"]
             ).aggregate(total_votes=Sum("votes"))["total_votes"]
             if poll["is_ended"]:
-                poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+                poll["stats"] = retrieve_poll_with_choices(poll["id"], poll_type="All")
 
             else:
                 poll["choices"] = list(

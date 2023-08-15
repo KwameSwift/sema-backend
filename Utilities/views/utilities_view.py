@@ -3,7 +3,7 @@ from itertools import chain
 import os
 
 import requests
-from django.db.models import Sum
+from django.db.models import Sum, Exists, Q
 from django.http import JsonResponse
 from rest_framework.views import APIView
 
@@ -11,9 +11,14 @@ from Auth.models.permissions_model import Module
 from Auth.models.user_model import Country, UserRole
 from Blog.models.blog_model import BlogComment, BlogPost
 from Polls.models.poll_models import Poll, PollChoices
-from Polls.poll_helper import retrieve_poll_with_choices
+from Polls.poll_helper import retrieve_poll_with_choices, get_polls_by_logged_in_user
 from Utilities.models.documents_model import BlogDocuments, UserDocuments
-from helpers.functions import aware_datetime, convert_quill_text_to_normal_text, paginate_data, truncate_text
+from helpers.functions import (
+    aware_datetime,
+    convert_quill_text_to_normal_text,
+    paginate_data,
+    truncate_text,
+)
 from helpers.status_codes import cannot_perform_action
 
 
@@ -73,7 +78,7 @@ class DropDowns(APIView):
 class GetFeed(APIView):
     def get(self, request, *args, **kwargs):
         page_number = self.kwargs.get("page_number")
-
+        user = self.request.user
         blog_posts = (
             BlogPost.objects.filter(is_approved=True, is_published=True)
             .values(
@@ -125,49 +130,67 @@ class GetFeed(APIView):
                 .values()
                 .order_by("-created_on")
             )
-            
-        Poll.objects.filter(
-            end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
-        ).update(is_ended=True)
-
-        polls = Poll.objects.filter(is_approved=True).values(
-            "id",
-            "title",
-            "file_location",
-            "question",
-            "start_date",
-            "end_date",
-            "is_approved",
-            "is_ended",
-            "author_id",
-            "author__first_name",
-            "author__last_name",
-            "author__profile_image",
-            "author__is_verified",
-            "created_on",
-        ).order_by("-created_on")
-
-        modified_polls = []
-        for poll in polls:
-            if poll["is_ended"]:
-                modified_poll = retrieve_poll_with_choices(poll["id"])
-                modified_poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
-                modified_polls.append(modified_poll)
-                # poll["stats"] = retrieve_poll_with_choices(poll["id"])
-
-            else:
-                poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))['total_votes']
-                poll["choices"] = list(
-                    PollChoices.objects.filter(poll_id=poll["id"]).values(
-                        "id", "choice"
-                    )
+        if user.is_authenticated:
+            for blog_post in blog_posts:
+                exists = BlogPost.likers.through.objects.filter(
+                    Q(blogpost_id=blog_post["id"]) & Q(user_id=user.user_key)
                 )
-                modified_polls.append(poll)
-        combined_results = sorted(chain(blog_posts, modified_polls), key=lambda x: x["created_on"], reverse=True)
+                blog_post["has_liked"] = True if exists else False
 
+            Poll.objects.filter(
+                end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
+            ).update(is_ended=True)
+            modified_polls = get_polls_by_logged_in_user(user)
+        else:
+            polls = (
+                Poll.objects.filter(is_approved=True)
+                .values(
+                    "id",
+                    "file_location",
+                    "question",
+                    "start_date",
+                    "end_date",
+                    "is_approved",
+                    "is_ended",
+                    "author_id",
+                    "author__first_name",
+                    "author__last_name",
+                    "author__profile_image",
+                    "author__is_verified",
+                    "created_on",
+                )
+                .order_by("-created_on")
+            )
+
+            modified_polls = []
+            for poll in polls:
+                if poll["is_ended"]:
+                    modified_poll = retrieve_poll_with_choices(poll["id"])
+                    modified_poll["total_votes"] = PollChoices.objects.filter(
+                        poll_id=poll["id"]
+                    ).aggregate(total_votes=Sum("votes"))["total_votes"]
+                    modified_polls.append(modified_poll)
+                    # poll["stats"] = retrieve_poll_with_choices(poll["id"])
+
+                else:
+                    poll["total_votes"] = PollChoices.objects.filter(
+                        poll_id=poll["id"]
+                    ).aggregate(total_votes=Sum("votes"))["total_votes"]
+                    poll["choices"] = list(
+                        PollChoices.objects.filter(poll_id=poll["id"]).values(
+                            "id", "choice"
+                        )
+                    )
+                    modified_polls.append(poll)
+
+        combined_results = sorted(
+            chain(blog_posts, modified_polls),
+            key=lambda x: x["created_on"],
+            reverse=True,
+        )
         data = paginate_data(combined_results, page_number, 10)
         return JsonResponse(
+            # {"success": "Success"},
             data,
             safe=False,
         )
-        
