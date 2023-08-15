@@ -434,6 +434,7 @@ class SearchPolls(APIView):
 
         polls = polls.values(
             "id",
+            "question",
             "file_location",
             "snapshot_location",
             "end_date",

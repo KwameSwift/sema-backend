@@ -1,12 +1,12 @@
 import datetime
 
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Polls.models.poll_models import Poll, PollVote
+from Polls.models.poll_models import Poll, PollVote, PollChoices
 from Polls.poll_helper import retrieve_poll_with_choices, send_poll_declination_mail
 from helpers.functions import aware_datetime, paginate_data
 from helpers.status_codes import (
@@ -178,6 +178,12 @@ class AdminGetAllPolls(APIView):
         )
 
         for poll in polls:
+            poll["choices"] = list(
+                PollChoices.objects.filter(poll_id=poll["id"]).values("id", "choice")
+            )
+            poll["total_votes"] = PollChoices.objects.filter(
+                poll_id=poll["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
             poll["is_owner"] = True if poll["author_id"] == user.user_key else False
 
         data = paginate_data(polls, page_number, 10)
