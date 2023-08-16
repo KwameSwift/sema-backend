@@ -234,7 +234,7 @@ class SendMessageToChatRoom(APIView):
                 data = {
                     "chat_room_id": chat_room.id,
                     "sender": f"{user.first_name} {user.last_name}",
-                    "timestamp": datetime.now(),
+                    "timestamp": datetime.now().isoformat(),
                 }
                 if files:
                     check_required_fields(data, ["description"])
