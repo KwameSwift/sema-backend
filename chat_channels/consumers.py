@@ -33,7 +33,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             json.dumps(
                 {
                     "data": event["data"],
-                    "timestamp": datetime.now(),
+                    "timestamp": datetime.now().isoformat(),
                 }
             )
         )
