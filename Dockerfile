@@ -34,4 +34,4 @@ RUN python manage.py migrate
 EXPOSE 8000
 
 # Running application
-CMD [ "/bin/sh", "${PROJECT}/entrypoint.sh" ]
+# CMD [ "/bin/sh", "${PROJECT}/entrypoint.sh" ]
