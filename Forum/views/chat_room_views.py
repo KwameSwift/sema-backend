@@ -106,13 +106,15 @@ class GetChatRoom(APIView):
         room_id = self.kwargs["room_id"]
 
         try:
-            meeting_room = ChatRoom.objects.filter(id=room_id).values(
+            chat_room = ChatRoom.objects.filter(id=room_id).values(
                 "id",
                 "room_name",
                 "description",
                 "creator_id",
                 "creator__first_name",
                 "creator__last_name",
+                "total_members",
+                "total_messages",
                 "creator__is_verified",
                 "creator__profile_image",
                 "created_on",
@@ -122,12 +124,12 @@ class GetChatRoom(APIView):
                 {
                     "status": "success",
                     "detail": "Meeting Room retrieved successfully",
-                    "data": meeting_room[0],
+                    "data": chat_room[0],
                 },
                 safe=False,
             )
         except IndexError:
-            raise non_existing_data_exception("Meeting Room")
+            raise non_existing_data_exception("Chat Room")
 
 
 class UpdateChatRoom(APIView):

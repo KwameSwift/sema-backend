@@ -29,14 +29,7 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             raise non_existing_data_exception("Chat Room")
 
     async def send_group_messages(self, event):
-        await self.send(
-            json.dumps(
-                {
-                    "data": event["data"],
-                    "timestamp": datetime.now().isoformat(),
-                }
-            )
-        )
+        await self.send(json.dumps({"data": event["data"]}))
 
     @database_sync_to_async
     def get_chat_room(self, chat_room_id):

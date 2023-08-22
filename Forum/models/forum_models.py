@@ -1,5 +1,11 @@
 from django.db import models
+from django.db.models import Q, Func, Value
 from Auth.models import User
+
+
+class LowerJSONKey(Func):
+    function = "LOWER"
+    template = "(%(function)s(%(expressions)s->>%(_key)s))"
 
 
 class Forum(models.Model):
@@ -17,11 +23,24 @@ class Forum(models.Model):
         User,
         related_name="forum_likers",
     )
-    total_comments = models.IntegerField(default=0)
+    forum_members = models.ManyToManyField(
+        User,
+        related_name="forum_members",
+    )
+    header_key = models.CharField(max_length=255, blank=True)
+    header_image = models.CharField(max_length=255, blank=True)
     total_likes = models.IntegerField(default=0)
+    total_members = models.IntegerField(default=0)
     total_shares = models.IntegerField(default=0)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    def search_forum(self, search_query):
+        return self.filter(
+            Q(**{f'{LowerJSONKey("tags", "tag_name")}__icontains': search_query})
+            | Q(topic__icontains=search_query)
+            | Q(description__icontains=search_query)
+        )
 
     class Meta:
         ordering = ("-created_on",)
@@ -88,37 +107,6 @@ class ForumFile(models.Model):
         db_table = "Forum_Files"
 
 
-class ForumComment(models.Model):
-    forum = models.ForeignKey(
-        Forum,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="forum_comment",
-    )
-    comment = models.CharField(max_length=255, blank=True)
-    parent_comment = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="comment_parent_comment",
-    )
-    commentor = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="forum_commentor",
-    )
-    created_on = models.DateTimeField(auto_now_add=True)
-    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
-
-    class Meta:
-        ordering = ("-created_on",)
-        db_table = "Forum_Comments"
-
-
 class ChatRoom(models.Model):
     room_name = models.CharField(max_length=255)
     description = models.TextField()
@@ -130,6 +118,7 @@ class ChatRoom(models.Model):
         related_name="forum_chat_room",
     )
     total_members = models.IntegerField(default=0)
+    total_messages = models.IntegerField(default=0)
     creator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

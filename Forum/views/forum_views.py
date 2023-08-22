@@ -6,8 +6,11 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.http import JsonResponse
 
-from Forum.models import Forum, ForumFile, VirtualMeeting, ForumComment, ChatRoom
-from helpers.azure_file_handling import create_forum_documents, delete_blob
+from Forum.models import Forum, ForumFile, VirtualMeeting, ChatRoom
+from helpers.azure_file_handling import (
+    delete_blob,
+    create_forum_header,
+)
 from helpers.functions import paginate_data
 from helpers.status_codes import (
     action_authorization_exception,
@@ -26,22 +29,20 @@ class CreateForum(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         user = self.request.user
-        files = request.FILES.getlist("files[]")
+        file = request.FILES.get("file")
 
         if not check_permission(user, "Forums", [2]):
             raise action_authorization_exception("Unauthorized to create forums")
 
-        if files:
-            files = data.pop("files[]", None)
-            check_required_fields(data, ["file_description"])
+        if file:
+            file = data.pop("file", None)
 
         data = json.dumps(data)
         data = json.loads(data)
 
-        file_description = data.pop("file_description", None)
-
-        check_required_fields(data, ["topic", "description", "tags"])
-        data["tags"] = eval(data["tags"])
+        check_required_fields(data, ["topic", "description", "tags[]"])
+        data["tags"] = eval(data["tags[]"])
+        data.pop("tags[]", None)
         data["author"] = user
 
         try:
@@ -49,11 +50,27 @@ class CreateForum(APIView):
             raise duplicate_data_exception("Forum")
         except Forum.DoesNotExist:
             forum = Forum.objects.create(**data)
-            if files:
-                create_forum_documents(files, forum, user, file_description)
-
+            if file:
+                header_image = create_forum_header(file, forum, user)
+                Forum.objects.filter(id=forum.id).update(
+                    header_key=header_image["file_key"],
+                    header_image=header_image["file_url"],
+                )
+            forum = Forum.objects.get(id=forum.id)
+            forum.forum_members.add(user)
+            forum.total_members += 1
+            forum.save()
+            data = {
+                "id": forum.id,
+                "topic": forum.topic,
+                "description": forum.description,
+            }
             return JsonResponse(
-                {"status": "success", "detail": "Forum created successfully"},
+                {
+                    "status": "success",
+                    "detail": "Forum created successfully",
+                    "data": data,
+                },
                 safe=False,
             )
 
@@ -109,43 +126,49 @@ class GetSingleForum(APIView):
                     "author__profile_image",
                     "author__is_verified",
                     "author__organization",
-                    "total_comments",
                     "total_likes",
+                    "total_members",
                     "total_shares",
                     "created_on",
                 )
                 .first()
             )
-            forum["virtual_meetings"] = VirtualMeeting.objects.filter(
-                forum_id=forum_id
-            ).values(
-                "id",
-                "meeting_agenda",
-                "meeting_url",
-                "scheduled_start_time",
-                "scheduled_end_time",
-                "organizer__first_name",
-                "organizer__last_name",
-                "total_attendees",
+            forum["virtual_meetings"] = list(
+                VirtualMeeting.objects.filter(forum_id=forum_id).values(
+                    "id",
+                    "meeting_agenda",
+                    "meeting_url",
+                    "scheduled_start_time",
+                    "scheduled_end_time",
+                    "organizer__first_name",
+                    "organizer__last_name",
+                    "total_attendees",
+                )
             )
-            forum["files"] = ForumFile.objects.filter(forum_id=forum_id).values(
-                "id", "description", "file_type", "file_url", "created_on"
+            forum["files"] = list(
+                ForumFile.objects.filter(forum_id=forum_id).values(
+                    "id", "description", "file_type", "file_url", "created_on"
+                )
             )
-            forum["comments"] = ForumComment.objects.filter(
-                "id",
-                "comment",
-                "parent_comment_id",
-                "parent_comment__comment",
-                "commentor__first_name",
-                "commentor__last_name",
-                "created_on",
-            )
-            forum["chat_rooms"] = ChatRoom.objects.filter(forum_id=forum_id).values(
-                "id", "room_name", "total_members"
+
+            forum["chat_rooms"] = list(
+                ChatRoom.objects.filter(forum_id=forum_id).values(
+                    "id",
+                    "room_name",
+                    "total_members",
+                    "total_messages",
+                )
             )
 
             if user.is_authenticated:
-                forum["user_has_liked"] = user in forum.forum_likers.all()
+                liked = Forum.forum_likers.through.objects.filter(
+                    Q(forum_id=forum_id) & Q(user_id=user.user_key)
+                )
+                member = Forum.forum_members.through.objects.filter(
+                    Q(forum_id=forum_id) & Q(user_id=user.user_key)
+                )
+                forum["has_liked"] = True if liked else False
+                forum["is_member"] = True if member else False
                 forum["is_authenticated"] = True
             else:
                 forum["is_authenticated"] = False
@@ -177,8 +200,6 @@ class GetAllForums(APIView):
                 "author__profile_image",
                 "author__is_verified",
                 "author__organization",
-                "forum_likers",
-                "total_comments",
                 "total_likes",
                 "total_shares",
                 "created_on",
@@ -201,25 +222,24 @@ class GetAllForums(APIView):
                         "id", "description", "file_type", "file_url", "created_on"
                     )
                 )
-                forum["comments"] = list(
-                    ForumComment.objects.filter(forum_id=forum["id"]).values(
-                        "id",
-                        "comment",
-                        "parent_comment_id",
-                        "parent_comment__comment",
-                        "commentor__first_name",
-                        "commentor__last_name",
-                        "created_on",
-                    )
-                )
                 forum["chat_rooms"] = list(
                     ChatRoom.objects.filter(forum_id=forum["id"]).values(
-                        "id", "room_name", "total_members"
+                        "id",
+                        "room_name",
+                        "total_members",
+                        "total_messages",
                     )
                 )
 
                 if user.is_authenticated:
-                    forum["user_has_liked"] = True if forum["forum_likers"] else False
+                    liked = Forum.forum_likers.through.objects.filter(
+                        Q(forum_id=forum["id"]) & Q(user_id=user.user_key)
+                    )
+                    member = Forum.forum_members.through.objects.filter(
+                        Q(forum_id=forum["id"]) & Q(user_id=user.user_key)
+                    )
+                    forum["has_liked"] = True if liked else False
+                    forum["is_member"] = True if member else False
                     forum["is_authenticated"] = True
                 else:
                     forum["is_authenticated"] = False
@@ -270,5 +290,59 @@ class LikeAForum(APIView):
                 },
                 safe=False,
             )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class JoinForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        forum_id = self.kwargs["forum_id"]
+        user = self.request.user
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            exists = Forum.forum_members.through.objects.filter(
+                Q(forum_id=forum) & Q(user_id=user.user_key)
+            )
+            if exists:
+                raise cannot_perform_action("User already part of forum")
+            else:
+                forum.forum_members.add(user)
+                forum.total_members += 1
+                forum.save()
+                return JsonResponse(
+                    {"status": "success", "detail": "User successfully joined forum"},
+                    safe=False,
+                )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class LeaveForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        forum_id = self.kwargs["forum_id"]
+        user = self.request.user
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            exists = Forum.forum_members.through.objects.filter(
+                Q(forum_id=forum) & Q(user_id=user.user_key)
+            )
+            if exists:
+                forum.forum_members.remove(user)
+                forum.total_members -= 1
+                forum.save()
+                return JsonResponse(
+                    {"status": "success", "detail": "User left forum"},
+                    safe=False,
+                )
+            else:
+                raise cannot_perform_action("User not a member of forum")
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")

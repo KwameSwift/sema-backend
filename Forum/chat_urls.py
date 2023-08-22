@@ -10,14 +10,6 @@ from .views.chat_room_views import (
     SendMessageToChatRoom,
 )
 
-from .views.forum_views import (
-    GetSingleForum,
-    CreateForum,
-    DeleteForum,
-    GetAllForums,
-    LikeAForum,
-)
-
 urlpatterns = [
     path(
         "create-chat-room/<int:forum_id>/",
@@ -58,31 +50,5 @@ urlpatterns = [
         "send-message/<int:room_id>/",
         SendMessageToChatRoom.as_view(),
         name="Send Message To Chat Room",
-    ),
-    # Forums
-    path(
-        "create-forum/",
-        CreateForum.as_view(),
-        name="Create Forum",
-    ),
-    path(
-        "get-forum/<int:forum_id>/",
-        GetSingleForum.as_view(),
-        name="Get Single Forum",
-    ),
-    path(
-        "delete-forum/<int:forum_id>/",
-        DeleteForum.as_view(),
-        name="Delete Forum",
-    ),
-    path(
-        "get-all-forums/<int:page_number>/",
-        GetAllForums.as_view(),
-        name="Get All Forums",
-    ),
-    path(
-        "like-a-forum/<int:forum_id>/",
-        LikeAForum.as_view(),
-        name="Like A Forum",
     ),
 ]

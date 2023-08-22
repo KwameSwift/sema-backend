@@ -307,12 +307,12 @@ def upload_cover_image(request, res_data, blog=None, poll=None):
 
 
 def create_other_blog_documents(files, blog, user):
+    user_name = f"{user.first_name}-{user.last_name}".lower()
     try:
         for img in files:
             file_name = str(img.name).lower()
             new_filename = file_name.replace(" ", "_")
             blog_title = str(blog.title).replace(" ", "_")
-            user_name = f"{user.first_name}-{user.last_name}".lower()
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
 
@@ -402,13 +402,13 @@ def upload_profile_image(file, user):
 
 
 def create_chat_shared_file(files, chat_room, user, description):
+    user_name = f"{user.first_name}-{user.last_name}".lower()
     try:
         urls = []
         for img in files:
             file_name = str(img.name).lower()
             new_filename = file_name.replace(" ", "_")
             chat = str(chat_room.room_name).replace(" ", "_")
-            user_name = f"{user.first_name}-{user.last_name}".lower()
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Chat_Shared_Files/{chat}"
 
@@ -451,14 +451,14 @@ def create_chat_shared_file(files, chat_room, user, description):
         pass
 
 
-def create_forum_documents(files, forum, user, description):
+def create_forum_header(files, forum, user):
+    user_name = f"{user.first_name}-{user.last_name}".lower()
+    forum_header = {}
     try:
-        urls = []
-        for img in files:
-            file_name = str(img.name).lower()
+        for file in files:
+            file_name = str(file.name).lower()
             new_filename = file_name.replace(" ", "_")
             topic = str(forum.topic).replace(" ", "_")
-            user_name = f"{user.first_name}-{user.last_name}".lower()
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Forum_Files/{topic}"
 
@@ -467,7 +467,7 @@ def create_forum_documents(files, forum, user, description):
                 container_client.create_container(public_access="blob")
 
             fs = FileSystemStorage(location=full_directory)
-            fs.save(new_filename, img)
+            fs.save(new_filename, file)
             file_path = f"{full_directory}/{new_filename}"
             blob_name = f"Forum_Files/{topic}/{new_filename}"
 
@@ -478,22 +478,13 @@ def create_forum_documents(files, forum, user, description):
             # Return blob url
             file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
-            urls.append(shortened_url)
-            forum_file = {
-                "file_name": new_filename,
-                "description": description,
-                "file_type": os.path.splitext(file_name)[1],
-                "file_url": shortened_url,
-                "file_key": blob_name,
-                "uploader_id": user.user_key,
-                "forum_id": forum.id,
-            }
 
-            ForumFile.objects.create(**forum_file)
+            forum_header["file_url"] = shortened_url
+            forum_header["file_key"] = blob_name
 
             if path.exists(f"media/{user_name}"):
                 shutil.rmtree(f"media/{user_name}")
-        return urls
+        return forum_header
     except ResourceExistsError:
         print("File already exists")
         if path.exists(f"media/{user_name}"):
