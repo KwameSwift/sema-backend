@@ -11,12 +11,20 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
+from Forum.models import Forum, VirtualMeeting, ForumFile, ChatRoom
 from helpers.azure_file_handling import delete_blob, shorten_url, upload_profile_image
-from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
-                               local_file_upload, paginate_data, truncate_text)
-from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  non_existing_data_exception)
+from helpers.functions import (
+    convert_quill_text_to_normal_text,
+    delete_file,
+    local_file_upload,
+    paginate_data,
+    truncate_text,
+)
+from helpers.status_codes import (
+    action_authorization_exception,
+    cannot_perform_action,
+    non_existing_data_exception,
+)
 from helpers.validations import check_required_fields
 from Polls.models.poll_models import Poll, PollVote
 from Polls.poll_helper import retrieve_poll_with_choices
@@ -322,13 +330,18 @@ class GetMySinglePoll(APIView):
         try:
             poll = Poll.objects.get(id=poll_id, author=user)
             poll_data = retrieve_poll_with_choices(poll.id)
-            poll_data["poll_votes"] = list((
-                PollVote.objects.filter(poll_id=poll.id)
-                .values(
-                    "id", "voter__first_name", "voter__last_name",
-                    "poll_choice__choice", "poll_choice_id", "comments"
+            poll_data["poll_votes"] = list(
+                (
+                    PollVote.objects.filter(poll_id=poll.id).values(
+                        "id",
+                        "voter__first_name",
+                        "voter__last_name",
+                        "poll_choice__choice",
+                        "poll_choice_id",
+                        "comments",
                     )
-                ))
+                )
+            )
 
             return JsonResponse(
                 {
@@ -340,3 +353,70 @@ class GetMySinglePoll(APIView):
             )
         except Poll.DoesNotExist:
             raise non_existing_data_exception("Poll")
+
+
+class GetMyForums(APIView):
+    def get(self, request, *args, **kwargs):
+        page_number = self.kwargs.get("page_number")
+        data_type = self.kwargs["data_type"]
+        user = self.request.user
+
+        query = Q(author=user)
+        if data_type == 1:
+            query &= Q(is_approved=True)
+        elif data_type == 2:
+            query &= Q(is_approved=False)
+        elif data_type == 3:
+            query &= Q(is_declined=True)
+
+        try:
+            forums = Forum.objects.filter(query).values(
+                "id",
+                "topic",
+                "description",
+                "tags",
+                "author__first_name",
+                "author__last_name",
+                "author__profile_image",
+                "author__is_verified",
+                "author__organization",
+                "total_likes",
+                "total_shares",
+                "is_approved",
+                "is_declined",
+                "created_on",
+            )
+            for forum in forums:
+                forum["virtual_meetings"] = list(
+                    VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
+                        "id",
+                        "meeting_agenda",
+                        "meeting_url",
+                        "scheduled_start_time",
+                        "scheduled_end_time",
+                        "organizer__first_name",
+                        "organizer__last_name",
+                        "total_attendees",
+                    )
+                )
+                forum["files"] = list(
+                    ForumFile.objects.filter(forum_id=forum["id"]).values(
+                        "id", "description", "file_type", "file_url", "created_on"
+                    )
+                )
+                forum["chat_rooms"] = list(
+                    ChatRoom.objects.filter(forum_id=forum["id"]).values(
+                        "id",
+                        "room_name",
+                        "total_members",
+                        "total_messages",
+                    )
+                )
+
+            data = paginate_data(forums, page_number, 10)
+            return JsonResponse(
+                data,
+                safe=False,
+            )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")

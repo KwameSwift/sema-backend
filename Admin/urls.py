@@ -1,18 +1,36 @@
 from django.urls import path
 
-from .views.admin_blog_views import (ApproveAndPublishBlogs,
-                                     GetAllBlogPostsAsAdmin, DeclineBlogs)
+from .views.admin_blog_views import (
+    ApproveAndPublishBlogs,
+    GetAllBlogPostsAsAdmin,
+    DeclineBlogs,
+)
 from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
-from .views.admin_poll_views import (AdminGetAllPolls, AdminViewSinglePoll,
-                                     ApprovePoll, DeclinePoll)
-from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
-                                           AssignUserRoleToUser,
-                                           DeleteUserRole, GetAllUserRoles,
-                                           GetSingleRole, UpdateUserRole)
-from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
-                                      GetAllUsers, GetSingleUser,
-                                      GetSystemStatistics, SearchAllUsers,
-                                      VerifyUsers)
+from .views.admin_forum_views import ApproveForum, DeclineForum, AdminGetAllForums
+from .views.admin_poll_views import (
+    AdminGetAllPolls,
+    AdminViewSinglePoll,
+    ApprovePoll,
+    DeclinePoll,
+)
+from .views.admin_user_roles_views import (
+    AddModuleView,
+    AddUserRole,
+    AssignUserRoleToUser,
+    DeleteUserRole,
+    GetAllUserRoles,
+    GetSingleRole,
+    UpdateUserRole,
+)
+from .views.admin_users_views import (
+    AddSuperAdmins,
+    DeleteUserView,
+    GetAllUsers,
+    GetSingleUser,
+    GetSystemStatistics,
+    SearchAllUsers,
+    VerifyUsers,
+)
 
 urlpatterns = [
     # System Statistics
@@ -128,5 +146,21 @@ urlpatterns = [
         "get-all-polls/<int:data_type>/<int:page_number>/",
         AdminGetAllPolls.as_view(),
         name="Admin Get All Polls",
+    ),
+    # Forum
+    path(
+        "approve-disapprove-forum/<int:status>/<int:forum_id>/",
+        ApproveForum.as_view(),
+        name="Approve Or Disapprove Forum",
+    ),
+    path(
+        "decline-forum/<int:forum_id>/",
+        DeclineForum.as_view(),
+        name="Decline Forum",
+    ),
+    path(
+        "get-all-forums/<int:data_type>/<int:page_number>/",
+        AdminGetAllForums.as_view(),
+        name="Admin Get All Forums",
     ),
 ]

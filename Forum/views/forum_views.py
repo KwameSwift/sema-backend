@@ -129,6 +129,8 @@ class GetSingleForum(APIView):
                     "total_likes",
                     "total_members",
                     "total_shares",
+                    "is_approved",
+                    "is_declined",
                     "created_on",
                 )
                 .first()
@@ -190,7 +192,7 @@ class GetAllForums(APIView):
         page_number = self.kwargs.get("page_number")
         user = self.request.user
         try:
-            forums = Forum.objects.all().values(
+            forums = Forum.objects.filter(is_approved=True, is_declined=False).values(
                 "id",
                 "topic",
                 "description",
@@ -202,6 +204,8 @@ class GetAllForums(APIView):
                 "author__organization",
                 "total_likes",
                 "total_shares",
+                "is_approved",
+                "is_declined",
                 "created_on",
             )
             for forum in forums:
