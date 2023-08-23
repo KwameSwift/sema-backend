@@ -5,10 +5,6 @@ from django.db.models.functions import Lower
 from Auth.models import User
 
 
-# class LowerJSONKey(Func):
-#     function = "LOWER"
-#     template = "(SELECT STRING_AGG(LOWER(UNNEST(%(expressions)s::TEXT[])), ',') FROM unnest(%(expressions)s::TEXT[]))"
-
 
 class Forum(models.Model):
     topic = models.CharField(max_length=255, blank=True)
@@ -46,13 +42,6 @@ class Forum(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
-    @classmethod
-    def search_forum(cls, search_query):
-        return cls.objects.filter(
-            Q(tags__icontains=search_query)
-            | Q(topic__icontains=search_query)
-            | Q(description__icontains=search_query)
-        ).values()
 
     class Meta:
         ordering = ("-created_on",)

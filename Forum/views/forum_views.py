@@ -409,12 +409,87 @@ class SearchForum(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def post(self, request, *args, **kwargs):
+        user = self.request.user
         page_number = self.kwargs["page_number"]
         search_query = request.data.get("search_query")
 
-        search_results = Forum.search_forum(search_query=search_query)
+        if user.role.name == "Super Admin":
+            forums = Forum.objects.filter(
+                Q(tags__icontains=search_query)
+                | Q(topic__icontains=search_query)
+                | Q(description__icontains=search_query)
+            ).values(
+                "id",
+                "topic",
+                "description",
+                "tags",
+                "author",
+                "author__first_name",
+                "author__last_name",
+                "author__profile_image",
+                "author__is_verified",
+                "author__organization",
+                "approved_by__first_name",
+                "approved_by__last_name",
+                "total_likes",
+                "total_shares",
+                "is_approved",
+                "is_declined",
+                "created_on",
+            )
+            for forum in forums:
+                forum["is_owner"] = True if forum["author"] == user.user_key else False
+        else:
+            forums = Forum.objects.filter(
+                Q(author=user),
+                Q(tags__icontains=search_query)
+                | Q(topic__icontains=search_query)
+                | Q(description__icontains=search_query),
+            ).values(
+                "id",
+                "topic",
+                "description",
+                "tags",
+                "author__first_name",
+                "author__last_name",
+                "author__profile_image",
+                "author__is_verified",
+                "author__organization",
+                "total_likes",
+                "total_shares",
+                "is_approved",
+                "is_declined",
+                "created_on",
+            )
+        for forum in forums:
+            forum["virtual_meetings"] = list(
+                VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
+                    "id",
+                    "meeting_agenda",
+                    "meeting_url",
+                    "scheduled_start_time",
+                    "scheduled_end_time",
+                    "organizer__first_name",
+                    "organizer__last_name",
+                    "total_attendees",
+                )
+            )
+            forum["files"] = list(
+                ForumFile.objects.filter(forum_id=forum["id"]).values(
+                    "id", "description", "file_type", "file_url", "created_on"
+                )
+            )
+            forum["chat_rooms"] = list(
+                ChatRoom.objects.filter(forum_id=forum["id"]).values(
+                    "id",
+                    "room_name",
+                    "total_members",
+                    "total_messages",
+                )
+            )
+        # search_results = Forum.search_forum(search_query=search_query)
 
-        data = paginate_data(list(search_results), page_number, 10)
+        data = paginate_data(forums, page_number, 10)
 
         return JsonResponse(
             data,
