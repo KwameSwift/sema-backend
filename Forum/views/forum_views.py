@@ -126,6 +126,7 @@ class GetSingleForum(APIView):
                     "author__profile_image",
                     "author__is_verified",
                     "author__organization",
+                    "header_image",
                     "total_likes",
                     "total_members",
                     "total_shares",
@@ -348,5 +349,52 @@ class LeaveForum(APIView):
                 )
             else:
                 raise cannot_perform_action("User not a member of forum")
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class UpdateForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        forum_id = self.kwargs["forum_id"]
+        data = request.data
+        user = self.request.user
+        file = request.FILES.get("file")
+
+        if not check_permission(user, "Forums", [2]):
+            raise action_authorization_exception("Unauthorized to update forum")
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            container_name = (
+                f"{forum.author.first_name}-{forum.author.last_name}".lower()
+            )
+
+            if forum.author_id != user.user_key:
+                raise action_authorization_exception("Cannot update this forum")
+
+            if file:
+                file = data.pop("file", None)
+                delete_blob(container_name, forum.header_key)
+                header_image = create_forum_header(file, forum, user)
+                forum.header_key = header_image["file_key"]
+                forum.header_image = header_image["file_url"]
+                forum.save()
+
+            forum.refresh_from_db()
+            data = json.dumps(data)
+            data = json.loads(data)
+
+            if "tags[]" in data:
+                data["tags"] = eval(data["tags[]"])
+                data.pop("tags[]", None)
+            Forum.objects.filter(id=forum_id).update(**data)
+
+            return JsonResponse(
+                {"status": "success", "detail": "Forum updated successfully"},
+                safe=False,
+            )
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")
