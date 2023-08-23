@@ -126,6 +126,8 @@ class GetSingleForum(APIView):
                     "author__profile_image",
                     "author__is_verified",
                     "author__organization",
+                    "approved_by__first_name",
+                    "approved_by__last_name",
                     "header_image",
                     "total_likes",
                     "total_members",
@@ -203,6 +205,8 @@ class GetAllForums(APIView):
                 "author__profile_image",
                 "author__is_verified",
                 "author__organization",
+                "approved_by__first_name",
+                "approved_by__last_name",
                 "total_likes",
                 "total_shares",
                 "is_approved",
@@ -398,3 +402,21 @@ class UpdateForum(APIView):
             )
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")
+
+
+class SearchForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        page_number = self.kwargs["page_number"]
+        search_query = request.data.get("search_query")
+
+        search_results = Forum.search_forum(search_query=search_query)
+
+        data = paginate_data(list(search_results), page_number, 10)
+
+        return JsonResponse(
+            data,
+            safe=False,
+        )

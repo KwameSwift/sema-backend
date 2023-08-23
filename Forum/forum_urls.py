@@ -9,6 +9,7 @@ from .views.forum_views import (
     JoinForum,
     LeaveForum,
     UpdateForum,
+    SearchForum,
 )
 
 urlpatterns = [
@@ -52,5 +53,10 @@ urlpatterns = [
         "update-forum/<int:forum_id>/",
         UpdateForum.as_view(),
         name="Update Forum",
+    ),
+    path(
+        "search-forums/<int:page_number>/",
+        SearchForum.as_view(),
+        name="Search Forums",
     ),
 ]

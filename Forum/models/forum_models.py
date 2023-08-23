@@ -1,11 +1,13 @@
 from django.db import models
-from django.db.models import Q, Func, Value
+from django.db.models import Q, Func, F
+from django.db.models.functions import Lower
+
 from Auth.models import User
 
 
-class LowerJSONKey(Func):
-    function = "LOWER"
-    template = "(%(function)s(%(expressions)s->>%(_key)s))"
+# class LowerJSONKey(Func):
+#     function = "LOWER"
+#     template = "(SELECT STRING_AGG(LOWER(UNNEST(%(expressions)s::TEXT[])), ',') FROM unnest(%(expressions)s::TEXT[]))"
 
 
 class Forum(models.Model):
@@ -27,6 +29,13 @@ class Forum(models.Model):
         User,
         related_name="forum_members",
     )
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_approver",
+    )
     header_key = models.CharField(max_length=255, blank=True)
     header_image = models.CharField(max_length=255, blank=True)
     total_likes = models.IntegerField(default=0)
@@ -37,12 +46,13 @@ class Forum(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
-    def search_forum(self, search_query):
-        return self.filter(
-            Q(**{f'{LowerJSONKey("tags", "tag_name")}__icontains': search_query})
+    @classmethod
+    def search_forum(cls, search_query):
+        return cls.objects.filter(
+            Q(tags__icontains=search_query)
             | Q(topic__icontains=search_query)
             | Q(description__icontains=search_query)
-        )
+        ).values()
 
     class Meta:
         ordering = ("-created_on",)

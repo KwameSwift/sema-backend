@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
@@ -5,8 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Forum.models import Forum, ForumFile, VirtualMeeting, ChatRoom
-from helpers.azure_file_handling import delete_blob
-from helpers.functions import paginate_data
+from helpers.functions import paginate_data, aware_datetime
 from helpers.status_codes import (
     action_authorization_exception,
     cannot_perform_action,
@@ -33,9 +34,13 @@ class ApproveForum(APIView):
             if user.role.name == "Super Admin":
                 if status == 1:
                     forum.is_approved = True
+                    forum.approved_by = user
+                    forum.updated_on = aware_datetime(datetime.now())
                     message = "Forum approved successfully"
                 else:
                     forum.is_approved = False
+                    forum.approved_by = None
+                    forum.updated_on = aware_datetime(datetime.now())
                     message = "Forum disapproved successfully"
                 forum.save()
                 return JsonResponse(
@@ -99,6 +104,8 @@ class AdminGetAllForums(APIView):
                 "author__profile_image",
                 "author__is_verified",
                 "author__organization",
+                "approved_by__first_name",
+                "approved_by__last_name",
                 "total_likes",
                 "total_shares",
                 "is_approved",
