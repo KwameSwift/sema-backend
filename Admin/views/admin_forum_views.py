@@ -93,6 +93,7 @@ class AdminGetAllForums(APIView):
                 "topic",
                 "description",
                 "tags",
+                "author",
                 "author__first_name",
                 "author__last_name",
                 "author__profile_image",
@@ -105,6 +106,7 @@ class AdminGetAllForums(APIView):
                 "created_on",
             )
             for forum in forums:
+                forum["is_owner"] = True if forum["author"] == user.user_key else False
                 forum["virtual_meetings"] = list(
                     VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
                         "id",
