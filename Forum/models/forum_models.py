@@ -5,7 +5,6 @@ from django.db.models.functions import Lower
 from Auth.models import User
 
 
-
 class Forum(models.Model):
     topic = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
@@ -41,7 +40,6 @@ class Forum(models.Model):
     is_declined = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
-
 
     class Meta:
         ordering = ("-created_on",)

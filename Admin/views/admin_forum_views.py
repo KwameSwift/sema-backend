@@ -114,6 +114,7 @@ class AdminGetAllForums(APIView):
             )
             for forum in forums:
                 forum["is_owner"] = True if forum["author"] == user.user_key else False
+                forum.pop("author", None)
                 forum["virtual_meetings"] = list(
                     VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
                         "id",

@@ -249,6 +249,8 @@ class SendMessageToChatRoom(APIView):
                     data["message"] = message
                 room_name = str(chat_room.room_name).lower().replace(" ", "_")
                 send_group_message(room_name, data)
+                chat_room.total_messages += 1
+                chat_room.save()
                 return JsonResponse(
                     {"status": "success", "detail": "Message sent", "data": data},
                     safe=False,

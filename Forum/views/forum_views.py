@@ -439,6 +439,7 @@ class SearchForum(APIView):
             )
             for forum in forums:
                 forum["is_owner"] = True if forum["author"] == user.user_key else False
+                forum.pop("author", None)
         else:
             forums = Forum.objects.filter(
                 Q(author=user),
