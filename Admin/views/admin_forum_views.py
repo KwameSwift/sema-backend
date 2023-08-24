@@ -35,13 +35,15 @@ class ApproveForum(APIView):
                 if status == 1:
                     forum.is_approved = True
                     forum.approved_by = user
-                    forum.updated_on = aware_datetime(datetime.now())
+                    forum.approved_on = aware_datetime(datetime.now())
                     message = "Forum approved successfully"
                 else:
                     forum.is_approved = False
                     forum.approved_by = None
-                    forum.updated_on = aware_datetime(datetime.now())
+                    forum.approved_on = None
                     message = "Forum disapproved successfully"
+
+                forum.updated_on = aware_datetime(datetime.now())
                 forum.save()
                 return JsonResponse(
                     {"status": "success", "detail": message},
@@ -106,6 +108,7 @@ class AdminGetAllForums(APIView):
                 "author__organization",
                 "approved_by__first_name",
                 "approved_by__last_name",
+                "approved_on",
                 "total_likes",
                 "total_shares",
                 "is_approved",

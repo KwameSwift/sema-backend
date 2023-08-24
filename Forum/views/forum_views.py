@@ -128,6 +128,7 @@ class GetSingleForum(APIView):
                     "author__organization",
                     "approved_by__first_name",
                     "approved_by__last_name",
+                    "approved_on",
                     "header_image",
                     "total_likes",
                     "total_members",
@@ -207,6 +208,7 @@ class GetAllForums(APIView):
                 "author__organization",
                 "approved_by__first_name",
                 "approved_by__last_name",
+                "approved_on",
                 "total_likes",
                 "total_shares",
                 "is_approved",
@@ -431,6 +433,7 @@ class SearchForum(APIView):
                 "author__organization",
                 "approved_by__first_name",
                 "approved_by__last_name",
+                "approved_on",
                 "total_likes",
                 "total_shares",
                 "is_approved",
@@ -456,6 +459,9 @@ class SearchForum(APIView):
                 "author__profile_image",
                 "author__is_verified",
                 "author__organization",
+                "approved_by__first_name",
+                "approved_by__last_name",
+                "approved_on",
                 "total_likes",
                 "total_shares",
                 "is_approved",
@@ -488,7 +494,6 @@ class SearchForum(APIView):
                     "total_messages",
                 )
             )
-        # search_results = Forum.search_forum(search_query=search_query)
 
         data = paginate_data(forums, page_number, 10)
 
