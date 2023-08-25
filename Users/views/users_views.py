@@ -194,7 +194,7 @@ class GetAuthorStatistics(APIView):
         total_blogs = BlogPost.objects.filter(author=user).count()
         total_events = Events.objects.filter(created_by=user).count()
         total_polls = Poll.objects.filter(author=user).count()
-        total_forums = 0
+        total_forums = Forum.objects.filter(author=user).count()
 
         blogs = (
             BlogPost.objects.filter(author=user)

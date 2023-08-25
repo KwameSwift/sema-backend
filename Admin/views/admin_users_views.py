@@ -10,13 +10,16 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models import User
 from Blog.models.blog_model import BlogPost
 from Events.models.events_model import Events
+from Forum.models import Forum
+from Polls.models import Poll
 from helpers.email_sender import send_email
-from helpers.functions import (aware_datetime, generate_random_string,
-                               paginate_data)
-from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  duplicate_data_exception,
-                                  non_existing_data_exception)
+from helpers.functions import aware_datetime, generate_random_string, paginate_data
+from helpers.status_codes import (
+    action_authorization_exception,
+    cannot_perform_action,
+    duplicate_data_exception,
+    non_existing_data_exception,
+)
 from helpers.validations import check_required_fields, check_super_admin
 
 
@@ -26,7 +29,8 @@ class GetSystemStatistics(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
-        if not check_super_admin(self.request.user):
+        user = self.request.user
+        if not check_super_admin(user):
             raise cannot_perform_action("Unauthorized to perform action")
 
         total_users = User.objects.all().count()
@@ -38,8 +42,8 @@ class GetSystemStatistics(APIView):
 
         total_blogs = BlogPost.objects.all().count()
         total_events = Events.objects.all().count()
-        total_polls = 0
-        total_forums = 0
+        total_polls = Poll.objects.all().count()
+        total_forums = Forum.objects.all().count()
         total_documents_in_vault = 0
         total_donations = 0
 
@@ -229,7 +233,7 @@ class GetSingleUser(APIView):
                 "country__name",
                 "is_verified",
                 "account_type",
-                "created_on"
+                "created_on",
             )
             .first()
         )
