@@ -38,7 +38,7 @@ class Forum(models.Model):
     total_shares = models.IntegerField(default=0)
     is_approved = models.BooleanField(default=False)
     is_public = models.BooleanField(default=False)
-    # approved_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+    approved_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     is_declined = models.BooleanField(default=False)
     decline_comment = models.CharField(max_length=255, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)

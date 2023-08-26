@@ -135,6 +135,7 @@ class GetSingleForum(APIView):
                     "total_members",
                     "total_shares",
                     "is_approved",
+                    "is_public",
                     "is_declined",
                     "created_on",
                 )
@@ -213,6 +214,7 @@ class GetAllForums(APIView):
                 "total_likes",
                 "total_shares",
                 "is_approved",
+                "is_public",
                 "is_declined",
                 "created_on",
             )
@@ -437,6 +439,7 @@ class SearchForum(APIView):
                 "approved_on",
                 "total_likes",
                 "total_shares",
+                "is_public",
                 "is_approved",
                 "is_declined",
                 "created_on",
@@ -465,6 +468,7 @@ class SearchForum(APIView):
                 "approved_on",
                 "total_likes",
                 "total_shares",
+                "is_public",
                 "is_approved",
                 "is_declined",
                 "created_on",

@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from Forum.forum_helper import send_forum_declination_mail
 from Forum.models import Forum, ForumFile, VirtualMeeting, ChatRoom
 from helpers.functions import paginate_data, aware_datetime
 from helpers.status_codes import (
@@ -13,7 +14,7 @@ from helpers.status_codes import (
     cannot_perform_action,
     non_existing_data_exception,
 )
-from helpers.validations import check_permission
+from helpers.validations import check_permission, check_required_fields
 
 
 class ApproveForum(APIView):
@@ -62,20 +63,25 @@ class DeclineForum(APIView):
     def put(self, request, *args, **kwargs):
         user = self.request.user
         forum_id = self.kwargs.get("forum_id")
+        data = request.data
 
         if not check_permission(user, "Forums", [2]):
             raise action_authorization_exception("Unauthorized to decline forums")
         try:
             forum = Forum.objects.get(id=forum_id)
             if user.role.name == "Super Admin":
+                check_required_fields(data, ["comment", "description", "tags[]"])
                 forum.is_declined = True
+                forum.is_approved = False
+                forum.decline_comment = data["comment"]
                 forum.save()
+                send_forum_declination_mail(forum, data["comment"])
                 return JsonResponse(
                     {"status": "success", "detail": "Forum declined successfully"},
                     safe=False,
                 )
             else:
-                raise cannot_perform_action("Cannot approve forum")
+                raise cannot_perform_action("Cannot decline forum")
         except Forum.DoesNotExist:
             non_existing_data_exception("Forum")
 
