@@ -96,6 +96,7 @@ class DeleteForum(APIView):
                 )
                 for file in forum_files:
                     delete_blob(container, file["file_key"])
+                delete_blob(container, forum.header_key)
                 forum.delete()
                 return JsonResponse(
                     {"status": "success", "detail": "Forum deleted successfully"},
