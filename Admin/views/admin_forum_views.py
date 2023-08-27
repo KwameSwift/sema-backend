@@ -118,6 +118,7 @@ class AdminGetAllForums(APIView):
                 "total_likes",
                 "total_shares",
                 "is_approved",
+                "is_public",
                 "is_declined",
                 "created_on",
             )

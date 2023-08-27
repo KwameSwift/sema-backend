@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
@@ -11,7 +12,11 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
 from Events.models.events_model import Events
-from Forum.models import Forum, VirtualMeeting, ForumFile, ChatRoom
+from Forum.forum_helper import (
+    send_forum_join_request_approval_to_user,
+    send_forum_join_request_decline_to_user,
+)
+from Forum.models import Forum, VirtualMeeting, ForumFile, ChatRoom, ForumRequest
 from helpers.azure_file_handling import delete_blob, shorten_url, upload_profile_image
 from helpers.functions import (
     convert_quill_text_to_normal_text,
@@ -19,6 +24,7 @@ from helpers.functions import (
     local_file_upload,
     paginate_data,
     truncate_text,
+    aware_datetime,
 )
 from helpers.status_codes import (
     action_authorization_exception,
@@ -382,6 +388,8 @@ class GetMyForums(APIView):
                 "author__organization",
                 "total_likes",
                 "total_shares",
+                "is_public",
+                "approved_on",
                 "is_approved",
                 "is_declined",
                 "created_on",
@@ -418,5 +426,125 @@ class GetMyForums(APIView):
                 data,
                 safe=False,
             )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class ApproveJoinForumRequest(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        request_id = self.kwargs["request_id"]
+
+        try:
+            forum_request = ForumRequest.objects.get(id=request_id)
+            try:
+                forum = Forum.objects.get(id=forum_request.forum_id)
+                if forum.author == user:
+                    try:
+                        requester = User.objects.get(
+                            user_key=forum_request.member.user_key
+                        )
+                        forum.forum_members.add(requester)
+                        forum.total_members += 1
+                        forum.updated_on = aware_datetime(datetime.now())
+                        forum.save()
+                        forum_request.is_approved = True
+                        forum_request.is_declined = False
+                        forum_request.updated_on = aware_datetime(datetime.now())
+                        forum_request.save()
+                        send_forum_join_request_approval_to_user(forum, requester)
+                        return JsonResponse(
+                            {
+                                "status": "success",
+                                "detail": "Successfully approved join forum request",
+                            },
+                            safe=False,
+                        )
+                    except User.DoesNotExist:
+                        raise non_existing_data_exception("User")
+                else:
+                    raise cannot_perform_action(
+                        "Unauthorized to approve this join request"
+                    )
+            except Forum.DoesNotExist:
+                raise non_existing_data_exception("Forum")
+        except ForumRequest.DoesNotExist:
+            raise non_existing_data_exception("Forum request")
+
+
+class DeclineJoinForumRequest(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        request_id = self.kwargs["request_id"]
+        user = self.request.user
+
+        try:
+            forum_request = ForumRequest.objects.get(id=request_id)
+            try:
+                forum = Forum.objects.get(id=forum_request.forum_id)
+                if forum.author == user:
+                    try:
+                        requester = User.objects.get(
+                            user_key=forum_request.member.user_key
+                        )
+                        forum_request.is_approved = False
+                        forum_request.is_declined = True
+                        forum_request.save()
+                        send_forum_join_request_decline_to_user(forum, requester)
+                        return JsonResponse(
+                            {
+                                "status": "success",
+                                "detail": "Successfully declined join forum request",
+                            },
+                            safe=False,
+                        )
+                    except User.DoesNotExist:
+                        raise non_existing_data_exception("User")
+                else:
+                    raise cannot_perform_action(
+                        "Unauthorized to decline this join request"
+                    )
+            except Forum.DoesNotExist:
+                raise non_existing_data_exception("Forum")
+        except ForumRequest.DoesNotExist:
+            raise non_existing_data_exception("Forum request")
+
+
+class GetForumJoinRequests(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        forum_id = self.kwargs["forum_id"]
+        page_number = self.kwargs["page_number"]
+        user = self.request.user
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            if user == forum.author:
+                forum_request = list(
+                    ForumRequest.objects.filter(
+                        forum_id=forum_id, is_approved=False
+                    ).values(
+                        "id",
+                        "forum__topic",
+                        "member__first_name",
+                        "member__last_name",
+                        "member__email",
+                        "created_on",
+                    )
+                )
+                data = paginate_data(forum_request, page_number, 10)
+                return JsonResponse(
+                    data,
+                    safe=False,
+                )
+            else:
+                raise cannot_perform_action("Unauthorized to view forum requests")
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")

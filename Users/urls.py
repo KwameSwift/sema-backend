@@ -12,6 +12,9 @@ from .views.users_views import (
     UpdateUserProfile,
     UploadUserDocuments,
     GetMyForums,
+    ApproveJoinForumRequest,
+    DeclineJoinForumRequest,
+    GetForumJoinRequests,
 )
 
 urlpatterns = [
@@ -70,5 +73,20 @@ urlpatterns = [
         "my-forums/<int:data_type>/<int:page_number>/",
         GetMyForums.as_view(),
         name="Get My Forums",
+    ),
+    path(
+        "approve-forum-request/<int:request_id>/",
+        ApproveJoinForumRequest.as_view(),
+        name="Approve Forum Request",
+    ),
+    path(
+        "decline-forum-request/<int:request_id>/",
+        DeclineJoinForumRequest.as_view(),
+        name="Decline Forum Request",
+    ),
+    path(
+        "get-forum-join-requests/<int:request_id>/",
+        GetForumJoinRequests.as_view(),
+        name="Get Forum Join Requests",
     ),
 ]

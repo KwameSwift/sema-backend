@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models import Q, Func, F
-from django.db.models.functions import Lower
 
 from Auth.models import User
 
@@ -186,3 +184,28 @@ class SharedFile(models.Model):
     class Meta:
         ordering = ("-created_on",)
         db_table = "Shared_Files"
+
+
+class ForumRequest(models.Model):
+    member = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="join_requester",
+    )
+    forum = models.ForeignKey(
+        Forum,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="request_forum",
+    )
+    is_approved = models.BooleanField(default=False)
+    is_declined = models.BooleanField(default=False)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_on",)
+        db_table = "Forum_Requests"

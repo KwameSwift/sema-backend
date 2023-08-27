@@ -1,12 +1,22 @@
 import json
 
 from django.db.models import Q
+from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.http import JsonResponse
 
-from Forum.models import Forum, ForumFile, VirtualMeeting, ChatRoom
+from Forum.forum_helper import (
+    send_forum_join_request_to_admin,
+    send_forum_request_response_to_user,
+)
+from Forum.models import (
+    Forum,
+    ForumFile,
+    VirtualMeeting,
+    ChatRoom,
+    ForumRequest,
+)
 from helpers.azure_file_handling import (
     delete_blob,
     create_forum_header,
@@ -112,6 +122,7 @@ class GetSingleForum(APIView):
     def get(self, request, *args, **kwargs):
         forum_id = self.kwargs.get("forum_id")
         user = self.request.user
+
         try:
             Forum.objects.get(id=forum_id)
 
@@ -318,19 +329,30 @@ class JoinForum(APIView):
 
         try:
             forum = Forum.objects.get(id=forum_id)
+
             exists = Forum.forum_members.through.objects.filter(
                 Q(forum_id=forum) & Q(user_id=user.user_key)
             )
-            if exists:
-                raise cannot_perform_action("User already part of forum")
+            if forum.is_public:
+                if exists:
+                    raise cannot_perform_action("User already a member of forum")
+                else:
+                    forum.forum_members.add(user)
+                    forum.total_members += 1
+                    forum.save()
+                    message = "User successfully joined forum"
             else:
-                forum.forum_members.add(user)
-                forum.total_members += 1
-                forum.save()
-                return JsonResponse(
-                    {"status": "success", "detail": "User successfully joined forum"},
-                    safe=False,
-                )
+                send_forum_join_request_to_admin(forum, forum.author.email, user)
+                send_forum_request_response_to_user(forum, user)
+                try:
+                    ForumRequest.objects.get(forum=forum, member=user)
+                except ForumRequest.DoesNotExist:
+                    ForumRequest.objects.create(forum=forum, member=user)
+                message = "Join request sent to Forum Admin"
+            return JsonResponse(
+                {"status": "success", "detail": message},
+                safe=False,
+            )
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")
 
