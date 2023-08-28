@@ -85,7 +85,7 @@ urlpatterns = [
         name="Decline Forum Request",
     ),
     path(
-        "get-forum-join-requests/<int:request_id>/",
+        "get-forum-join-requests/<int:forum_id>/<int:page_number>/",
         GetForumJoinRequests.as_view(),
         name="Get Forum Join Requests",
     ),
