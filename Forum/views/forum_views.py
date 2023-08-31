@@ -268,6 +268,8 @@ class GetAllForums(APIView):
                     forum["is_authenticated"] = True
                 else:
                     forum["is_authenticated"] = False
+                    forum["is_member"] = False
+                    forum["has_liked"] = False
 
             data = paginate_data(forums, page_number, 10)
             return JsonResponse(
