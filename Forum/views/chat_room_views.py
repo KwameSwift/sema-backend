@@ -167,11 +167,11 @@ class JoinChatRoom(APIView):
         try:
             chat_room = ChatRoom.objects.get(id=room_id)
             try:
-                UserChatRoom.objects.get(meeting_room_id=chat_room.id, member=user)
-                cannot_perform_action("User already part of chat room")
+                UserChatRoom.objects.get(chat_room_id=chat_room.id, member=user)
+                raise cannot_perform_action("User already part of chat room")
             except UserChatRoom.DoesNotExist:
                 UserChatRoom.objects.create(
-                    meeting_room_id=chat_room.id,
+                    chat_room_id=chat_room.id,
                     member=user,
                     membership_type="Member",
                 )
@@ -197,7 +197,7 @@ class LeaveChatRoom(APIView):
             chat_room = ChatRoom.objects.get(id=room_id)
             try:
                 user_chat_room = UserChatRoom.objects.get(
-                    meeting_room_id=chat_room.id, member=user
+                    chat_room_id=chat_room.id, member=user
                 )
                 user_chat_room.delete()
 
@@ -208,7 +208,7 @@ class LeaveChatRoom(APIView):
                     safe=False,
                 )
             except UserChatRoom.DoesNotExist:
-                cannot_perform_action("User not part of chat room")
+                raise cannot_perform_action("User not part of chat room")
         except ChatRoom.DoesNotExist:
             raise non_existing_data_exception("Chat Room")
 
