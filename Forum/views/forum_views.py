@@ -231,9 +231,6 @@ class GetAllForums(APIView):
                 "created_on",
             )
             for forum in forums:
-                forum["is_owner"] = (
-                    True if forum["author_id"] == user.user_key else False
-                )
                 forum["virtual_meetings"] = list(
                     VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
                         "id",
@@ -261,6 +258,9 @@ class GetAllForums(APIView):
                 )
 
                 if user.is_authenticated:
+                    forum["is_owner"] = (
+                        True if forum["author_id"] == user.user_key else False
+                    )
                     liked = Forum.forum_likers.through.objects.filter(
                         Q(forum_id=forum["id"]) & Q(user_id=user.user_key)
                     )
@@ -271,6 +271,7 @@ class GetAllForums(APIView):
                     forum["is_member"] = True if member else False
                     forum["is_authenticated"] = True
                 else:
+                    forum["is_owner"] = False
                     forum["is_authenticated"] = False
                     forum["is_member"] = False
                     forum["has_liked"] = False
