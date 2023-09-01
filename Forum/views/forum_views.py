@@ -214,6 +214,7 @@ class GetAllForums(APIView):
                 "topic",
                 "description",
                 "tags",
+                "author_id",
                 "author__first_name",
                 "author__last_name",
                 "author__profile_image",
@@ -230,6 +231,9 @@ class GetAllForums(APIView):
                 "created_on",
             )
             for forum in forums:
+                forum["is_owner"] = (
+                    True if forum["author_id"] == user.user_key else False
+                )
                 forum["virtual_meetings"] = list(
                     VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
                         "id",
@@ -270,7 +274,7 @@ class GetAllForums(APIView):
                     forum["is_authenticated"] = False
                     forum["is_member"] = False
                     forum["has_liked"] = False
-
+                forum.pop("author_id", None)
             data = paginate_data(forums, page_number, 10)
             return JsonResponse(
                 data,
