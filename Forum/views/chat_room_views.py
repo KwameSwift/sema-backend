@@ -6,7 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from Forum.models import ChatRoom, UserChatRoom, Forum
+from Forum.forum_helper import create_chat_room_message
+from Forum.models import ChatRoom, UserChatRoom, Forum, ChatRoomMessages
 from chat_channels.sender_functions import send_group_message
 from helpers.azure_file_handling import create_chat_shared_file
 from helpers.status_codes import (
@@ -103,10 +104,21 @@ class GetChatRoom(APIView):
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
+        user = self.request.user
         room_id = self.kwargs["room_id"]
 
         try:
-            chat_room = ChatRoom.objects.filter(id=room_id).values(
+            chat = ChatRoom.objects.get(id=room_id)
+            try:
+                UserChatRoom.objects.get(user=user, chat_room_id=chat.id)
+            except UserChatRoom.DoesNotExist:
+                raise cannot_perform_action("User not a member of chat room")
+        except ChatRoom.DoesNotExist:
+            raise non_existing_data_exception("Chat Room")
+
+        chat_room = (
+            ChatRoom.objects.filter(id=room_id)
+            .values(
                 "id",
                 "room_name",
                 "description",
@@ -119,17 +131,28 @@ class GetChatRoom(APIView):
                 "creator__profile_image",
                 "created_on",
             )
+            .first()
+        )
 
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "detail": "Meeting Room retrieved successfully",
-                    "data": chat_room[0],
-                },
-                safe=False,
+        messages = (
+            ChatRoomMessages.objects.filter(chat_room_id=chat_room["id"])
+            .values()
+            .order_by("-created_on")
+        )
+        for message in messages:
+            message["is_sender"] = (
+                True if message["sender_d"] == user.user_key else False
             )
-        except IndexError:
-            raise non_existing_data_exception("Chat Room")
+        chat_room["messages"] = list(messages)
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Meeting Room retrieved successfully",
+                "data": chat_room,
+            },
+            safe=False,
+        )
 
 
 class UpdateChatRoom(APIView):
@@ -235,22 +258,20 @@ class SendMessageToChatRoom(APIView):
                 UserChatRoom.objects.get(chat_room_id=room_id, member=user)
                 data = {
                     "chat_room_id": chat_room.id,
+                    "sender_id": user.user_key,
                     "sender": f"{user.first_name} {user.last_name}",
                     "timestamp": datetime.now().isoformat(),
                 }
                 if files:
-                    check_required_fields(data, ["description"])
-                    urls = create_chat_shared_file(
-                        files, chat_room, user, data["description"]
-                    )
-                    data["description"] = data.get("description")
+                    urls = create_chat_shared_file(files, chat_room, user, message)
                     data["files"] = urls
-                else:
-                    data["message"] = message
+
+                data["message"] = message
                 room_name = str(chat_room.room_name).lower().replace(" ", "_")
                 send_group_message(room_name, data)
                 chat_room.total_messages += 1
                 chat_room.save()
+                create_chat_room_message(data)
                 return JsonResponse(
                     {"status": "success", "detail": "Message sent", "data": data},
                     safe=False,

@@ -209,3 +209,29 @@ class ForumRequest(models.Model):
     class Meta:
         ordering = ("-created_on",)
         db_table = "Forum_Requests"
+
+
+class ChatRoomMessages(models.Model):
+    chat_room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="chat_room_messages",
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="message_sender",
+    )
+    message = models.TextField(blank=True)
+    is_media = models.BooleanField(default=False)
+    media_files = models.JSONField(blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_on",)
+        db_table = "Chat_Room_Messages"
