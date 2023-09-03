@@ -141,7 +141,7 @@ class GetChatRoom(APIView):
         )
         for message in messages:
             message["is_sender"] = (
-                True if message["sender_d"] == user.user_key else False
+                True if message["sender_id"] == user.user_key else False
             )
         chat_room["messages"] = list(messages)
 
