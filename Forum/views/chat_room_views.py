@@ -136,13 +136,22 @@ class GetChatRoom(APIView):
 
         messages = (
             ChatRoomMessages.objects.filter(chat_room_id=chat_room["id"])
-            .values()
+            .values(
+                "sender_id",
+                "sender__first_name",
+                "sender__last_name",
+                "message",
+                "is_media",
+                "media_files",
+                "created_on",
+            )
             .order_by("-created_on")
         )
         for message in messages:
             message["is_sender"] = (
                 True if message["sender_id"] == user.user_key else False
             )
+            message.pop("sender_id", None)
         chat_room["messages"] = list(messages)
 
         return JsonResponse(
