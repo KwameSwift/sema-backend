@@ -145,7 +145,7 @@ class GetChatRoom(APIView):
                 "media_files",
                 "created_on",
             )
-            .order_by("-created_on")
+            .order_by("created_on")
         )
         for message in messages:
             message["is_sender"] = (
