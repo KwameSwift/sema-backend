@@ -267,7 +267,7 @@ class SendMessageToChatRoom(APIView):
                 UserChatRoom.objects.get(chat_room_id=room_id, member=user)
                 data = {
                     "chat_room_id": chat_room.id,
-                    "sender_id": user.user_key,
+                    "sender_id": str(user.user_key),
                     "sender": f"{user.first_name} {user.last_name}",
                     "timestamp": datetime.now().isoformat(),
                 }
