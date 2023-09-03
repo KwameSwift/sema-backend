@@ -4,7 +4,7 @@ from django.core.asgi import get_asgi_application
 from .consumers import ChatRoomConsumer
 
 websocket_urlpatterns = URLRouter(
-    [path("ws/forum-messages/<int:chat_room_id>/", ChatRoomConsumer.as_asgi())]
+    [path("ws/chat-messages/<int:chat_room_id>/", ChatRoomConsumer.as_asgi())]
 )
 
 application = ProtocolTypeRouter(
