@@ -110,7 +110,7 @@ class GetChatRoom(APIView):
         try:
             chat = ChatRoom.objects.get(id=room_id)
             try:
-                UserChatRoom.objects.get(user=user, chat_room_id=chat.id)
+                UserChatRoom.objects.get(member=user, chat_room_id=chat.id)
             except UserChatRoom.DoesNotExist:
                 raise cannot_perform_action("User not a member of chat room")
         except ChatRoom.DoesNotExist:
