@@ -141,6 +141,6 @@ def create_chat_room_message(data):
         chat_room_id=data["chat_room_id"],
         sender_id=data["sender_id"],
         message=data["message"],
-        is_media=True if data["media_files"] else False,
-        media_files=data["media_files"] if data["media_files"] else None,
+        is_media=True if data.get("media_files") else False,
+        media_files=data["media_files"] if data.get("media_files") else None,
     )
