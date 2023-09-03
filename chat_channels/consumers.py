@@ -26,7 +26,8 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_chat_room(self, chat_room_id):
         try:
-            return ChatRoom.objects.get(id=chat_room_id)
+            chat_room = ChatRoom.objects.get(id=chat_room_id)
+            return chat_room
         except ChatRoom.DoesNotExist:
             raise non_existing_data_exception("Chat Room")
 
