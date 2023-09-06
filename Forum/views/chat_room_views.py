@@ -274,15 +274,21 @@ class SendMessageToChatRoom(APIView):
                 UserChatRoom.objects.get(chat_room_id=room_id, member=user)
                 data = {
                     "chat_room_id": chat_room.id,
-                    "sender_id": str(user.user_key),
-                    "sender": f"{user.first_name} {user.last_name}",
-                    "timestamp": datetime.now().isoformat(),
+                    "sender__first_name": user.first_name,
+                    "sender__last_name": user.last_name,
                 }
+
                 if files:
                     urls = create_chat_shared_file(files, chat_room, user, message)
-                    data["files"] = urls
+                else:
+                    urls = []
 
                 data["message"] = message
+                data["is_media"] = True if files else False
+                data["media_files"] = urls
+                data["created_on"] = datetime.now().isoformat()
+                data["is_sender"] = True
+
                 room_name = str(chat_room.room_name).lower().replace(" ", "_")
                 send_group_message(room_name, data)
                 chat_room.total_messages += 1
