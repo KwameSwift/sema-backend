@@ -293,7 +293,7 @@ class SendMessageToChatRoom(APIView):
                 send_group_message(room_name, data)
                 chat_room.total_messages += 1
                 chat_room.save()
-                create_chat_room_message(data)
+                create_chat_room_message(data, user.user_key)
                 return JsonResponse(
                     {"status": "success", "detail": "Message sent", "data": data},
                     safe=False,
