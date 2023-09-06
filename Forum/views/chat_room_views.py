@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -202,17 +203,23 @@ class JoinChatRoom(APIView):
                 UserChatRoom.objects.get(chat_room_id=chat_room.id, member=user)
                 raise cannot_perform_action("User already part of chat room")
             except UserChatRoom.DoesNotExist:
-                UserChatRoom.objects.create(
-                    chat_room_id=chat_room.id,
-                    member=user,
-                    membership_type="Member",
+                is_forum_member = Forum.forum_members.through.objects.filter(
+                    Q(forum_id=chat_room.forum_id) & Q(user_id=user.user_key)
                 )
-                chat_room.total_members += 1
-                chat_room.save()
-                return JsonResponse(
-                    {"status": "success", "detail": "User joined chat room"},
-                    safe=False,
-                )
+                if is_forum_member:
+                    UserChatRoom.objects.create(
+                        chat_room_id=chat_room.id,
+                        member=user,
+                        membership_type="Member",
+                    )
+                    chat_room.total_members += 1
+                    chat_room.save()
+                    return JsonResponse(
+                        {"status": "success", "detail": "User joined chat room"},
+                        safe=False,
+                    )
+                else:
+                    raise cannot_perform_action("Not a member of forum")
         except ChatRoom.DoesNotExist:
             raise non_existing_data_exception("Chat Room")
 
