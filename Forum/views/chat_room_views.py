@@ -288,12 +288,13 @@ class SendMessageToChatRoom(APIView):
                 data["media_files"] = urls
                 data["created_on"] = datetime.now().isoformat()
                 data["is_sender"] = True
+                data["sender_id"] = user.user_key
 
                 room_name = str(chat_room.room_name).lower().replace(" ", "_")
                 send_group_message(room_name, data)
                 chat_room.total_messages += 1
                 chat_room.save()
-                create_chat_room_message(data, user.user_key)
+                create_chat_room_message(data)
                 return JsonResponse(
                     {"status": "success", "detail": "Message sent", "data": data},
                     safe=False,
