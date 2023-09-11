@@ -288,7 +288,7 @@ class SendMessageToChatRoom(APIView):
                 data["media_files"] = urls
                 data["created_on"] = datetime.now().isoformat()
                 data["is_sender"] = True
-                data["sender_id"] = user.user_key
+                data["sender_id"] = str(user.user_key)
 
                 room_name = str(chat_room.room_name).lower().replace(" ", "_")
                 send_group_message(room_name, data)
