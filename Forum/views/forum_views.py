@@ -9,6 +9,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from Forum.forum_helper import (
     send_forum_join_request_to_admin,
     send_forum_request_response_to_user,
+    get_randomized_forums_suggestions,
 )
 from Forum.models import (
     Forum,
@@ -192,6 +193,7 @@ class GetSingleForum(APIView):
             else:
                 forum["is_authenticated"] = False
 
+            forum["suggested_forums"] = get_randomized_forums_suggestions(forum["id"])
             return JsonResponse(
                 {
                     "status": "success",

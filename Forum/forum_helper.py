@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from Forum.models import ChatRoomMessages
+from Forum.models import ChatRoomMessages, Forum
 from helpers.email_sender import send_email
 
 
@@ -144,3 +144,26 @@ def create_chat_room_message(data):
         is_media=True if data.get("media_files") else False,
         media_files=data["media_files"] if data.get("media_files") else None,
     )
+
+
+def get_randomized_forums_suggestions(forum_id):
+    from random import sample
+
+    # Get the total number of forum records (excluding the excluded ID)
+    total_forums = Forum.objects.exclude(id=forum_id).count()
+
+    # Generate a list of unique random indexes to return four items
+    random_indexes = sample(range(total_forums), 4)
+
+    # Retrieve the random forum records as a list
+    random_forums = list(
+        Forum.objects.all()
+        .exclude(id=forum_id)
+        .order_by("?")  # Shuffle the records randomly
+        .values("id", "topic", "is_public", "total_members")
+    )
+
+    # Slice the list using the random indexes
+    selected_random_forums = [random_forums[i] for i in random_indexes]
+
+    return selected_random_forums
