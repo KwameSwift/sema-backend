@@ -84,6 +84,7 @@ class ForumFile(models.Model):
     description = models.TextField()
     file_url = models.CharField(max_length=255, blank=True)
     file_key = models.CharField(max_length=255, blank=True)
+    file_category = models.CharField(max_length=255, blank=True)
     file_type = models.CharField(max_length=255, blank=True)
     uploader = models.ForeignKey(
         User,

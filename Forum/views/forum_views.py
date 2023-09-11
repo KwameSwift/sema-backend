@@ -1,4 +1,5 @@
 import json
+import os
 
 from django.db.models import Q
 from django.http import JsonResponse
@@ -21,6 +22,7 @@ from Forum.models import (
 from helpers.azure_file_handling import (
     delete_blob,
     create_forum_header,
+    create_forum_files,
 )
 from helpers.functions import paginate_data
 from helpers.status_codes import (
@@ -30,6 +32,8 @@ from helpers.status_codes import (
     cannot_perform_action,
 )
 from helpers.validations import check_permission, check_required_fields
+
+LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
 
 # Create a Forum
@@ -165,9 +169,28 @@ class GetSingleForum(APIView):
                     "total_attendees",
                 )
             )
+            forum["media_files"] = list(
+                ForumFile.objects.filter(
+                    forum_id=forum_id, file_category="Media Files"
+                ).values(
+                    "id",
+                    "description",
+                    "file_category",
+                    "file_type",
+                    "file_url",
+                    "created_on",
+                )
+            )
             forum["files"] = list(
-                ForumFile.objects.filter(forum_id=forum_id).values(
-                    "id", "description", "file_type", "file_url", "created_on"
+                ForumFile.objects.filter(
+                    forum_id=forum_id, file_category="Files"
+                ).values(
+                    "id",
+                    "description",
+                    "file_category",
+                    "file_type",
+                    "file_url",
+                    "created_on",
                 )
             )
 
@@ -535,5 +558,46 @@ class SearchForum(APIView):
 
         return JsonResponse(
             data,
+            safe=False,
+        )
+
+
+class UploadForumFiles(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        forum_id = self.kwargs.get("forum_id")
+        files = request.FILES.getlist("files[]")
+        data = request.data
+
+        if files:
+            files = data.pop("files[]", None)
+
+        data = json.dumps(data)
+        data = json.loads(data)
+
+        if not check_permission(user, "Forums", [2]):
+            raise action_authorization_exception("Unauthorized to upload forum files")
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+        if not forum.author_id == user.user_key:
+            raise action_authorization_exception(
+                "Unauthorized to upload forum documents"
+            )
+
+        files_urls = create_forum_files(files, forum, user, data.get("description"))
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Files uploaded successfully",
+                "data": files_urls,
+            },
             safe=False,
         )

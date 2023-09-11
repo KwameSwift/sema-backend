@@ -167,3 +167,38 @@ def get_randomized_forums_suggestions(forum_id):
     selected_random_forums = [random_forums[i] for i in random_indexes]
 
     return selected_random_forums
+
+
+def categorize_file(file_name):
+    # Define a dictionary mapping media file extensions to "Media Files"
+    media_file_extensions = {
+        ".mp3",
+        ".wav",
+        ".mp4",
+        ".avi",
+        ".mov",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".bmp",
+        ".mkv",
+        ".webm",
+        ".flv",
+        ".flac",
+        ".aac",
+        ".ogg",
+        ".wma",
+        ".tiff",
+        ".raw",
+        ".ico",
+    }
+
+    # Get the file extension from the file name
+    file_extension = file_name[file_name.rfind(".") :].lower()
+
+    # Check if the file extension is in the media_file_extensions dictionary
+    if file_extension in media_file_extensions:
+        return "Media Files"
+    else:
+        return "Files"
