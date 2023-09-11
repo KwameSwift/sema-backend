@@ -152,7 +152,6 @@ class GetChatRoom(APIView):
             message["is_sender"] = (
                 True if message["sender_id"] == user.user_key else False
             )
-            message.pop("sender_id", None)
         chat_room["messages"] = list(messages)
 
         return JsonResponse(
