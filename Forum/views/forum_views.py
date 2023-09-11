@@ -175,6 +175,7 @@ class GetSingleForum(APIView):
                 ).values(
                     "id",
                     "description",
+                    "file_name",
                     "file_category",
                     "file_type",
                     "file_url",
@@ -187,6 +188,7 @@ class GetSingleForum(APIView):
                 ).values(
                     "id",
                     "description",
+                    "file_name",
                     "file_category",
                     "file_type",
                     "file_url",
