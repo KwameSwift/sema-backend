@@ -265,8 +265,8 @@ class SendMessageToChatRoom(APIView):
         if files:
             files = data.pop("files[]", None)
 
-        data = json.dumps(data)
-        data = json.loads(data)
+        # data = json.dumps(data)
+        # data = json.loads(data)
         try:
             chat_room = ChatRoom.objects.get(id=room_id)
             try:

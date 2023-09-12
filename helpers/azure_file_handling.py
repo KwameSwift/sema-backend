@@ -403,12 +403,18 @@ def upload_profile_image(file, user):
 
 
 def create_chat_shared_file(files, chat_room, user, description):
+    import uuid
+
+    # Generate a UUID
+    uuid_value = uuid.uuid4()
+
     user_name = f"{user.first_name}-{user.last_name}".lower()
     try:
         urls = []
         for img in files:
             file_name = str(img.name).lower()
-            new_filename = file_name.replace(" ", "_")
+            filename = file_name.replace(" ", "_")
+            new_filename = f"{uuid_value}_{filename}"
             chat = str(chat_room.room_name).replace(" ", "_")
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Chat_Shared_Files/{chat}"
@@ -431,9 +437,9 @@ def create_chat_shared_file(files, chat_room, user, description):
             shortened_url = shorten_url(file_url)
             urls.append(shortened_url)
             shared_file = {
-                "file_name": new_filename,
+                "file_name": str(img.name).split(".")[0],
                 "description": description if description else "",
-                "file_type": os.path.splitext(file_name)[1],
+                "file_type": new_filename[new_filename.rfind(".") :].lower(),
                 "file_url": shortened_url,
                 "file_key": blob_name,
                 "uploader_id": user.user_key,
