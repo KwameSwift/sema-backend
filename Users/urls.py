@@ -15,6 +15,7 @@ from .views.users_views import (
     ApproveJoinForumRequest,
     DeclineJoinForumRequest,
     GetForumJoinRequests,
+    ManageMyForum,
 )
 
 urlpatterns = [
@@ -88,5 +89,10 @@ urlpatterns = [
         "get-forum-join-requests/<int:forum_id>/<int:page_number>/",
         GetForumJoinRequests.as_view(),
         name="Get Forum Join Requests",
+    ),
+    path(
+        "manage-forum/<int:forum_id>/",
+        ManageMyForum.as_view(),
+        name="Manage My Forum",
     ),
 ]

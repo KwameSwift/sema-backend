@@ -15,6 +15,7 @@ from Events.models.events_model import Events
 from Forum.forum_helper import (
     send_forum_join_request_approval_to_user,
     send_forum_join_request_decline_to_user,
+    get_randomized_forums_suggestions,
 )
 from Forum.models import Forum, VirtualMeeting, ForumFile, ChatRoom, ForumRequest
 from helpers.azure_file_handling import delete_blob, shorten_url, upload_profile_image
@@ -87,10 +88,10 @@ class UploadUserDocuments(APIView):
         files = request.FILES.getlist("files")
         user = self.request.user
 
-        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
+        local_file_path = os.environ.get("LOCAL_FILE_PATH")
         for file in files:
             full_directory = (
-                f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Documents"
+                f"{local_file_path}{user.first_name}_{user.last_name}/Documents"
             )
             file_path = local_file_upload(full_directory, file)
 
@@ -546,5 +547,113 @@ class GetForumJoinRequests(APIView):
                 )
             else:
                 raise cannot_perform_action("Unauthorized to view forum requests")
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class ManageMyForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        forum_id = self.kwargs.get("forum_id")
+        user = self.request.user
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            if not forum.author == user:
+                raise cannot_perform_action("Unauthorized to manage forum")
+            else:
+                forum = (
+                    Forum.objects.filter(id=forum_id)
+                    .values(
+                        "id",
+                        "topic",
+                        "description",
+                        "tags",
+                        "author__first_name",
+                        "author__last_name",
+                        "author__profile_image",
+                        "author__is_verified",
+                        "author__organization",
+                        "approved_by__first_name",
+                        "approved_by__last_name",
+                        "approved_on",
+                        "header_image",
+                        "forum_members",
+                        "total_likes",
+                        "total_members",
+                        "total_shares",
+                        "is_approved",
+                        "is_public",
+                        "is_declined",
+                        "created_on",
+                    )
+                    .first()
+                )
+                forum["virtual_meetings"] = list(
+                    VirtualMeeting.objects.filter(forum_id=forum_id).values(
+                        "id",
+                        "meeting_agenda",
+                        "meeting_url",
+                        "scheduled_start_time",
+                        "scheduled_end_time",
+                        "organizer__first_name",
+                        "organizer__last_name",
+                        "total_attendees",
+                    )
+                )
+                forum["media_files"] = list(
+                    ForumFile.objects.filter(
+                        forum_id=forum_id, file_category="Media Files"
+                    ).values(
+                        "id",
+                        "description",
+                        "file_name",
+                        "file_category",
+                        "file_type",
+                        "file_url",
+                        "file_key",
+                        "created_on",
+                    )
+                )
+                forum["files"] = list(
+                    ForumFile.objects.filter(
+                        forum_id=forum_id, file_category="Files"
+                    ).values(
+                        "id",
+                        "description",
+                        "file_name",
+                        "file_category",
+                        "file_type",
+                        "file_url",
+                        "file_key",
+                        "created_on",
+                    )
+                )
+
+                forum["chat_rooms"] = list(
+                    ChatRoom.objects.filter(forum_id=forum_id).values(
+                        "id",
+                        "room_name",
+                        "total_members",
+                        "total_messages",
+                    )
+                )
+                frm = Forum.objects.filter(id=forum_id).first()
+                forum["members"] = list(
+                    frm.forum_members.all().values(
+                        "user_key", "first_name", "last_name"
+                    )
+                )
+
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Forum deleted successfully",
+                        "data": forum,
+                    },
+                    safe=False,
+                )
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")

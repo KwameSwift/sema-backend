@@ -207,6 +207,10 @@ class GetSingleForum(APIView):
                     "total_messages",
                 )
             )
+            frm = Forum.objects.filter(id=forum_id).first()
+            forum["members"] = list(
+                frm.forum_members.all().values("user_key", "first_name", "last_name")
+            )
 
             if user.is_authenticated:
                 liked = Forum.forum_likers.through.objects.filter(

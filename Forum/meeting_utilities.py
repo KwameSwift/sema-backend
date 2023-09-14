@@ -38,8 +38,4 @@ def generate_link():
     # Create the event
     event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
 
-    # Print out the event ID and conference link
-    print(f'Event created: {event.get("htmlLink")}')
-    print(f'Conference link: {event.get("conferenceData").get("entryPoints")[0].get("uri")}')
-
     return True

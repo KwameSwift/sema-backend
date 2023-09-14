@@ -3,7 +3,6 @@ import os
 import shutil
 from os import path
 
-import fitz
 import requests
 from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.storage.blob import BlobServiceClient, ContentSettings
@@ -12,8 +11,8 @@ from pdf2image import convert_from_path
 
 from Forum.forum_helper import categorize_file
 from Forum.models import SharedFile, ForumFile
+from Utilities.models.documents_model import BlogDocuments
 from helpers.status_codes import cannot_perform_action
-from Utilities.models.documents_model import BlogDocuments, UserDocuments
 
 STORAGE_ACCOUNT = os.environ.get("STORAGE_ACCOUNT")
 STORAGE_ACCOUNT_PROTOCOL = os.environ.get("STORAGE_ACCOUNT_PROTOCOL")
