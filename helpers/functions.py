@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.timezone import make_aware
 
-from _project import settings
+from django.conf import settings
 
 FTP_HOSTNAME = os.getenv("FTP_HOSTNAME")
 FTP_USERNAME = os.getenv("FTP_USERNAME")

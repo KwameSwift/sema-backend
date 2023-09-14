@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timezone
 
 from django.db.models import Q
 from django.http import JsonResponse
@@ -18,13 +19,14 @@ from Forum.models import (
     VirtualMeeting,
     ChatRoom,
     ForumRequest,
+    VirtualMeetingAttendees,
 )
 from helpers.azure_file_handling import (
     delete_blob,
     create_forum_header,
     create_forum_files,
 )
-from helpers.functions import paginate_data
+from helpers.functions import paginate_data, aware_datetime
 from helpers.status_codes import (
     action_authorization_exception,
     duplicate_data_exception,
@@ -603,3 +605,162 @@ class UploadForumFiles(APIView):
             },
             safe=False,
         )
+
+
+class CreateVirtualMeeting(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        user = self.request.user
+        forum_id = self.kwargs.get("forum_id")
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+
+            if not forum.author == user:
+                raise cannot_perform_action(
+                    "Unauthorized to create meeting in this Forum"
+                )
+
+            check_required_fields(
+                data,
+                [
+                    "meeting_url",
+                    "meeting_agenda",
+                    "scheduled_start_time",
+                    "scheduled_end_time",
+                ],
+            )
+            start_time = datetime.fromisoformat(data["scheduled_start_time"]).replace(
+                tzinfo=timezone.utc
+            )
+            end_time = datetime.fromisoformat(data["scheduled_end_time"]).replace(
+                tzinfo=timezone.utc
+            )
+
+            details = {
+                "organizer": user,
+                "forum": forum,
+                "meeting_url": data["meeting_url"],
+                "meeting_agenda": data["meeting_agenda"],
+                "scheduled_start_time": start_time,
+                "scheduled_end_time": end_time,
+                "total_attendees": 1,
+            }
+            meeting = VirtualMeeting.objects.create(**details)
+            attendee = {
+                "meeting_id": meeting.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "mobile_number": user.mobile_number if user.mobile_number else "",
+                "country_id": user.country.id,
+            }
+            VirtualMeetingAttendees.objects.create(**attendee)
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Meeting created successfully",
+                    "data": {
+                        "meeting_url": data["meeting_url"],
+                        "meeting_agenda": data["meeting_agenda"],
+                        "scheduled_start_time": start_time,
+                        "scheduled_end_time": end_time,
+                    },
+                },
+                safe=False,
+            )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class DeleteVirtualMeeting(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        meeting_id = self.kwargs.get("meeting_id")
+
+        try:
+            meeting = VirtualMeeting.objects.get(id=meeting_id)
+
+            if not meeting.organizer == user:
+                raise cannot_perform_action("Unauthorized to delete this meeting")
+            else:
+                VirtualMeetingAttendees.objects.filter(meeting=meeting).delete()
+                meeting.delete()
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Meeting deleted successfully",
+                    },
+                    safe=False,
+                )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Virtual Meeting")
+
+
+class UpdateVirtualMeeting(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        data = request.data
+        meeting_id = self.kwargs.get("meeting_id")
+
+        try:
+            meeting = VirtualMeeting.objects.get(id=meeting_id)
+
+            if not meeting.organizer == user:
+                raise cannot_perform_action("Unauthorized to delete this meeting")
+            else:
+                VirtualMeeting.objects.filter(id=meeting.id).update(**data)
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Meeting updated successfully",
+                    },
+                    safe=False,
+                )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Virtual Meeting")
+
+
+class RegisterForMeeting(APIView):
+    def delete(self, request, *args, **kwargs):
+        data = request.data
+        meeting_id = self.kwargs.get("meeting_id")
+        check_required_fields(
+            data,
+            ["first_name", "last_name", "email", "mobile_number", "country_id"],
+        )
+        try:
+            meeting = VirtualMeeting.objects.get(id=meeting_id)
+            try:
+                VirtualMeetingAttendees.objects.get(
+                    meeting=meeting, email=data["email"]
+                )
+                raise duplicate_data_exception("User already registered")
+            except VirtualMeetingAttendees.DoesNotExist:
+                details = {
+                    "meeting": meeting,
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                    "email": data["email"],
+                    "mobile_number": data["mobile_number"],
+                    "country_id": data["country_id"],
+                }
+                VirtualMeetingAttendees.objects.create(**details)
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Meeting registration successful",
+                    },
+                    safe=False,
+                )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Virtual Meeting")

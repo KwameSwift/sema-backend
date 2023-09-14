@@ -1,6 +1,6 @@
 from django.db import models
 
-from Auth.models import User
+from Auth.models import User, Country
 
 
 class Forum(models.Model):
@@ -59,10 +59,6 @@ class VirtualMeeting(models.Model):
         blank=True,
         related_name="meeting_organizer",
     )
-    attendees = models.ManyToManyField(
-        User,
-        related_name="virtual_meeting_attendees",
-    )
     total_attendees = models.IntegerField(default=0)
     forum = models.ForeignKey(
         Forum,
@@ -77,6 +73,33 @@ class VirtualMeeting(models.Model):
     class Meta:
         ordering = ("-created_on",)
         db_table = "Virtual_Meetings"
+
+
+class VirtualMeetingAttendees(models.Model):
+    meeting = models.ForeignKey(
+        VirtualMeeting,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="virtual_meeting",
+    )
+    first_name = models.CharField(max_length=255, blank=True)
+    last_name = models.CharField(max_length=255, blank=True)
+    email = models.CharField(max_length=255, blank=True)
+    mobile_number = models.CharField(max_length=255, blank=True)
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="attendee_country",
+    )
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_on",)
+        db_table = "Virtual_Meeting_Attendees"
 
 
 class ForumFile(models.Model):

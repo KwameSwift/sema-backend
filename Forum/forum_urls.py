@@ -11,6 +11,10 @@ from .views.forum_views import (
     UpdateForum,
     SearchForum,
     UploadForumFiles,
+    DeleteVirtualMeeting,
+    CreateVirtualMeeting,
+    RegisterForMeeting,
+    UpdateVirtualMeeting,
 )
 
 urlpatterns = [
@@ -64,5 +68,25 @@ urlpatterns = [
         "upload-forum-files/<int:forum_id>/",
         UploadForumFiles.as_view(),
         name="Upload Forum Files",
+    ),
+    path(
+        "create-virtual-meeting/<int:forum_id>/",
+        CreateVirtualMeeting.as_view(),
+        name="Create Virtual Meeting",
+    ),
+    path(
+        "delete-virtual-meeting/<int:meeting_id>/",
+        DeleteVirtualMeeting.as_view(),
+        name="Delete Virtual Meeting",
+    ),
+    path(
+        "update-virtual-meeting/<int:meeting_id>/",
+        UpdateVirtualMeeting.as_view(),
+        name="Update Virtual Meeting",
+    ),
+    path(
+        "register-virtual-meeting/<int:meeting_id>/",
+        RegisterForMeeting.as_view(),
+        name="Register For Meeting",
     ),
 ]
