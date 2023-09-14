@@ -21,6 +21,7 @@ from Forum.models import (
     ForumRequest,
     VirtualMeetingAttendees,
 )
+from Polls.poll_helper import send_meeting_registration_mail
 from helpers.azure_file_handling import (
     delete_blob,
     create_forum_header,
@@ -755,6 +756,9 @@ class RegisterForMeeting(APIView):
                     "country_id": data["country_id"],
                 }
                 VirtualMeetingAttendees.objects.create(**details)
+                send_meeting_registration_mail(
+                    meeting, data["email"], data["first_name"]
+                )
                 return JsonResponse(
                     {
                         "status": "success",

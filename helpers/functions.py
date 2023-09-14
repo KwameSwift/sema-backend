@@ -53,7 +53,6 @@ def paginate_data(data, page_number, items_per_page):
 
 # Function to return aware datetime
 def aware_datetime(datetime):
-    settings.TIME_ZONE
     return make_aware(datetime)
 
 

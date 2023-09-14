@@ -133,3 +133,31 @@ def send_poll_declination_mail(poll, comments):
     )
 
     send_email(recipient_email, subject, message)
+
+
+def send_meeting_registration_mail(meeting, recipient_email, first_name):
+    subject = "Poll Declined"
+    # Convert the string to a datetime object
+    dt_object = datetime.datetime.fromisoformat(
+        str(meeting.scheduled_start_time).replace("Z", "+00:00")
+    )
+    # Convert the datetime object to the desired format
+    formatted_datetime = dt_object.strftime("%d-%b-%Y %H:%M:%S %Z")
+
+    new_line = "\n"
+    double_new_line = "\n\n"
+    message = (
+        f"Hi, {first_name}.{new_line}"
+        f"Your registration to attend the virtual meeting: {meeting.meeting_agenda}, scheduled for"
+        f" {formatted_datetime} has been received successfully. {new_line}"
+        f"Please find details of the meeting below:{new_line}"
+        f"Meeting link: {meeting.meeting_url}{new_line}"
+        f"Agenda: {meeting.meeting_agenda}{new_line}"
+        f"Organizer: {meeting.organizer.first_name} {meeting.organizer.last_name}{new_line}"
+        f"Start date and time: {formatted_datetime}{new_line}"
+        f"See you soon! {double_new_line}"
+        f"Thank you.{new_line}"
+        f"The Sema Team"
+    )
+
+    send_email(recipient_email, subject, message)
