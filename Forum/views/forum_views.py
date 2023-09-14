@@ -160,7 +160,7 @@ class GetSingleForum(APIView):
                 )
                 .first()
             )
-            forum["virtual_meetings"] = list(
+            virtual_meetings = list(
                 VirtualMeeting.objects.filter(forum_id=forum_id).values(
                     "id",
                     "meeting_agenda",
@@ -222,9 +222,16 @@ class GetSingleForum(APIView):
                 forum["has_liked"] = True if liked else False
                 forum["is_member"] = True if member else False
                 forum["is_authenticated"] = True
+                for meeting in virtual_meetings:
+                    vm = VirtualMeetingAttendees.objects.filter(
+                        meeting_id=meeting["id"], email=user.email
+                    )
+                    meeting["is_registered"] = True if vm else False
             else:
                 forum["is_authenticated"] = False
-
+                for meeting in virtual_meetings:
+                    meeting["is_registered"] = False
+            forum["virtual_meetings"] = list(virtual_meetings)
             forum["suggested_forums"] = get_randomized_forums_suggestions(forum["id"])
             return JsonResponse(
                 {
