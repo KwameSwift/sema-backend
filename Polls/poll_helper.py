@@ -136,7 +136,7 @@ def send_poll_declination_mail(poll, comments):
 
 
 def send_meeting_registration_mail(meeting, recipient_email, first_name):
-    subject = "Poll Declined"
+    subject = "Virtual Meeting Registration"
     # Convert the string to a datetime object
     dt_object = datetime.datetime.fromisoformat(
         str(meeting.scheduled_start_time).replace("Z", "+00:00")
