@@ -580,7 +580,6 @@ class ManageMyForum(APIView):
                         "approved_by__last_name",
                         "approved_on",
                         "header_image",
-                        "forum_members",
                         "total_likes",
                         "total_members",
                         "total_shares",
