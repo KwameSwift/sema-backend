@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
@@ -15,10 +15,23 @@ from Events.models.events_model import Events
 from Forum.forum_helper import (
     send_forum_join_request_approval_to_user,
     send_forum_join_request_decline_to_user,
-    get_randomized_forums_suggestions,
 )
-from Forum.models import Forum, VirtualMeeting, ForumFile, ChatRoom, ForumRequest
-from helpers.azure_file_handling import delete_blob, shorten_url, upload_profile_image
+from Forum.models import (
+    Forum,
+    VirtualMeeting,
+    ForumFile,
+    ChatRoom,
+    ForumRequest,
+    ForumPoll,
+    ForumPollChoices,
+)
+from Polls.models.poll_models import Poll, PollVote
+from Polls.poll_helper import (
+    retrieve_poll_with_choices,
+    author_retrieve_forum_poll_with_choices,
+)
+from Utilities.models.documents_model import UserDocuments
+from helpers.azure_file_handling import delete_blob, upload_profile_image
 from helpers.functions import (
     convert_quill_text_to_normal_text,
     delete_file,
@@ -33,9 +46,6 @@ from helpers.status_codes import (
     non_existing_data_exception,
 )
 from helpers.validations import check_required_fields
-from Polls.models.poll_models import Poll, PollVote
-from Polls.poll_helper import retrieve_poll_with_choices
-from Utilities.models.documents_model import UserDocuments
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -656,3 +666,34 @@ class ManageMyForum(APIView):
                 )
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Forum")
+
+
+class GetMyForumPolls(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        forum_id = self.kwargs.get("forum_id")
+        page_number = self.kwargs.get("page_number")
+
+        data = []
+        ForumPoll.objects.filter(
+            forum_id=forum_id, author=user, end_date__lt=aware_datetime(datetime.now())
+        ).update(is_ended=True)
+
+        forum_polls = ForumPoll.objects.filter(forum_id=forum_id, author=user).values()
+
+        for forum in forum_polls:
+            item = author_retrieve_forum_poll_with_choices(forum["id"])
+            item["total_votes"] = ForumPollChoices.objects.filter(
+                forum_poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
+            data.append(item)
+
+        data = paginate_data(data, page_number, 10)
+
+        return JsonResponse(
+            data,
+            safe=False,
+        )

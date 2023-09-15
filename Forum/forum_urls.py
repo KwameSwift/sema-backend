@@ -109,7 +109,7 @@ urlpatterns = [
         name="Vote On A Forum Poll",
     ),
     path(
-        "get-all-forum-polls/<int:forum_id>/",
+        "get-all-forum-polls/<int:forum_id>/<int:page_number>/",
         GetAllForumPollsByUser.as_view(),
         name="Get All Forum Polls By User",
     ),

@@ -964,6 +964,7 @@ class GetAllForumPollsByUser(APIView):
     def get(self, request, *args, **kwargs):
         user = self.request.user
         forum_id = self.kwargs.get("forum_id")
+        page_number = self.kwargs.get("page_number")
 
         data = []
         ForumPoll.objects.filter(
@@ -984,11 +985,9 @@ class GetAllForumPollsByUser(APIView):
             ).aggregate(total_votes=Sum("votes"))["total_votes"]
             data.append(item)
 
+        data = paginate_data(data, page_number, 10)
+
         return JsonResponse(
-            {
-                "status": "success",
-                "detail": "Polls retrieved successfully",
-                "data": data,
-            },
+            data,
             safe=False,
         )
