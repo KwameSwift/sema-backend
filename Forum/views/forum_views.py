@@ -719,7 +719,7 @@ class UpdateVirtualMeeting(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
-    def delete(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         user = self.request.user
         data = request.data
         meeting_id = self.kwargs.get("meeting_id")
