@@ -774,6 +774,12 @@ class RegisterForMeeting(APIView):
                     {
                         "status": "success",
                         "detail": "Meeting registration successful",
+                        "data": {
+                            "meeting_link": meeting.meeting_url,
+                            "start_date": meeting.scheduled_start_date,
+                            "end_date": meeting.scheduled_end_date,
+
+                        }
                     },
                     safe=False,
                 )
