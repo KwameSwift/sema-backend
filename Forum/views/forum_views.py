@@ -743,7 +743,7 @@ class UpdateVirtualMeeting(APIView):
 
 
 class RegisterForMeeting(APIView):
-    def delete(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         data = request.data
         meeting_id = self.kwargs.get("meeting_id")
         check_required_fields(
