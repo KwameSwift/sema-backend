@@ -728,7 +728,7 @@ class UpdateVirtualMeeting(APIView):
             meeting = VirtualMeeting.objects.get(id=meeting_id)
 
             if not meeting.organizer == user:
-                raise cannot_perform_action("Unauthorized to delete this meeting")
+                raise cannot_perform_action("Unauthorized to update this meeting")
             else:
                 VirtualMeeting.objects.filter(id=meeting.id).update(**data)
                 return JsonResponse(
