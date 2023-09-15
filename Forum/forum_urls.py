@@ -15,6 +15,10 @@ from .views.forum_views import (
     CreateVirtualMeeting,
     RegisterForMeeting,
     UpdateVirtualMeeting,
+    CreateForumPoll,
+    DeleteForumPoll,
+    VoteOnAForumPoll,
+    GetAllForumPollsByUser,
 )
 
 urlpatterns = [
@@ -88,5 +92,25 @@ urlpatterns = [
         "register-virtual-meeting/<int:meeting_id>/",
         RegisterForMeeting.as_view(),
         name="Register For Meeting",
+    ),
+    path(
+        "create-forum-poll/<int:forum_id>/",
+        CreateForumPoll.as_view(),
+        name="Create Forum Poll",
+    ),
+    path(
+        "delete-forum-poll/<int:forum_poll_id>/",
+        DeleteForumPoll.as_view(),
+        name="Delete Forum Poll",
+    ),
+    path(
+        "vote-on-forum-poll/",
+        VoteOnAForumPoll.as_view(),
+        name="Vote On A Forum Poll",
+    ),
+    path(
+        "get-all-forum-polls/<int:forum_id>/",
+        GetAllForumPollsByUser.as_view(),
+        name="Get All Forum Polls By User",
     ),
 ]

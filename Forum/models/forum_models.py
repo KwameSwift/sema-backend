@@ -259,3 +259,78 @@ class ChatRoomMessages(models.Model):
     class Meta:
         ordering = ("-created_on",)
         db_table = "Chat_Room_Messages"
+
+
+class ForumPoll(models.Model):
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_poll_author",
+    )
+    forum = models.ForeignKey(
+        Forum,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_poll",
+    )
+    question = models.CharField(max_length=255, blank=True)
+    start_date = models.DateField(auto_now_add=False, null=True, blank=True)
+    end_date = models.DateField(auto_now_add=False, null=True, blank=True)
+    is_ended = models.BooleanField(default=False)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_on",)
+        db_table = "Forum_Polls"
+
+
+class ForumPollChoices(models.Model):
+    forum_poll = models.ForeignKey(
+        ForumPoll,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_poll",
+    )
+    choice = models.CharField(max_length=255, null=True, blank=True)
+    votes = models.IntegerField(default=0)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("created_on",)
+        db_table = "Forum_Poll_Choices"
+
+
+class ForumPollVote(models.Model):
+    forum_poll = models.ForeignKey(
+        ForumPoll,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_poll_for_choice",
+    )
+    poll_choice = models.ForeignKey(
+        ForumPollChoices,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_poll_choice",
+    )
+    voter = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_poll_choice_voter",
+    )
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("created_on",)
+        db_table = "Forum_Poll_Votes"

@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -20,8 +20,15 @@ from Forum.models import (
     ChatRoom,
     ForumRequest,
     VirtualMeetingAttendees,
+    ForumPoll,
+    ForumPollChoices,
+    ForumPollVote,
 )
-from Polls.poll_helper import send_meeting_registration_mail
+from Polls.poll_helper import (
+    send_meeting_registration_mail,
+    retrieve_forum_poll_with_choices,
+    get_forum_polls_by_logged_in_user,
+)
 from helpers.azure_file_handling import (
     delete_blob,
     create_forum_header,
@@ -743,8 +750,12 @@ class UpdateVirtualMeeting(APIView):
 
 
 class RegisterForMeeting(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
     def post(self, request, *args, **kwargs):
         data = request.data
+        user = self.request.user
         meeting_id = self.kwargs.get("meeting_id")
         check_required_fields(
             data,
@@ -752,6 +763,12 @@ class RegisterForMeeting(APIView):
         )
         try:
             meeting = VirtualMeeting.objects.get(id=meeting_id)
+            is_forum_member = Forum.forum_members.through.objects.filter(
+                Q(forum_id=meeting.forum_id) & Q(user_id=user.user_key)
+            )
+            if not is_forum_member:
+                raise cannot_perform_action("You are not a member of the forum")
+
             try:
                 VirtualMeetingAttendees.objects.get(
                     meeting=meeting, email=data["email"]
@@ -784,3 +801,194 @@ class RegisterForMeeting(APIView):
                 )
         except Forum.DoesNotExist:
             raise non_existing_data_exception("Virtual Meeting")
+
+
+class CreateForumPoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        forum_id = self.kwargs["forum_id"]
+        user = self.request.user
+        data = request.data
+
+        check_required_fields(data, ["question", "choices", "start_date", "end_date"])
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            if not forum.author == user:
+                raise cannot_perform_action("Unauthorized to create poll")
+            else:
+                try:
+                    ForumPoll.objects.get(
+                        question=data["question"], author_id=user.user_key
+                    )
+                    raise duplicate_data_exception("Forum Poll")
+                except ForumPoll.DoesNotExist:
+                    data["start_date"] = datetime.strptime(
+                        data["start_date"], "%Y-%m-%d"
+                    ).date()
+                    data["end_date"] = datetime.strptime(
+                        data["end_date"], "%Y-%m-%d"
+                    ).date()
+                    data["author_id"] = user.user_key
+                    data["forum_id"] = forum.id
+
+                    choices = data.pop("choices", None)
+                    forum_poll = ForumPoll.objects.create(**data)
+
+                    for choice in choices:
+                        ForumPollChoices.objects.create(
+                            forum_poll_id=forum_poll.id, choice=choice
+                        )
+
+                    poll_data = (
+                        ForumPoll.objects.filter(id=forum_poll.id)
+                        .values(
+                            "id",
+                            "question",
+                            "start_date",
+                            "is_ended",
+                            "author__first_name",
+                            "author__last_name",
+                            "created_on",
+                        )
+                        .first()
+                    )
+                    poll_data["choices"] = list(
+                        ForumPollChoices.objects.filter(
+                            forum_poll_id=forum_poll.id
+                        ).values("id", "choice")
+                    )
+                    return JsonResponse(
+                        {
+                            "status": "success",
+                            "detail": "Forum Poll created successfully",
+                            "data": poll_data,
+                        },
+                        safe=False,
+                    )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class DeleteForumPoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def delete(self, request, *args, **kwargs):
+        forum_poll_id = self.kwargs["forum_poll_id"]
+        user = self.request.user
+
+        try:
+            forum_poll = ForumPoll.objects.get(id=forum_poll_id)
+            if not forum_poll.author == user:
+                raise cannot_perform_action("Unauthorized to delete this forum poll")
+            else:
+                ForumPollChoices.objects.filter(forum_poll_id=forum_poll.id).delete()
+                forum_poll.delete()
+
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Forum Poll deleted successfully",
+                    },
+                    safe=False,
+                )
+        except ForumPoll.DoesNotExist:
+            raise non_existing_data_exception("Forum Poll")
+
+
+class VoteOnAForumPoll(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        user = self.request.user
+
+        check_required_fields(data, ["forum_poll_id", "choice_id"])
+
+        try:
+            forum_poll = ForumPoll.objects.get(id=data["forum_poll_id"])
+
+            is_forum_member = Forum.forum_members.through.objects.filter(
+                Q(forum_id=forum_poll.forum_id) & Q(user_id=user.user_key)
+            )
+
+            if not is_forum_member:
+                raise cannot_perform_action("You are not a member of the forum")
+
+            if forum_poll.is_ended:
+                raise cannot_perform_action("Cannot vote. Poll has ended")
+
+            try:
+                ForumPollVote.objects.get(forum_poll=forum_poll, voter=user)
+                raise cannot_perform_action("User already voted for this poll")
+            except ForumPollVote.DoesNotExist:
+                try:
+                    poll_choice = ForumPollChoices.objects.get(
+                        forum_poll=forum_poll, id=data["choice_id"]
+                    )
+                    poll_choice.votes += 1
+                    poll_choice.updated_on = aware_datetime(datetime.now())
+                    poll_choice.save()
+
+                    ForumPollVote.objects.create(
+                        forum_poll=forum_poll,
+                        voter=user,
+                        poll_choice=poll_choice,
+                    )
+                except ForumPollChoices.DoesNotExist:
+                    raise non_existing_data_exception("Poll Choice")
+
+                # poll_choice = get_polls_by_logged_in_user(user)
+                poll_stats = retrieve_forum_poll_with_choices(forum_poll.id)
+
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Vote has been cast",
+                        "data": poll_stats,
+                    },
+                    safe=False,
+                )
+        except ForumPoll.DoesNotExist:
+            raise non_existing_data_exception("Forum Poll")
+
+
+class GetAllForumPollsByUser(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        forum_id = self.kwargs.get("forum_id")
+
+        data = []
+        ForumPoll.objects.filter(
+            forum_id=forum_id, end_date__lt=aware_datetime(datetime.now())
+        ).update(is_ended=True)
+
+        poll_data = get_forum_polls_by_logged_in_user(user)
+        for item in poll_data:
+            if (
+                item["is_ended"]
+                and not ForumPollVote.objects.filter(
+                    voter=user, forum_poll_id=item["id"]
+                ).exists()
+            ):
+                item = retrieve_forum_poll_with_choices(item["id"])
+            item["total_votes"] = ForumPollChoices.objects.filter(
+                forum_poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
+            data.append(item)
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "detail": "Polls retrieved successfully",
+                "data": data,
+            },
+            safe=False,
+        )
