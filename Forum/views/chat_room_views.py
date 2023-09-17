@@ -282,7 +282,6 @@ class SendMessageToChatRoom(APIView):
                 if files:
                     urls = create_chat_shared_file(files, chat_room, user, message)
                     for url in urls:
-                        print(url)
                         data["message"] = message
                         data["is_media"] = True
                         data["media_files"] = [url["url"]]
@@ -295,6 +294,7 @@ class SendMessageToChatRoom(APIView):
                         chat_room.save()
                         file_type = url["file_type"]
                         create_chat_room_message(data, file_type)
+                    data["media_files"] = urls
                 else:
                     data["message"] = message
                     data["is_media"] = False
