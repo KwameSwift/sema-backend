@@ -144,7 +144,8 @@ class GetChatRoom(APIView):
                 "message",
                 "is_media",
                 "media_files",
-                "file_type" "created_on",
+                "file_type",
+                "created_on",
             )
             .order_by("created_on")
         )
