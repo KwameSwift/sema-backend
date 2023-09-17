@@ -277,6 +277,8 @@ class SendMessageToChatRoom(APIView):
                     "sender__last_name": user.last_name,
                 }
 
+                room_name = str(chat_room.room_name).lower().replace(" ", "_")
+
                 if files:
                     urls = create_chat_shared_file(files, chat_room, user, message)
                     for url in urls:
@@ -287,7 +289,6 @@ class SendMessageToChatRoom(APIView):
                         data["is_sender"] = True
                         data["sender_id"] = str(user.user_key)
 
-                        room_name = str(chat_room.room_name).lower().replace(" ", "_")
                         send_group_message(room_name, data)
                         chat_room.total_messages += 1
                         chat_room.save()
@@ -295,13 +296,12 @@ class SendMessageToChatRoom(APIView):
                         create_chat_room_message(data, file_type)
                 else:
                     data["message"] = message
-                    data["is_media"] = True
+                    data["is_media"] = False
                     data["media_files"] = []
                     data["created_on"] = datetime.now().isoformat()
                     data["is_sender"] = True
                     data["sender_id"] = str(user.user_key)
 
-                    room_name = str(chat_room.room_name).lower().replace(" ", "_")
                     send_group_message(room_name, data)
                     chat_room.total_messages += 1
                     chat_room.save()
