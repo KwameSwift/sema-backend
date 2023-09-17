@@ -144,7 +144,7 @@ class GetChatRoom(APIView):
                 "message",
                 "is_media",
                 "media_files",
-                "created_on",
+                "file_type" "created_on",
             )
             .order_by("created_on")
         )
@@ -279,21 +279,35 @@ class SendMessageToChatRoom(APIView):
 
                 if files:
                     urls = create_chat_shared_file(files, chat_room, user, message)
+                    for url in urls:
+                        data["message"] = message
+                        data["is_media"] = True
+                        data["media_files"] = [url["url"]]
+                        data["created_on"] = datetime.now().isoformat()
+                        data["is_sender"] = True
+                        data["sender_id"] = str(user.user_key)
+
+                        room_name = str(chat_room.room_name).lower().replace(" ", "_")
+                        send_group_message(room_name, data)
+                        chat_room.total_messages += 1
+                        chat_room.save()
+                        file_type = url["file_type"]
+                        create_chat_room_message(data, file_type)
                 else:
-                    urls = []
+                    data["message"] = message
+                    data["is_media"] = True
+                    data["media_files"] = []
+                    data["created_on"] = datetime.now().isoformat()
+                    data["is_sender"] = True
+                    data["sender_id"] = str(user.user_key)
 
-                data["message"] = message
-                data["is_media"] = True if files else False
-                data["media_files"] = urls
-                data["created_on"] = datetime.now().isoformat()
-                data["is_sender"] = True
-                data["sender_id"] = str(user.user_key)
+                    room_name = str(chat_room.room_name).lower().replace(" ", "_")
+                    send_group_message(room_name, data)
+                    chat_room.total_messages += 1
+                    chat_room.save()
 
-                room_name = str(chat_room.room_name).lower().replace(" ", "_")
-                send_group_message(room_name, data)
-                chat_room.total_messages += 1
-                chat_room.save()
-                create_chat_room_message(data)
+                    create_chat_room_message(data)
+
                 return JsonResponse(
                     {"status": "success", "detail": "Message sent", "data": data},
                     safe=False,

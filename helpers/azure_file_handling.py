@@ -434,7 +434,11 @@ def create_chat_shared_file(files, chat_room, user, description):
             # Return blob url
             file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
             shortened_url = shorten_url(file_url)
-            urls.append(shortened_url)
+            img_dict = {
+                "file_type": new_filename[new_filename.rfind(".") :].lower(),
+                "url": shortened_url,
+            }
+            urls.append(img_dict)
             shared_file = {
                 "file_name": str(img.name).split(".")[0],
                 "description": description if description else "",

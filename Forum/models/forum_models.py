@@ -252,6 +252,7 @@ class ChatRoomMessages(models.Model):
     )
     message = models.TextField(blank=True)
     is_media = models.BooleanField(default=False)
+    file_type = models.CharField(max_length=255, blank=True)
     media_files = models.JSONField(blank=True, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)

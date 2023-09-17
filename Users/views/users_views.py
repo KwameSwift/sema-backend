@@ -647,6 +647,7 @@ class ManageMyForum(APIView):
                         "room_name",
                         "total_members",
                         "total_messages",
+                        "description",
                     )
                 )
                 frm = Forum.objects.filter(id=forum_id).first()

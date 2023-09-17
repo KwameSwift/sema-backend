@@ -1,8 +1,15 @@
 from django.urls import path
 
-from .views.polls_view import (CreatePoll, DeletePoll, GetAllApprovedPolls,
-                               GetAllPollResults, SearchPolls, UpdatePoll,
-                               VoteOnAPoll, UpdateUserPollComment)
+from .views.polls_view import (
+    CreatePoll,
+    DeletePoll,
+    GetAllApprovedPolls,
+    GetAllPollResults,
+    SearchPolls,
+    UpdatePoll,
+    VoteOnAPoll,
+    UpdateUserPollComment,
+)
 
 urlpatterns = [
     path(
@@ -21,7 +28,7 @@ urlpatterns = [
         name="Get All Polls And Results",
     ),
     path(
-        "all-approved-polls/",
+        "all-approved-polls/<int:page_number>/",
         GetAllApprovedPolls.as_view(),
         name="Get All Approved Polls",
     ),

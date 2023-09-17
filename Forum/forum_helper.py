@@ -136,13 +136,14 @@ def send_forum_join_request_approval_to_user(forum, user):
     send_email(recipient_email, subject, message)
 
 
-def create_chat_room_message(data):
+def create_chat_room_message(data, file_type=None):
     ChatRoomMessages.objects.create(
         chat_room_id=data["chat_room_id"],
         sender_id=data["sender_id"],
         message=data["message"],
         is_media=True if data.get("media_files") else False,
         media_files=data["media_files"] if data.get("media_files") else None,
+        file_type=file_type if file_type else None,
     )
 
 
