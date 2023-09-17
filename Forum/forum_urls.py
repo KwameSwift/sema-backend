@@ -39,7 +39,7 @@ urlpatterns = [
         name="Delete Forum",
     ),
     path(
-        "get-all-forums/<int:page_number>/",
+        "get-all-forums/<int:forum_type>/<int:page_number>/",
         GetAllForums.as_view(),
         name="Get All Forums",
     ),

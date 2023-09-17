@@ -40,6 +40,7 @@ from helpers.status_codes import (
     duplicate_data_exception,
     non_existing_data_exception,
     cannot_perform_action,
+    invalid_data,
 )
 from helpers.validations import check_permission, check_required_fields
 
@@ -254,10 +255,25 @@ class GetSingleForum(APIView):
 
 class GetAllForums(APIView):
     def get(self, request, *args, **kwargs):
-        page_number = self.kwargs.get("page_number")
         user = self.request.user
+        page_number = self.kwargs.get("page_number")
+        forum_type = self.kwargs.get("forum_type")
+
+        # Define the base condition that is common to all cases
+        base_condition = Q(is_approved=True, is_declined=False)
+
+        # Dictionary to map forum_type to additional conditions
+        additional_conditions = {2: Q(is_public=True), 3: Q(is_public=False)}
+
+        # Check if forum_type is valid, if not, raise an exception
+        if forum_type not in [1, 2, 3]:
+            raise invalid_data("Invalid forum type")
+
+        # Apply the base condition and any additional condition if present
+        forums_query = base_condition & additional_conditions.get(forum_type, Q())
+
         try:
-            forums = Forum.objects.filter(is_approved=True, is_declined=False).values(
+            forums = Forum.objects.filter(forums_query).values(
                 "id",
                 "topic",
                 "description",
