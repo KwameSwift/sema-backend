@@ -988,7 +988,7 @@ class GetAllForumPollsByUser(APIView):
             forum_id=forum_id, end_date__lt=aware_datetime(datetime.now())
         ).update(is_ended=True)
 
-        poll_data = get_forum_polls_by_logged_in_user(user)
+        poll_data = get_forum_polls_by_logged_in_user(user, forum_id)
         for item in poll_data:
             if (
                 item["is_ended"]

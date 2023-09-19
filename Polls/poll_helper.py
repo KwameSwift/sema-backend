@@ -231,11 +231,11 @@ def retrieve_forum_poll_with_choices(poll_id, poll_type=None):
     return poll_data
 
 
-def get_forum_polls_by_logged_in_user(user):
+def get_forum_polls_by_logged_in_user(user, forum_id):
     data = []
 
     # Retrieve the poll
-    polls = ForumPoll.objects.all().values()
+    polls = ForumPoll.objects.filter(forum_id=forum_id).values()
 
     for poll in polls:
         poll_vote = (
