@@ -64,7 +64,7 @@ urlpatterns = [
         name="Update Forum",
     ),
     path(
-        "search-forums/<int:page_number>/",
+        "search-forums/",
         SearchForum.as_view(),
         name="Search Forums",
     ),

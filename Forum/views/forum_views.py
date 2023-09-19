@@ -509,7 +509,7 @@ class SearchForum(APIView):
 
     def post(self, request, *args, **kwargs):
         user = self.request.user
-        page_number = self.kwargs["page_number"]
+        # page_number = self.kwargs["page_number"]
         search_query = request.data.get("search_query")
 
         if user.role.name == "Super Admin":
@@ -594,10 +594,14 @@ class SearchForum(APIView):
                 )
             )
 
-        data = paginate_data(forums, page_number, 10)
+        # data = paginate_data(forums, page_number, 10)
 
         return JsonResponse(
-            data,
+            {
+                "status": "success",
+                "detail": "Forums retrieved successfully",
+                "data": list(forums),
+            },
             safe=False,
         )
 
