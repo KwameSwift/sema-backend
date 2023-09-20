@@ -508,62 +508,32 @@ class SearchForum(APIView):
         user = self.request.user
         # page_number = self.kwargs["page_number"]
         search_query = request.data.get("search_query")
+        forums = Forum.objects.filter(
+            Q(tags__icontains=search_query)
+            | Q(topic__icontains=search_query)
+            | Q(description__icontains=search_query)
+        ).values(
+            "id",
+            "topic",
+            "description",
+            "tags",
+            "author",
+                "author__first_name",
+                "author__last_name",
+                "author__profile_image",
+                "author__is_verified",
+                "author__organization",
+                "approved_by__first_name",
+                "approved_by__last_name",
+                "approved_on",
+                "total_likes",
+                "total_shares",
+                "is_public",
+                "is_approved",
+                "is_declined",
+                "created_on",
+            )
 
-        if user.role.name == "Super Admin":
-            forums = Forum.objects.filter(
-                Q(tags__icontains=search_query)
-                | Q(topic__icontains=search_query)
-                | Q(description__icontains=search_query)
-            ).values(
-                "id",
-                "topic",
-                "description",
-                "tags",
-                "author",
-                "author__first_name",
-                "author__last_name",
-                "author__profile_image",
-                "author__is_verified",
-                "author__organization",
-                "approved_by__first_name",
-                "approved_by__last_name",
-                "approved_on",
-                "total_likes",
-                "total_shares",
-                "is_public",
-                "is_approved",
-                "is_declined",
-                "created_on",
-            )
-            for forum in forums:
-                forum["is_owner"] = True if forum["author"] == user.user_key else False
-                forum.pop("author", None)
-        else:
-            forums = Forum.objects.filter(
-                Q(author=user),
-                Q(tags__icontains=search_query)
-                | Q(topic__icontains=search_query)
-                | Q(description__icontains=search_query),
-            ).values(
-                "id",
-                "topic",
-                "description",
-                "tags",
-                "author__first_name",
-                "author__last_name",
-                "author__profile_image",
-                "author__is_verified",
-                "author__organization",
-                "approved_by__first_name",
-                "approved_by__last_name",
-                "approved_on",
-                "total_likes",
-                "total_shares",
-                "is_public",
-                "is_approved",
-                "is_declined",
-                "created_on",
-            )
         for forum in forums:
             forum["virtual_meetings"] = list(
                 VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
