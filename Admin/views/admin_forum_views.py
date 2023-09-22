@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Forum.forum_helper import send_forum_declination_mail
-from Forum.models import Forum, ForumFile, VirtualMeeting, ChatRoom
+from Forum.models import Forum, ForumFile, VirtualMeeting, ChatRoom, ForumDiscussion
 from helpers.functions import paginate_data, aware_datetime
 from helpers.status_codes import (
     action_authorization_exception,
@@ -116,6 +116,7 @@ class AdminGetAllForums(APIView):
                 "approved_by__last_name",
                 "approved_on",
                 "total_likes",
+                "total_comments",
                 "total_shares",
                 "is_approved",
                 "is_public",
@@ -148,6 +149,18 @@ class AdminGetAllForums(APIView):
                         "room_name",
                         "total_members",
                         "total_messages",
+                    )
+                )
+                forum["discussions"] = list(
+                    ForumDiscussion.objects.filter(forum_id=forum["id"]).values(
+                        "id",
+                        "comment",
+                        "commentor__first_name",
+                        "commentor__last_name",
+                        "commentor__profile_image",
+                        "is_forum_admin",
+                        "total_likes",
+                        "created_on",
                     )
                 )
 

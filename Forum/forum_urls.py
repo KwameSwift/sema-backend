@@ -19,6 +19,10 @@ from .views.forum_views import (
     DeleteForumPoll,
     VoteOnAForumPoll,
     GetAllForumPollsByUser,
+    CommentOnForum,
+    DeleteCommentOnForum,
+    LikeAForumComment,
+    GetAllForumDiscussions,
 )
 
 urlpatterns = [
@@ -112,5 +116,25 @@ urlpatterns = [
         "get-all-forum-polls/<int:forum_id>/<int:page_number>/",
         GetAllForumPollsByUser.as_view(),
         name="Get All Forum Polls By User",
+    ),
+    path(
+        "comment-on-forum/<int:forum_id>/",
+        CommentOnForum.as_view(),
+        name="Comment On Forum",
+    ),
+    path(
+        "delete-forum-comment/<int:comment_id>/",
+        DeleteCommentOnForum.as_view(),
+        name="Delete Comment On Forum",
+    ),
+    path(
+        "like-forum-comment/<int:forum_comment_id>/",
+        LikeAForumComment.as_view(),
+        name="Like A Forum Comment",
+    ),
+    path(
+        "get-all-forum-discussions/<int:forum_id>/",
+        GetAllForumDiscussions.as_view(),
+        name="Get All Forum Discussions",
     ),
 ]

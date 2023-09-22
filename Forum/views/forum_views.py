@@ -23,6 +23,7 @@ from Forum.models import (
     ForumPoll,
     ForumPollChoices,
     ForumPollVote,
+    ForumDiscussion,
 )
 from Polls.poll_helper import (
     send_meeting_registration_mail,
@@ -159,6 +160,7 @@ class GetSingleForum(APIView):
                     "approved_on",
                     "header_image",
                     "total_likes",
+                    "total_comments",
                     "total_members",
                     "total_shares",
                     "is_approved",
@@ -214,6 +216,18 @@ class GetSingleForum(APIView):
                     "total_members",
                     "total_messages",
                     "description",
+                )
+            )
+            forum["discussions"] = list(
+                ForumDiscussion.objects.filter(forum_id=forum_id).values(
+                    "id",
+                    "comment",
+                    "commentor__first_name",
+                    "commentor__last_name",
+                    "commentor__profile_image",
+                    "is_forum_admin",
+                    "total_likes",
+                    "created_on",
                 )
             )
             frm = Forum.objects.filter(id=forum_id).first()
@@ -289,6 +303,7 @@ class GetAllForums(APIView):
                 "approved_by__last_name",
                 "approved_on",
                 "total_likes",
+                "total_comments",
                 "total_shares",
                 "is_approved",
                 "is_public",
@@ -319,6 +334,18 @@ class GetAllForums(APIView):
                         "room_name",
                         "total_members",
                         "total_messages",
+                    )
+                )
+                forum["discussions"] = list(
+                    ForumDiscussion.objects.filter(forum_id=forum["id"]).values(
+                        "id",
+                        "comment",
+                        "commentor__first_name",
+                        "commentor__last_name",
+                        "commentor__profile_image",
+                        "is_forum_admin",
+                        "total_likes",
+                        "created_on",
                     )
                 )
 
@@ -518,21 +545,22 @@ class SearchForum(APIView):
             "description",
             "tags",
             "author",
-                "author__first_name",
-                "author__last_name",
-                "author__profile_image",
-                "author__is_verified",
-                "author__organization",
-                "approved_by__first_name",
-                "approved_by__last_name",
-                "approved_on",
-                "total_likes",
-                "total_shares",
-                "is_public",
-                "is_approved",
-                "is_declined",
-                "created_on",
-            )
+            "author__first_name",
+            "author__last_name",
+            "author__profile_image",
+            "author__is_verified",
+            "author__organization",
+            "approved_by__first_name",
+            "approved_by__last_name",
+            "approved_on",
+            "total_likes",
+            "total_comments",
+            "total_shares",
+            "is_public",
+            "is_approved",
+            "is_declined",
+            "created_on",
+        )
 
         for forum in forums:
             forum["virtual_meetings"] = list(
@@ -979,3 +1007,165 @@ class GetAllForumPollsByUser(APIView):
             data,
             safe=False,
         )
+
+
+class CommentOnForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        user = self.request.user
+        forum_id = self.kwargs["forum_id"]
+
+        check_required_fields(data, ["comment"])
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+
+            is_forum_member = Forum.forum_members.through.objects.filter(
+                Q(forum_id=forum.id) & Q(user_id=user.user_key)
+            )
+
+            if not is_forum_member:
+                raise cannot_perform_action("You are not a member of the forum")
+
+            details = {
+                "comment": data["comment"],
+                "commentor": user,
+                "is_forum_admin": True if forum.author == user else False,
+                "forum": forum,
+            }
+            ForumDiscussion.objects.create(**details)
+            forum.total_comments += 1
+            forum.save()
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Comment posted successfully",
+                },
+                safe=False,
+            )
+
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class DeleteCommentOnForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        comment_id = self.kwargs["comment_id"]
+
+        try:
+            comment = ForumDiscussion.objects.get(id=comment_id)
+
+            if not comment.commentor == user or not comment.forum.author == user:
+                raise cannot_perform_action("Unauthorized to delete comment")
+
+            is_forum_member = Forum.forum_members.through.objects.filter(
+                Q(forum_id=comment.forum.id) & Q(user_id=user.user_key)
+            )
+
+            if not is_forum_member:
+                raise cannot_perform_action("You are not a member of the forum")
+            else:
+                forum = Forum.objects.get(id=comment.forum.id)
+                forum.total_comments -= 1
+                forum.save()
+                comment.delete()
+
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Comment deleted successfully",
+                    },
+                    safe=False,
+                )
+
+        except ForumDiscussion.DoesNotExist:
+            raise non_existing_data_exception("Comment")
+
+
+class LikeAForumComment(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        data = request.data
+        user = self.request.user
+        forum_comment_id = self.kwargs["forum_comment_id"]
+
+        try:
+            discussion = ForumDiscussion.objects.get(id=forum_comment_id)
+
+            is_forum_member = Forum.forum_members.through.objects.filter(
+                Q(forum_id=discussion.forum_id) & Q(user_id=user.user_key)
+            )
+
+            if not is_forum_member:
+                raise cannot_perform_action("You are not a member of the forum")
+
+            is_comment_liker = (
+                ForumDiscussion.forum_comment_likers.through.objects.filter(
+                    Q(forumdiscussion_id=discussion.id) & Q(user_id=user.user_key)
+                )
+            )
+            if is_comment_liker:
+                likes = discussion.total_likes - 1
+                discussion.forum_comment_likers.remove(user)
+                message = "Comment unliked"
+            else:
+                discussion.forum_comment_likers.add(user)
+                likes = discussion.total_likes + 1
+                message = "Comment liked"
+
+            discussion.total_likes = likes
+            discussion.save()
+
+            liked_comments = user.forum_comment_likers.all()
+            comment_ids = [discussion.id for discussion in liked_comments]
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": message,
+                    "total_likes": likes,
+                    "liked_comments": comment_ids,
+                },
+                safe=False,
+            )
+        except ForumDiscussion.DoesNotExist:
+            raise non_existing_data_exception("Comment")
+
+
+class GetAllForumDiscussions(APIView):
+    def get(self, request, *args, **kwargs):
+        forum_id = self.kwargs.get("forum_id")
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            forum_discussions = ForumDiscussion.objects.filter(
+                forum_id=forum.id
+            ).values(
+                "id",
+                "comment",
+                "commentor__first_name",
+                "commentor__last_name",
+                "commentor__profile_image",
+                "is_forum_admin",
+                "total_likes",
+                "created_on",
+            )
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Forum discussions retrieved successfully",
+                    "data": list(forum_discussions),
+                },
+                safe=False,
+            )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")

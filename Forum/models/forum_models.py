@@ -32,6 +32,7 @@ class Forum(models.Model):
     header_key = models.CharField(max_length=255, blank=True)
     header_image = models.CharField(max_length=255, blank=True)
     total_likes = models.IntegerField(default=0)
+    total_comments = models.IntegerField(default=0)
     total_members = models.IntegerField(default=0)
     total_shares = models.IntegerField(default=0)
     is_approved = models.BooleanField(default=False)
@@ -335,3 +336,33 @@ class ForumPollVote(models.Model):
     class Meta:
         ordering = ("created_on",)
         db_table = "Forum_Poll_Votes"
+
+
+class ForumDiscussion(models.Model):
+    forum = models.ForeignKey(
+        Forum,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_discussion",
+    )
+    comment = models.TextField()
+    commentor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="forum_commentor",
+    )
+    is_forum_admin = models.BooleanField(default=False)
+    total_likes = models.IntegerField(default=0)
+    forum_comment_likers = models.ManyToManyField(
+        User,
+        related_name="forum_comment_likers",
+    )
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now_add=False, null=True, blank=True)
+
+    class Meta:
+        ordering = ("created_on",)
+        db_table = "Forum_Discussion"
