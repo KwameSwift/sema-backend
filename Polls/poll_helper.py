@@ -198,7 +198,7 @@ def get_polls_by_author(query):
     return data
 
 
-def send_poll_declination_mail(poll, comments):
+def send_poll_declination_mail(poll, c0omments):
     subject = "Poll Declined"
     recipient_email = poll.author.email
     # Convert the string to a datetime object

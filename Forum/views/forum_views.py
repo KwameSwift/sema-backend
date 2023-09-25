@@ -761,7 +761,43 @@ class UpdateVirtualMeeting(APIView):
                     },
                     safe=False,
                 )
-        except Forum.DoesNotExist:
+        except VirtualMeeting.DoesNotExist:
+            raise non_existing_data_exception("Virtual Meeting")
+
+
+class GetAllMeetingAttendants(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        data = request.data
+        meeting_id = self.kwargs.get("meeting_id")
+        page_number = self.kwargs.get("page_number")
+
+        try:
+            meeting = VirtualMeeting.objects.get(id=meeting_id)
+            if not meeting.organizer == user:
+                raise cannot_perform_action(
+                    "Unauthorized to view this meeting attendants"
+                )
+            else:
+                attendants = VirtualMeetingAttendees.objects.filter(
+                    meeting=meeting
+                ).values(
+                    "id",
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "mobile_number",
+                    "country__name",
+                )
+                data = paginate_data(list(attendants), page_number, 10)
+                return JsonResponse(
+                    data,
+                    safe=False,
+                )
+        except VirtualMeeting.DoesNotExist:
             raise non_existing_data_exception("Virtual Meeting")
 
 

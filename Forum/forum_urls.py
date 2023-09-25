@@ -23,6 +23,7 @@ from .views.forum_views import (
     DeleteCommentOnForum,
     LikeAForumComment,
     GetAllForumDiscussions,
+    GetAllMeetingAttendants,
 )
 
 urlpatterns = [
@@ -96,6 +97,11 @@ urlpatterns = [
         "register-virtual-meeting/<int:meeting_id>/",
         RegisterForMeeting.as_view(),
         name="Register For Meeting",
+    ),
+    path(
+        "get-meeting-attendants/<int:meeting_id>/<int:page_number>/",
+        GetAllMeetingAttendants.as_view(),
+        name="Get All Meeting Attendants",
     ),
     path(
         "create-forum-poll/<int:forum_id>/",
