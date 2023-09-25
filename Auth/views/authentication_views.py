@@ -15,13 +15,16 @@ from Auth.models.permissions_model import Permission
 from Auth.models.user_model import UserRole
 from Blog.models.blog_model import BlogPost
 from helpers.email_sender import send_email
-from helpers.status_codes import (PasswordMismatch, WrongCode,
-                                  WrongCredentials, WrongPassword,
-                                  cannot_perform_action,
-                                  duplicate_data_exception,
-                                  non_existing_data_exception)
-from helpers.validations import (check_required_fields,
-                                 generate_password_reset_code)
+from helpers.status_codes import (
+    PasswordMismatch,
+    WrongCode,
+    WrongCredentials,
+    WrongPassword,
+    cannot_perform_action,
+    duplicate_data_exception,
+    non_existing_data_exception,
+)
+from helpers.validations import check_required_fields, generate_password_reset_code
 
 
 class RegisterView(APIView):
@@ -119,14 +122,16 @@ class LoginView(APIView):
                 liked_blogs = user.blog_likers.all()
                 blog_ids = [blog.id for blog in liked_blogs]
 
-                # Construct user object with tokens and necessary details
+                liked_discussions = user.forum_comment_likers.all()
+                discussion_ids = [discussion.id for discussion in liked_discussions]
+
+                # Construct a user object with tokens and necessary details
                 data = {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                     "user": {},
                 }
 
-                settings.TIME_ZONE
                 naive_datetime = datetime.datetime.now()
                 aware_datetime = make_aware(naive_datetime)
                 user.last_login = aware_datetime
@@ -148,6 +153,7 @@ class LoginView(APIView):
                 data["user"]["account_type"] = user.account_type
                 data["user"]["is_admin"] = user.is_admin
                 data["liked_blogs"] = blog_ids
+                data["liked_discussions"] = discussion_ids
                 data["permissions"] = permissions
 
                 return JsonResponse(
@@ -173,14 +179,16 @@ class GuestLoginView(APIView):
                 liked_blogs = user.blog_likers.all()
                 blog_ids = [blog.id for blog in liked_blogs]
 
-                # Construct user object with tokens and necessary details
+                liked_discussions = user.forum_comment_likers.all()
+                discussion_ids = [discussion.id for discussion in liked_discussions]
+
+                # Construct a user object with tokens and necessary details
                 data = {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                     "user": {},
                 }
 
-                settings.TIME_ZONE
                 naive_datetime = datetime.datetime.now()
                 aware_datetime = make_aware(naive_datetime)
                 user.last_login = aware_datetime
@@ -202,6 +210,7 @@ class GuestLoginView(APIView):
                 data["user"]["account_type"] = user.account_type
                 data["user"]["is_admin"] = user.is_admin
                 data["liked_blogs"] = blog_ids
+                data["liked_discussions"] = discussion_ids
                 data["permissions"] = permissions
 
                 return JsonResponse(
@@ -337,8 +346,8 @@ class ChangePasswordView(APIView):
 class CallBack(APIView):
     def get(self, request, *args, **kwargs):
         message = request.data
-        send_email('charlestontaylor09@gmail.com', "Redirect URL", message)
-        
+        send_email("charlestontaylor09@gmail.com", "Redirect URL", message)
+
         return JsonResponse(
             {
                 "status": "success",
