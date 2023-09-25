@@ -275,8 +275,6 @@ class GetMyPolls(APIView):
         page_number = self.kwargs["page_number"]
         user = self.request.user
 
-        data = []
-
         if not check_permission(user, "Polls", [1, 2]):
             raise action_authorization_exception("Unauthorized to view poll results")
 
