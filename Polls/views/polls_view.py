@@ -212,14 +212,6 @@ class GetAllApprovedPollsByUser(APIView):
             data,
             safe=False,
         )
-        # return JsonResponse(
-        #     {
-        #         "status": "success",
-        #         "detail": "Polls retrieved successfully",
-        #         "data": data,
-        #     },
-        #     safe=False,
-        # )
 
 
 # Get All Polls and their results
@@ -299,6 +291,7 @@ class GetMyPolls(APIView):
             "snapshot_location",
             "start_date",
             "end_date",
+            "is_ended",
             "is_approved",
             "is_declined",
             "created_on",
