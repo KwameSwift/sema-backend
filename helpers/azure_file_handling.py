@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import shutil
 from os import path
 
@@ -49,7 +48,7 @@ def shorten_url(url):
 def upload_image_cover_or_pdf_to_azure(file, blog, user):
     file_name = str(file.name).lower()
     new_filename = file_name.replace(" ", "_")
-    blog_title = str(blog.title).replace(" ", "_")
+    blog_title = str(blog.title).replace(" ", "_").strip("?")
     user_name = f"{user.first_name}-{user.last_name}".lower()
     base_directory = f"{LOCAL_FILE_PATH}{user_name}"
     full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
@@ -313,7 +312,7 @@ def create_other_blog_documents(files, blog, user):
         for img in files:
             file_name = str(img.name).lower()
             new_filename = file_name.replace(" ", "_")
-            blog_title = str(blog.title).replace(" ", "_")
+            blog_title = str(blog.title).replace(" ", "_").strip("?")
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Blog_Documents/{blog_title}"
 
@@ -415,7 +414,7 @@ def create_chat_shared_file(files, chat_room, user, description):
             file_name = str(img.name).lower()
             filename = file_name.replace(" ", "_")
             new_filename = f"{uuid_value}_{filename}"
-            chat = str(chat_room.room_name).replace(" ", "_")
+            chat = str(chat_room.room_name).replace(" ", "_").strip("?")
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Chat_Shared_Files/{chat}"
 
@@ -469,9 +468,7 @@ def create_forum_header(files, forum, user):
         for file in files:
             file_name = str(file.name).lower()
             new_filename = file_name.replace(" ", "_")
-            # Remove non-alphanumeric characters
-            alphanumeric_string = re.sub(r"[^a-zA-Z0-9]", "", str(forum.topic))
-            topic = alphanumeric_string.replace(" ", "_")
+            topic = str(forum.topic).replace(" ", "_").strip("?")
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Forum_Files/Header/{topic}"
 
@@ -512,7 +509,7 @@ def create_forum_files(files, forum, user, description):
         for img in files:
             file_name = str(img.name).lower()
             new_filename = file_name.replace(" ", "_")
-            topic = str(forum.topic).replace(" ", "_")
+            topic = str(forum.topic).replace(" ", "_").strip("?")
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Forum_Files/Shared_Files/{topic}"
 
