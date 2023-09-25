@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 from os import path
 
@@ -468,7 +469,9 @@ def create_forum_header(files, forum, user):
         for file in files:
             file_name = str(file.name).lower()
             new_filename = file_name.replace(" ", "_")
-            topic = str(forum.topic).replace(" ", "_")
+            # Remove non-alphanumeric characters
+            alphanumeric_string = re.sub(r"[^a-zA-Z0-9]", "", str(forum.topic))
+            topic = alphanumeric_string.replace(" ", "_")
             base_directory = f"{LOCAL_FILE_PATH}{user_name}"
             full_directory = f"{base_directory}/Forum_Files/Header/{topic}"
 
