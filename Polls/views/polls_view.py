@@ -9,7 +9,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Polls.models.poll_models import Poll, PollChoices, PollVote
-from Polls.poll_helper import get_polls_by_logged_in_user, retrieve_poll_with_choices
+from Polls.poll_helper import (
+    get_polls_by_logged_in_user,
+    retrieve_poll_with_choices,
+    get_polls_by_author,
+    author_retrieve_poll_with_choices,
+)
 from Utilities.models.documents_model import UserDocuments
 from helpers.azure_file_handling import (
     delete_blob,
@@ -270,6 +275,8 @@ class GetMyPolls(APIView):
         page_number = self.kwargs["page_number"]
         user = self.request.user
 
+        data = []
+
         if not check_permission(user, "Polls", [1, 2]):
             raise action_authorization_exception("Unauthorized to view poll results")
 
@@ -284,23 +291,13 @@ class GetMyPolls(APIView):
         elif data_type == 3:
             query &= Q(is_declined=True)
 
-        polls = Poll.objects.filter(query).values(
-            "id",
-            "question",
-            "file_location",
-            "snapshot_location",
-            "start_date",
-            "end_date",
-            "is_ended",
-            "is_approved",
-            "is_declined",
-            "created_on",
-        )
+        polls = get_polls_by_author(query)
 
-        for poll in polls:
-            poll["choices"] = list(
-                PollChoices.objects.filter(poll_id=poll["id"]).values("id", "choice")
-            )
+        for item in polls:
+            item["total_votes"] = PollChoices.objects.filter(
+                poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
+
         data = paginate_data(polls, page_number, 10)
         return JsonResponse(data, safe=False)
 
