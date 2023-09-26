@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -835,6 +835,8 @@ class RegisterForMeeting(APIView):
                     "country_id": data["country_id"],
                 }
                 VirtualMeetingAttendees.objects.create(**details)
+                meeting.total_attendees += 1
+                meeting.save()
                 send_meeting_registration_mail(
                     meeting, data["email"], data["first_name"]
                 )
