@@ -281,7 +281,7 @@ class SendMessageToChatRoom(APIView):
                 room_name = str(chat_room.room_name).lower().replace(" ", "_")
 
                 if files:
-                    urls = create_chat_shared_file(files, chat_room, user, message)
+                    urls = create_chat_shared_file(files, chat_room, user)
                     for url in urls:
                         data["message"] = message
                         data["is_media"] = True
