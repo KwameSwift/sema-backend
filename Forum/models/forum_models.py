@@ -185,7 +185,6 @@ class UserChatRoom(models.Model):
 
 class SharedFile(models.Model):
     file_name = models.CharField(max_length=255, blank=True)
-    description = models.TextField()
     file_type = models.CharField(max_length=255, blank=True)
     file_url = models.CharField(max_length=255, blank=True)
     file_key = models.CharField(max_length=255, blank=True)

@@ -402,7 +402,7 @@ def upload_profile_image(file, user):
     return shortened_url, blob_name
 
 
-def create_chat_shared_file(files, chat_room, user, description):
+def create_chat_shared_file(files, chat_room, user):
     import uuid
 
     # Generate a UUID
@@ -442,7 +442,6 @@ def create_chat_shared_file(files, chat_room, user, description):
             urls.append(img_dict)
             shared_file = {
                 "file_name": str(img.name).split(".")[0],
-                "description": description if description else "",
                 "file_type": new_filename[new_filename.rfind(".") :].lower(),
                 "file_url": shortened_url,
                 "file_key": blob_name,
