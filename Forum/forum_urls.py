@@ -23,7 +23,7 @@ from .views.forum_views import (
     DeleteCommentOnForum,
     LikeAForumComment,
     GetAllForumDiscussions,
-    GetAllMeetingAttendants,
+    GetAllMeetingAttendees,
 )
 
 urlpatterns = [
@@ -100,7 +100,7 @@ urlpatterns = [
     ),
     path(
         "get-meeting-attendants/<int:meeting_id>/<int:page_number>/",
-        GetAllMeetingAttendants.as_view(),
+        GetAllMeetingAttendees.as_view(),
         name="Get All Meeting Attendants",
     ),
     path(

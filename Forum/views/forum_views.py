@@ -765,13 +765,12 @@ class UpdateVirtualMeeting(APIView):
             raise non_existing_data_exception("Virtual Meeting")
 
 
-class GetAllMeetingAttendants(APIView):
+class GetAllMeetingAttendees(APIView):
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JWTAuthentication,)
 
     def get(self, request, *args, **kwargs):
         user = self.request.user
-        data = request.data
         meeting_id = self.kwargs.get("meeting_id")
         page_number = self.kwargs.get("page_number")
 
@@ -779,7 +778,7 @@ class GetAllMeetingAttendants(APIView):
             meeting = VirtualMeeting.objects.get(id=meeting_id)
             if not meeting.organizer == user:
                 raise cannot_perform_action(
-                    "Unauthorized to view this meeting attendants"
+                    "Unauthorized to view this meeting attendees"
                 )
             else:
                 attendants = VirtualMeetingAttendees.objects.filter(
