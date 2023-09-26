@@ -143,7 +143,7 @@ def create_chat_room_message(data, file_type=None):
         message=data["message"],
         is_media=True if data.get("media_files") else False,
         media_files=data["media_files"] if data.get("media_files") else None,
-        file_type=file_type if file_type else None,
+        file_type=file_type if file_type else "",
     )
 
 
