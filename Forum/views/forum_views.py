@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -44,8 +44,6 @@ from helpers.status_codes import (
     invalid_data,
 )
 from helpers.validations import check_permission, check_required_fields
-
-LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
 
 # Create a Forum
@@ -224,6 +222,7 @@ class GetSingleForum(APIView):
                     "comment",
                     "commentor__first_name",
                     "commentor__last_name",
+                    "commentor__is_verified",
                     "commentor__profile_image",
                     "is_forum_admin",
                     "total_likes",

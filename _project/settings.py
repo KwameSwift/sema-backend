@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "Polls",
     "Forum",
     "channels",
+    "DocumentVault",
 ]
 
 CHANNEL_LAYERS = {

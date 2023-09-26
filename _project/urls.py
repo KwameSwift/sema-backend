@@ -37,6 +37,7 @@ urlpatterns = [
     path("polls/", include("Polls.urls")),
     path("forum/", include("Forum.forum_urls")),
     path("chats/", include("Forum.chat_urls")),
+    path("document-vault/", include("DocumentVault.urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

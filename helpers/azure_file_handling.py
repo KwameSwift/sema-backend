@@ -9,6 +9,7 @@ from azure.storage.blob import BlobServiceClient, ContentSettings
 from django.core.files.storage import FileSystemStorage
 from pdf2image import convert_from_path
 
+from DocumentVault.models import Document
 from Forum.forum_helper import categorize_file
 from Forum.models import SharedFile, ForumFile
 from Utilities.models.documents_model import BlogDocuments
@@ -495,6 +496,58 @@ def create_forum_header(files, forum, user):
             if path.exists(f"media/{user_name}"):
                 shutil.rmtree(f"media/{user_name}")
         return forum_header
+    except ResourceExistsError:
+        print("File already exists")
+        if path.exists(f"media/{user_name}"):
+            shutil.rmtree(f"media/{user_name}")
+        pass
+
+
+def create_vault_document(files, user, description):
+    user_name = f"{user.first_name}-{user.last_name}".lower()
+    try:
+        urls = []
+        for img in files:
+            file_name = str(img.name).lower()
+            new_filename = file_name.replace(" ", "_")
+            base_directory = f"{LOCAL_FILE_PATH}{user_name}"
+            full_directory = f"{base_directory}/Documents_Vault"
+
+            container_client = blob_service_client.get_container_client(user_name)
+            if not container_client.exists():
+                container_client.create_container(public_access="blob")
+
+            fs = FileSystemStorage(location=full_directory)
+            fs.save(new_filename, img)
+            file_path = f"{full_directory}/{new_filename}"
+            blob_name = f"Documents_Vault/{new_filename}"
+
+            # Upload a file to the container
+            with open(file_path, "rb") as data:
+                container_client.upload_blob(name=blob_name, data=data)
+
+            # Return blob url
+            file_url = f"{BLOB_BASE_URL}/{user_name}/{blob_name}"
+            shortened_url = shorten_url(file_url)
+            data = {
+                "url": shortened_url,
+                "file_type": new_filename[new_filename.rfind(".") :].lower(),
+            }
+            urls.append(data)
+            forum_file = {
+                "file_name": str(img.name).split(".")[0],
+                "description": description if description else "",
+                "file_type": new_filename[new_filename.rfind(".") :].lower(),
+                "file_url": shortened_url,
+                "file_key": blob_name,
+                "owner_id": user.user_key,
+            }
+
+            Document.objects.create(**forum_file)
+
+            if path.exists(f"media/{user_name}"):
+                shutil.rmtree(f"media/{user_name}")
+        return urls
     except ResourceExistsError:
         print("File already exists")
         if path.exists(f"media/{user_name}"):

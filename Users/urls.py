@@ -1,5 +1,6 @@
 from django.urls import path
 
+from DocumentVault.views.document_vault_views import GetMyDocumentsInVault
 from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
 
 from .views.users_views import (
@@ -100,5 +101,10 @@ urlpatterns = [
         "get-my-forum-polls/<int:forum_id>/<int:page_number>/",
         GetMyForumPolls.as_view(),
         name="Get My Forum Polls",
+    ),
+    path(
+        "get-my-vault-documents/<int:page_number>/",
+        GetMyDocumentsInVault.as_view(),
+        name="Get My Documents In Vault",
     ),
 ]

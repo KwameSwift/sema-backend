@@ -1,5 +1,6 @@
 from django.urls import path
 
+from DocumentVault.views.document_vault_views import AdminGetAllDocumentsInVault
 from .views.admin_blog_views import (
     ApproveAndPublishBlogs,
     GetAllBlogPostsAsAdmin,
@@ -162,5 +163,10 @@ urlpatterns = [
         "get-all-forums/<int:data_type>/<int:page_number>/",
         AdminGetAllForums.as_view(),
         name="Admin Get All Forums",
+    ),
+    path(
+        "get-vault-documents/<int:page_number>/",
+        AdminGetAllDocumentsInVault.as_view(),
+        name="Admin Get All Documents In Vault",
     ),
 ]

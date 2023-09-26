@@ -21,7 +21,6 @@ from helpers.azure_file_handling import (
 from helpers.functions import (
     check_abusive_words,
     convert_quill_text_to_normal_text,
-    local_file_upload,
     paginate_data,
     truncate_text,
 )
@@ -354,18 +353,8 @@ class UploadBlogDocument(APIView):
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")
 
-        for file in files:
-            base_directory = f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}"
-            full_directory = f"{base_directory}/Blog_Documents/{blog.title}"
-            file_path = local_file_upload(full_directory, file)
-
-            new_blog_image = {
-                "owner": user,
-                "blog_id": blog.id,
-                "document_location": file_path,
-            }
-
-            BlogDocuments.objects.create(**new_blog_image)
+        if files:
+            create_other_blog_documents(files, blog, user)
 
         return JsonResponse(
             {"status": "success", "detail": "File uploaded successfully"},
@@ -385,21 +374,28 @@ class DeleteBlogDocuments(APIView):
         if not check_permission(user, "Blogs", [2]):
             raise action_authorization_exception("Unauthorized to delete blog image")
 
-        check_required_fields(data, ["blog_post_id"], ["document_urls"])
+        check_required_fields(data, ["blog_post_id", "document_urls"])
         try:
             blog = BlogPost.objects.get(id=data["blog_post_id"])
+
+            container = f"{blog.author.first_name}-{blog.author.last_name}"
+
+            for url in data["document_urls"]:
+                try:
+                    document = BlogDocuments.objects.get(
+                        blog=blog, document_location=url
+                    )
+                    delete_blob(container.lower(), document.document_location)
+                    document.delete()
+                except BlogDocuments.DoesNotExist:
+                    pass
+
+            return JsonResponse(
+                {"status": "success", "detail": "File(s) deleted successfully"},
+                safe=False,
+            )
         except BlogPost.DoesNotExist:
             raise non_existing_data_exception("Blog")
-
-        for url in data["document_urls"]:
-            if os.path.exists(url):
-                os.remove(url)
-            BlogDocuments.objects.filter(blog=blog, document_location=url).delete()
-
-        return JsonResponse(
-            {"status": "success", "detail": "File(s) deleted successfully"},
-            safe=False,
-        )
 
 
 # Update a blog post
