@@ -9,6 +9,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
 from Blog.models.blog_model import BlogPost
+from DocumentVault.models import Document
 from Events.models.events_model import Events
 from Forum.models import Forum
 from Polls.models import Poll
@@ -43,14 +44,15 @@ class GetSystemStatistics(APIView):
         total_blogs = BlogPost.objects.all().count()
         total_polls = Poll.objects.all().count()
         total_forums = Forum.objects.all().count()
+        total_document_vault = Document.objects.all().count()
 
         data = {
             "total_users": total_users,
             "total_admins": total_admins,
             "total_guests": total_guests,
             "total_content_creators": total_content_creators,
-            "total_blogs": total_blogs,
-            "total_forums": total_forums,
+            "total_blogs_and_forums": total_blogs + total_forums,
+            "total_document_vault": total_document_vault,
             "total_polls": total_polls,
         }
 

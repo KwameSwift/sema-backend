@@ -11,6 +11,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
+from DocumentVault.models import Document
 from Events.models.events_model import Events
 from Forum.forum_helper import (
     send_forum_join_request_approval_to_user,
@@ -211,6 +212,7 @@ class GetAuthorStatistics(APIView):
         total_blogs = BlogPost.objects.filter(author=user).count()
         total_polls = Poll.objects.filter(author=user).count()
         total_forums = Forum.objects.filter(author=user).count()
+        total_document_vault = Document.objects.filter(owner=user).count()
 
         blogs = (
             BlogPost.objects.filter(author=user)
@@ -227,6 +229,7 @@ class GetAuthorStatistics(APIView):
             "total_polls": total_polls,
             "total_blogs": total_blogs,
             "total_forums": total_forums,
+            "total_document_vault": total_document_vault,
             "blog_data": blog_data,
         }
 
