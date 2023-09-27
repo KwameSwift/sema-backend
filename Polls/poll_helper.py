@@ -158,7 +158,7 @@ def get_polls_by_logged_in_user(user):
     data = []
 
     # Retrieve the poll
-    polls = Poll.objects.filter(is_approved=True).values()
+    polls = Poll.objects.filter(is_approved=True, is_declined=False).values()
 
     for poll in polls:
         poll_vote = (

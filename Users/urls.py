@@ -58,7 +58,7 @@ urlpatterns = [
         name="Update My Profile",
     ),
     path(
-        "approved-polls/",
+        "approved-polls/<int:page_number>/",
         GetAllApprovedPollsByUser.as_view(),
         name="Authenticated User Approved Polls",
     ),

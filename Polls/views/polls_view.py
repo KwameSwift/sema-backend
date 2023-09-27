@@ -227,7 +227,7 @@ class GetAllApprovedPolls(APIView):
             end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
         ).update(is_ended=True)
 
-        polls = Poll.objects.filter(is_approved=True).values(
+        polls = Poll.objects.filter(is_approved=True, is_declined=False).values(
             "id",
             "question",
             "file_location",
