@@ -1106,7 +1106,7 @@ class DeleteCommentOnForum(APIView):
         try:
             comment = ForumDiscussion.objects.get(id=comment_id)
 
-            if not comment.commentor == user or not comment.forum.author == user:
+            if not comment.commentor.user_key == user.user_key or not comment.forum.author.user_key == user.user_key:
                 raise cannot_perform_action("Unauthorized to delete comment")
 
             is_forum_member = Forum.forum_members.through.objects.filter(
