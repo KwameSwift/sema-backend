@@ -1105,30 +1105,31 @@ class DeleteCommentOnForum(APIView):
 
         try:
             comment = ForumDiscussion.objects.get(id=comment_id)
-
-            if not comment.commentor.user_key == user.user_key or not comment.forum.author.user_key == user.user_key:
-                raise cannot_perform_action("Unauthorized to delete comment")
-
-            is_forum_member = Forum.forum_members.through.objects.filter(
-                Q(forum_id=comment.forum.id) & Q(user_id=user.user_key)
-            )
-
-            if not is_forum_member:
-                raise cannot_perform_action("You are not a member of the forum")
-            else:
-                forum = Forum.objects.get(id=comment.forum.id)
-                forum.total_comments -= 1
-                forum.save()
-                comment.delete()
-
-                return JsonResponse(
-                    {
-                        "status": "success",
-                        "detail": "Comment deleted successfully",
-                    },
-                    safe=False,
+            if (
+                comment.commentor.user_key == user.user_key
+                or comment.forum.author.user_key == user.user_key
+            ):
+                is_forum_member = Forum.forum_members.through.objects.filter(
+                    Q(forum_id=comment.forum.id) & Q(user_id=user.user_key)
                 )
 
+                if not is_forum_member:
+                    raise cannot_perform_action("You are not a member of the forum")
+                else:
+                    forum = Forum.objects.get(id=comment.forum.id)
+                    forum.total_comments -= 1
+                    forum.save()
+                    comment.delete()
+
+                    return JsonResponse(
+                        {
+                            "status": "success",
+                            "detail": "Comment deleted successfully",
+                        },
+                        safe=False,
+                    )
+            else:
+                raise cannot_perform_action("Unauthorized to delete comment")
         except ForumDiscussion.DoesNotExist:
             raise non_existing_data_exception("Comment")
 
