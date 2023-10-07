@@ -24,6 +24,7 @@ from Forum.models import (
     ForumPollChoices,
     ForumPollVote,
     ForumDiscussion,
+    UserChatRoom,
 )
 from Polls.poll_helper import (
     send_meeting_registration_mail,
@@ -220,6 +221,7 @@ class GetSingleForum(APIView):
                 ForumDiscussion.objects.filter(forum_id=forum_id).values(
                     "id",
                     "comment",
+                    "commentor__user_key",
                     "commentor__first_name",
                     "commentor__last_name",
                     "commentor__is_verified",
@@ -249,6 +251,11 @@ class GetSingleForum(APIView):
                         meeting_id=meeting["id"], email=user.email
                     )
                     meeting["is_registered"] = True if vm else False
+                for chat_room in forum["chat_rooms"]:
+                    is_member = UserChatRoom.objects.filter(
+                        member=user, chat_room_id=chat_room["id"]
+                    ).exists()
+                    chat_room["is_member"] = is_member
             else:
                 forum["is_authenticated"] = False
                 for meeting in virtual_meetings:
@@ -339,6 +346,7 @@ class GetAllForums(APIView):
                     ForumDiscussion.objects.filter(forum_id=forum["id"]).values(
                         "id",
                         "comment",
+                        "commentor__user_key",
                         "commentor__first_name",
                         "commentor__last_name",
                         "commentor__profile_image",
@@ -1188,6 +1196,7 @@ class GetAllForumDiscussions(APIView):
             ).values(
                 "id",
                 "comment",
+                "commentor__user_key",
                 "commentor__first_name",
                 "commentor__last_name",
                 "commentor__profile_image",
