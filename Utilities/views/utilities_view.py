@@ -58,7 +58,7 @@ class DropDowns(APIView):
                 .order_by("-created_on")
             )
         elif drop_type == 2:
-            data = Country.objects.all().values("id", "name", "calling_code")
+            data = Country.objects.all().values("id", "name", "calling_code", "flag")
         elif drop_type == 3:
             data = (
                 Module.objects.all().values("id", "name", "created_on").order_by("id")
