@@ -1,13 +1,20 @@
 import random
+import re
 
 from Auth.models.permissions_model import Module, Permission
 from Auth.models.user_model import User
 from helpers.status_codes import EmptyParameters
 
-# def validate_email(s):
-#    pat = "^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
-#    if not re.match(pat,s):
-#       raise InvalidEmail()
+
+def is_email(email):
+    # Define a regular expression pattern for a basic email address check
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+
+    # Use the re.match function to check if the string matches the pattern
+    if re.match(pattern, email):
+        return True
+    else:
+        return False
 
 
 def check_required_fields(data, fields):

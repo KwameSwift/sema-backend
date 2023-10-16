@@ -122,12 +122,14 @@ class User(AbstractBaseUser):
     password_reset_code = models.CharField(max_length=255, blank=True, null=True)
 
     profile_image = models.CharField(max_length=255, blank=True, null=True)
-    
+
     profile_image_key = models.CharField(max_length=255, blank=True, null=True)
 
     account_type = models.CharField(max_length=255, null=False)
 
     is_deleted = models.BooleanField(default=False)
+
+    mobile_login_field = models.CharField(max_length=255, blank=True, default="")
 
     # unique field
     USERNAME_FIELD = "email"
