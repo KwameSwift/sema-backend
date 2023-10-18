@@ -37,6 +37,7 @@ class RegisterView(APIView):
         data = request.data
 
         check_required_fields(data, ["first_name", "last_name"])
+        language = data.pop("language", None)
         try:
             if "email" in data:
                 User.objects.get(email=data["email"])
@@ -80,7 +81,7 @@ class RegisterView(APIView):
             user = User.objects.create(**data)
 
             # Send welcome mail to user
-            if data.get("language") == "en":
+            if language == "en":
                 send_email(
                     data["email"], "Welcome to Sema App!", english_welcome_message
                 )
