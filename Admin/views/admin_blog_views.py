@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models import User
+from Blog.blog_helper import send_blog_declination_mail
 from Blog.models.blog_model import BlogComment, BlogPost
 from helpers.functions import (aware_datetime,
                                convert_quill_text_to_normal_text,
@@ -117,3 +118,39 @@ class GetAllBlogPostsAsAdmin(APIView):
             data,
             safe=False,
         )
+
+
+class DeclineBlogs(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        data = request.data
+
+        if not check_super_admin(self.request.user):
+            raise action_authorization_exception("Unauthorized to perform action")
+
+        check_required_fields(data, ["blog_post_id", "comments"])
+
+        try:
+            blog = BlogPost.objects.get(id=data["blog_post_id"])
+            blog.is_approved = False
+            blog.is_published = False
+            blog.is_declined = True
+            blog.declined_by = user
+            blog.approved_and_published_by = None
+            blog.updated_on = aware_datetime(datetime.datetime.now())
+            blog.save()
+
+            send_blog_declination_mail(blog, data["comments"])
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "detail": "Blog verified and published successfully",
+                },
+                safe=False,
+            )
+        except User.DoesNotExist:
+            raise non_existing_data_exception("User")

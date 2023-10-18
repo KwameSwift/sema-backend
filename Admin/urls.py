@@ -1,18 +1,37 @@
 from django.urls import path
 
-from .views.admin_blog_views import (ApproveAndPublishBlogs,
-                                     GetAllBlogPostsAsAdmin)
+from DocumentVault.views.document_vault_views import AdminGetAllDocumentsInVault
+from .views.admin_blog_views import (
+    ApproveAndPublishBlogs,
+    GetAllBlogPostsAsAdmin,
+    DeclineBlogs,
+)
 from .views.admin_events_view import ApproveEvents, GetAllEventsAsAdmin
-from .views.admin_poll_views import (AdminGetAllPolls, AdminViewSinglePoll,
-                                     ApprovePoll)
-from .views.admin_user_roles_views import (AddModuleView, AddUserRole,
-                                           AssignUserRoleToUser,
-                                           DeleteUserRole, GetAllUserRoles,
-                                           GetSingleRole, UpdateUserRole)
-from .views.admin_users_views import (AddSuperAdmins, DeleteUserView,
-                                      GetAllUsers, GetSingleUser,
-                                      GetSystemStatistics, SearchAllUsers,
-                                      VerifyUsers)
+from .views.admin_forum_views import ApproveForum, DeclineForum, AdminGetAllForums
+from .views.admin_poll_views import (
+    AdminGetAllPolls,
+    AdminViewSinglePoll,
+    ApprovePoll,
+    DeclinePoll,
+)
+from .views.admin_user_roles_views import (
+    AddModuleView,
+    AddUserRole,
+    AssignUserRoleToUser,
+    DeleteUserRole,
+    GetAllUserRoles,
+    GetSingleRole,
+    UpdateUserRole,
+)
+from .views.admin_users_views import (
+    AddSuperAdmins,
+    DeleteUserView,
+    GetAllUsers,
+    GetSingleUser,
+    GetSystemStatistics,
+    SearchAllUsers,
+    VerifyUsers,
+)
 
 urlpatterns = [
     # System Statistics
@@ -32,6 +51,11 @@ urlpatterns = [
         ApproveAndPublishBlogs.as_view(),
         name="Admin Approve Blog Post",
     ),
+    path(
+        "decline-blog-posts/",
+        DeclineBlogs.as_view(),
+        name="Admin Decline Blog Post",
+    ),
     # Users
     path(
         "all-users/<int:page_number>/",
@@ -44,7 +68,7 @@ urlpatterns = [
         name="Verify Users",
     ),
     path(
-        "get-single-user/",
+        "get-single-user/<slug:user_key>/",
         GetSingleUser.as_view(),
         name="Get Single User",
     ),
@@ -110,6 +134,11 @@ urlpatterns = [
         name="Approve Poll",
     ),
     path(
+        "decline-poll/<int:poll_id>/",
+        DeclinePoll.as_view(),
+        name="Decline Poll",
+    ),
+    path(
         "single-poll/<int:poll_id>/",
         AdminViewSinglePoll.as_view(),
         name="Admin Single Poll",
@@ -118,5 +147,26 @@ urlpatterns = [
         "get-all-polls/<int:data_type>/<int:page_number>/",
         AdminGetAllPolls.as_view(),
         name="Admin Get All Polls",
+    ),
+    # Forum
+    path(
+        "approve-disapprove-forum/<int:status>/<int:forum_id>/",
+        ApproveForum.as_view(),
+        name="Approve Or Disapprove Forum",
+    ),
+    path(
+        "decline-forum/<int:forum_id>/",
+        DeclineForum.as_view(),
+        name="Decline Forum",
+    ),
+    path(
+        "get-all-forums/<int:data_type>/<int:page_number>/",
+        AdminGetAllForums.as_view(),
+        name="Admin Get All Forums",
+    ),
+    path(
+        "get-vault-documents/<int:page_number>/",
+        AdminGetAllDocumentsInVault.as_view(),
+        name="Admin Get All Documents In Vault",
     ),
 ]

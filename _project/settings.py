@@ -90,7 +90,21 @@ INSTALLED_APPS = [
     "Admin",
     "Events",
     "Polls",
+    "Forum",
+    "channels",
+    "DocumentVault",
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv("REDIS_IP"), int(os.getenv("REDIS_PORT")))],
+        },
+    },
+}
+
+ASGI_APPLICATION = "chat_channels.routing.application"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -134,7 +148,7 @@ TEMPLATES = [
 AUTH_USER_MODEL = "Auth.User"
 WSGI_APPLICATION = "_project.wsgi.application"
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1GB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
 FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
 
 
@@ -230,10 +244,10 @@ MEDIA_URL = "/media/"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 # as declared in NginX conf, it must match /opt/services/djangoapp/static/
-STATIC_ROOT = os.path.join((BASE_DIR), "static")
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 # do the same for media files, it must match /opt/services/djangoapp/media/
-MEDIA_ROOT = os.path.join((BASE_DIR), "media")
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

@@ -12,7 +12,6 @@ class Poll(models.Model):
         blank=True,
         related_name="poll_author",
     )
-    title = models.CharField(max_length=255, null=True, blank=True)
     file_location = models.CharField(max_length=255, null=True, blank=True)
     file_key = models.CharField(max_length=255, null=True, blank=True)
     snapshot_location = models.CharField(max_length=255, null=True, blank=True)
@@ -21,6 +20,14 @@ class Poll(models.Model):
     start_date = models.DateField(auto_now_add=False, null=True, blank=True)
     end_date = models.DateField(auto_now_add=False, null=True, blank=True)
     is_approved = models.BooleanField(default=False)
+    is_declined = models.BooleanField(default=False)
+    declined_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="poll_decliner",
+    )
     approved_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

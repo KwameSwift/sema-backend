@@ -23,6 +23,14 @@ class BlogPost(models.Model):
     is_published = models.BooleanField(default=False)
     is_abusive = models.BooleanField(default=False)
     is_consented = models.BooleanField(default=False)
+    is_declined = models.BooleanField(default=False)
+    declined_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="blog_declined_by",
+    )
     total_likes = models.IntegerField(default=0, null=True, blank=True)
     total_shares = models.IntegerField(default=0, null=True, blank=True)
     approved_and_published_by = models.ForeignKey(

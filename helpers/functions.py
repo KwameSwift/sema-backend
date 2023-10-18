@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.timezone import make_aware
 
-from _project import settings
+from django.conf import settings
 
 FTP_HOSTNAME = os.getenv("FTP_HOSTNAME")
 FTP_USERNAME = os.getenv("FTP_USERNAME")
@@ -53,7 +53,6 @@ def paginate_data(data, page_number, items_per_page):
 
 # Function to return aware datetime
 def aware_datetime(datetime):
-    settings.TIME_ZONE
     return make_aware(datetime)
 
 

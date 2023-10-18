@@ -1,7 +1,8 @@
 import json
 import os
+from datetime import datetime
 
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
@@ -10,17 +11,42 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Auth.models.user_model import User
 from Blog.models.blog_model import BlogComment, BlogPost
+from DocumentVault.models import Document
 from Events.models.events_model import Events
-from helpers.azure_file_handling import delete_blob, upload_profile_image
-from helpers.functions import (convert_quill_text_to_normal_text, delete_file,
-                               local_file_upload, paginate_data, truncate_text)
-from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  non_existing_data_exception)
-from helpers.validations import check_required_fields
-from Polls.models.poll_models import Poll
-from Polls.poll_helper import retrieve_poll_with_choices
+from Forum.forum_helper import (
+    send_forum_join_request_approval_to_user,
+    send_forum_join_request_decline_to_user,
+)
+from Forum.models import (
+    Forum,
+    VirtualMeeting,
+    ForumFile,
+    ChatRoom,
+    ForumRequest,
+    ForumPoll,
+    ForumPollChoices,
+)
+from Polls.models.poll_models import Poll, PollVote
+from Polls.poll_helper import (
+    retrieve_poll_with_choices,
+    author_retrieve_forum_poll_with_choices,
+)
 from Utilities.models.documents_model import UserDocuments
+from helpers.azure_file_handling import delete_blob, upload_profile_image
+from helpers.functions import (
+    convert_quill_text_to_normal_text,
+    delete_file,
+    local_file_upload,
+    paginate_data,
+    truncate_text,
+    aware_datetime,
+)
+from helpers.status_codes import (
+    action_authorization_exception,
+    cannot_perform_action,
+    non_existing_data_exception,
+)
+from helpers.validations import check_required_fields
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -73,10 +99,10 @@ class UploadUserDocuments(APIView):
         files = request.FILES.getlist("files")
         user = self.request.user
 
-        LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
+        local_file_path = os.environ.get("LOCAL_FILE_PATH")
         for file in files:
             full_directory = (
-                f"{LOCAL_FILE_PATH}{user.first_name}_{user.last_name}/Documents"
+                f"{local_file_path}{user.first_name}_{user.last_name}/Documents"
             )
             file_path = local_file_upload(full_directory, file)
 
@@ -184,9 +210,9 @@ class GetAuthorStatistics(APIView):
         user = self.request.user
 
         total_blogs = BlogPost.objects.filter(author=user).count()
-        total_events = Events.objects.filter(created_by=user).count()
         total_polls = Poll.objects.filter(author=user).count()
-        total_forums = 0
+        total_forums = Forum.objects.filter(author=user).count()
+        total_document_vault = Document.objects.filter(owner=user).count()
 
         blogs = (
             BlogPost.objects.filter(author=user)
@@ -202,8 +228,8 @@ class GetAuthorStatistics(APIView):
         data = {
             "total_polls": total_polls,
             "total_blogs": total_blogs,
-            "total_events": total_events,
             "total_forums": total_forums,
+            "total_document_vault": total_document_vault,
             "blog_data": blog_data,
         }
 
@@ -291,15 +317,12 @@ class UpdateUserProfile(APIView):
 
         if profile_image:
             try:
-                user_doc = UserDocuments.objects.get(
-                    owner=user, document_type="Profile Image"
-                )
-                delete_blob(container, user_doc.document_key)
-                user_doc.delete()
+                delete_blob(container, user.profile_image_key)
             except UserDocuments.DoesNotExist:
                 pass
-            image = upload_profile_image(profile_image, user)
-            user.profile_image = image
+            url = upload_profile_image(profile_image, user)
+            user.profile_image = url[0]
+            user.profile_image_key = url[1]
             profile_image = data.pop("profile_image", None)
             user.save()
 
@@ -325,6 +348,18 @@ class GetMySinglePoll(APIView):
         try:
             poll = Poll.objects.get(id=poll_id, author=user)
             poll_data = retrieve_poll_with_choices(poll.id)
+            poll_data["poll_votes"] = list(
+                (
+                    PollVote.objects.filter(poll_id=poll.id).values(
+                        "id",
+                        "voter__first_name",
+                        "voter__last_name",
+                        "poll_choice__choice",
+                        "poll_choice_id",
+                        "comments",
+                    )
+                )
+            )
 
             return JsonResponse(
                 {
@@ -336,3 +371,331 @@ class GetMySinglePoll(APIView):
             )
         except Poll.DoesNotExist:
             raise non_existing_data_exception("Poll")
+
+
+class GetMyForums(APIView):
+    def get(self, request, *args, **kwargs):
+        page_number = self.kwargs.get("page_number")
+        data_type = self.kwargs["data_type"]
+        user = self.request.user
+
+        query = Q(author=user)
+        if data_type == 1:
+            query &= Q(is_approved=True)
+        elif data_type == 2:
+            query &= Q(is_approved=False)
+        elif data_type == 3:
+            query &= Q(is_declined=True)
+
+        try:
+            forums = Forum.objects.filter(query).values(
+                "id",
+                "topic",
+                "description",
+                "tags",
+                "author__first_name",
+                "author__last_name",
+                "author__profile_image",
+                "author__is_verified",
+                "author__organization",
+                "total_likes",
+                "total_shares",
+                "is_public",
+                "approved_on",
+                "is_approved",
+                "is_declined",
+                "created_on",
+            )
+            for forum in forums:
+                forum["virtual_meetings"] = list(
+                    VirtualMeeting.objects.filter(forum_id=forum["id"]).values(
+                        "id",
+                        "meeting_agenda",
+                        "meeting_url",
+                        "scheduled_start_time",
+                        "scheduled_end_time",
+                        "organizer__first_name",
+                        "organizer__last_name",
+                        "total_attendees",
+                    )
+                )
+                forum["files"] = list(
+                    ForumFile.objects.filter(forum_id=forum["id"]).values(
+                        "id", "description", "file_type", "file_url", "created_on"
+                    )
+                )
+                forum["chat_rooms"] = list(
+                    ChatRoom.objects.filter(forum_id=forum["id"]).values(
+                        "id",
+                        "room_name",
+                        "total_members",
+                        "total_messages",
+                    )
+                )
+
+            data = paginate_data(forums, page_number, 10)
+            return JsonResponse(
+                data,
+                safe=False,
+            )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class ApproveJoinForumRequest(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        request_id = self.kwargs["request_id"]
+
+        try:
+            forum_request = ForumRequest.objects.get(id=request_id)
+            try:
+                forum = Forum.objects.get(id=forum_request.forum_id)
+                if forum.author == user:
+                    try:
+                        requester = User.objects.get(
+                            user_key=forum_request.member.user_key
+                        )
+                        forum.forum_members.add(requester)
+                        forum.total_members += 1
+                        forum.updated_on = aware_datetime(datetime.now())
+                        forum.save()
+                        forum_request.is_approved = True
+                        forum_request.is_declined = False
+                        forum_request.updated_on = aware_datetime(datetime.now())
+                        forum_request.save()
+                        send_forum_join_request_approval_to_user(forum, requester)
+                        return JsonResponse(
+                            {
+                                "status": "success",
+                                "detail": "Successfully approved join forum request",
+                            },
+                            safe=False,
+                        )
+                    except User.DoesNotExist:
+                        raise non_existing_data_exception("User")
+                else:
+                    raise cannot_perform_action(
+                        "Unauthorized to approve this join request"
+                    )
+            except Forum.DoesNotExist:
+                raise non_existing_data_exception("Forum")
+        except ForumRequest.DoesNotExist:
+            raise non_existing_data_exception("Forum request")
+
+
+class DeclineJoinForumRequest(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def post(self, request, *args, **kwargs):
+        request_id = self.kwargs["request_id"]
+        user = self.request.user
+
+        try:
+            forum_request = ForumRequest.objects.get(id=request_id)
+            try:
+                forum = Forum.objects.get(id=forum_request.forum_id)
+                if forum.author == user:
+                    try:
+                        requester = User.objects.get(
+                            user_key=forum_request.member.user_key
+                        )
+                        forum_request.is_approved = False
+                        forum_request.is_declined = True
+                        forum_request.save()
+                        send_forum_join_request_decline_to_user(forum, requester)
+                        return JsonResponse(
+                            {
+                                "status": "success",
+                                "detail": "Successfully declined join forum request",
+                            },
+                            safe=False,
+                        )
+                    except User.DoesNotExist:
+                        raise non_existing_data_exception("User")
+                else:
+                    raise cannot_perform_action(
+                        "Unauthorized to decline this join request"
+                    )
+            except Forum.DoesNotExist:
+                raise non_existing_data_exception("Forum")
+        except ForumRequest.DoesNotExist:
+            raise non_existing_data_exception("Forum request")
+
+
+class GetForumJoinRequests(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        forum_id = self.kwargs["forum_id"]
+        page_number = self.kwargs["page_number"]
+        user = self.request.user
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            if user == forum.author:
+                forum_request = list(
+                    ForumRequest.objects.filter(
+                        forum_id=forum_id, is_approved=False
+                    ).values(
+                        "id",
+                        "forum__topic",
+                        "member__first_name",
+                        "member__last_name",
+                        "member__email",
+                        "created_on",
+                    )
+                )
+                data = paginate_data(forum_request, page_number, 10)
+                return JsonResponse(
+                    data,
+                    safe=False,
+                )
+            else:
+                raise cannot_perform_action("Unauthorized to view forum requests")
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class ManageMyForum(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        forum_id = self.kwargs.get("forum_id")
+        user = self.request.user
+
+        try:
+            forum = Forum.objects.get(id=forum_id)
+            if not forum.author == user:
+                raise cannot_perform_action("Unauthorized to manage forum")
+            else:
+                forum = (
+                    Forum.objects.filter(id=forum_id)
+                    .values(
+                        "id",
+                        "topic",
+                        "description",
+                        "tags",
+                        "author__first_name",
+                        "author__last_name",
+                        "author__profile_image",
+                        "author__is_verified",
+                        "author__organization",
+                        "approved_by__first_name",
+                        "approved_by__last_name",
+                        "approved_on",
+                        "header_image",
+                        "total_likes",
+                        "total_members",
+                        "total_shares",
+                        "is_approved",
+                        "is_public",
+                        "is_declined",
+                        "created_on",
+                    )
+                    .first()
+                )
+                forum["virtual_meetings"] = list(
+                    VirtualMeeting.objects.filter(forum_id=forum_id).values(
+                        "id",
+                        "meeting_agenda",
+                        "meeting_url",
+                        "scheduled_start_time",
+                        "scheduled_end_time",
+                        "organizer__first_name",
+                        "organizer__last_name",
+                        "total_attendees",
+                    )
+                )
+                forum["media_files"] = list(
+                    ForumFile.objects.filter(
+                        forum_id=forum_id, file_category="Media Files"
+                    ).values(
+                        "id",
+                        "description",
+                        "file_name",
+                        "file_category",
+                        "file_type",
+                        "file_url",
+                        "file_key",
+                        "created_on",
+                    )
+                )
+                forum["files"] = list(
+                    ForumFile.objects.filter(
+                        forum_id=forum_id, file_category="Files"
+                    ).values(
+                        "id",
+                        "description",
+                        "file_name",
+                        "file_category",
+                        "file_type",
+                        "file_url",
+                        "file_key",
+                        "created_on",
+                    )
+                )
+
+                forum["chat_rooms"] = list(
+                    ChatRoom.objects.filter(forum_id=forum_id).values(
+                        "id",
+                        "room_name",
+                        "total_members",
+                        "total_messages",
+                        "description",
+                    )
+                )
+                frm = Forum.objects.filter(id=forum_id).first()
+                forum["members"] = list(
+                    frm.forum_members.all().values(
+                        "user_key", "first_name", "last_name"
+                    )
+                )
+
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "detail": "Forum deleted successfully",
+                        "data": forum,
+                    },
+                    safe=False,
+                )
+        except Forum.DoesNotExist:
+            raise non_existing_data_exception("Forum")
+
+
+class GetMyForumPolls(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        forum_id = self.kwargs.get("forum_id")
+        page_number = self.kwargs.get("page_number")
+
+        data = []
+        ForumPoll.objects.filter(
+            forum_id=forum_id, author=user, end_date__lt=aware_datetime(datetime.now())
+        ).update(is_ended=True)
+
+        forum_polls = ForumPoll.objects.filter(forum_id=forum_id, author=user).values()
+
+        for forum in forum_polls:
+            item = author_retrieve_forum_poll_with_choices(forum["id"])
+            item["total_votes"] = ForumPollChoices.objects.filter(
+                forum_poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
+            data.append(item)
+
+        data = paginate_data(data, page_number, 10)
+
+        return JsonResponse(
+            data,
+            safe=False,
+        )

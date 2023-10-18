@@ -93,3 +93,15 @@ class FileAlreadyExists(APIException):
         "code": status_code,
         "detail": "File already exists",
     }
+
+
+def invalid_data(message):
+    class InvalidData(APIException):
+        status_code = 319
+        default_detail = {
+            "status": "error",
+            "code": status_code,
+            "detail": message,
+        }
+
+    return InvalidData

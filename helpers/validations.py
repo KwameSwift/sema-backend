@@ -1,13 +1,20 @@
 import random
+import re
 
 from Auth.models.permissions_model import Module, Permission
 from Auth.models.user_model import User
 from helpers.status_codes import EmptyParameters
 
-# def validate_email(s):
-#    pat = "^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
-#    if not re.match(pat,s):
-#       raise InvalidEmail()
+
+def is_email(email):
+    # Define a regular expression pattern for a basic email address check
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+
+    # Use the re.match function to check if the string matches the pattern
+    if re.match(pattern, email):
+        return True
+    else:
+        return False
 
 
 def check_required_fields(data, fields):
@@ -38,11 +45,11 @@ def flatten_list(input_list: list, output_list: list):
             output_list.append(item)
 
 
-def capitalizeFirstLetters(name: str):
-    splt_name = str(name).split(" ")
+def capitalize_first_letters(name: str):
+    split_name = str(name).split(" ")
     try:
-        nm_1 = splt_name[0]
-        nm_2 = splt_name[1]
+        nm_1 = split_name[0]
+        nm_2 = split_name[1]
         final_name = nm_1.capitalize() + " " + nm_2.capitalize()
     except IndexError:
         final_name = name.capitalize()
@@ -51,14 +58,14 @@ def capitalizeFirstLetters(name: str):
 
 
 def unique_list(list_of_items):
-    unique_list = []
+    unique_data = []
     for x in list_of_items:
-        if x not in unique_list:
-            unique_list.append(x)
-    return unique_list
+        if x not in unique_data:
+            unique_data.append(x)
+    return unique_data
 
 
-# Check user module permision
+# Check user module permission
 def check_permission(user, module_name, access_level):
     module = Module.objects.get(name=module_name)
     permission = Permission.objects.get(role_id=user.role_id, module=module)

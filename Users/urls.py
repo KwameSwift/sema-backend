@@ -1,11 +1,24 @@
 from django.urls import path
 
+from DocumentVault.views.document_vault_views import GetMyDocumentsInVault
 from Polls.views.polls_view import GetAllApprovedPollsByUser, GetMyPolls
 
-from .views.users_views import (DeleteProfileImage, GetAuthorStatistics,
-                               GetMySinglePoll, GetUserBlogPosts, ProfileView,
-                               SearchMyBlogPosts, UpdateUserProfile,
-                               UploadUserDocuments)
+from .views.users_views import (
+    DeleteProfileImage,
+    GetAuthorStatistics,
+    GetMySinglePoll,
+    GetUserBlogPosts,
+    ProfileView,
+    SearchMyBlogPosts,
+    UpdateUserProfile,
+    UploadUserDocuments,
+    GetMyForums,
+    ApproveJoinForumRequest,
+    DeclineJoinForumRequest,
+    GetForumJoinRequests,
+    ManageMyForum,
+    GetMyForumPolls,
+)
 
 urlpatterns = [
     # Users
@@ -45,7 +58,7 @@ urlpatterns = [
         name="Update My Profile",
     ),
     path(
-        "approved-polls/",
+        "approved-polls/<int:page_number>/",
         GetAllApprovedPollsByUser.as_view(),
         name="Authenticated User Approved Polls",
     ),
@@ -58,5 +71,40 @@ urlpatterns = [
         "my-single-polls/<int:poll_id>/",
         GetMySinglePoll.as_view(),
         name="Get My Single Poll",
+    ),
+    path(
+        "my-forums/<int:data_type>/<int:page_number>/",
+        GetMyForums.as_view(),
+        name="Get My Forums",
+    ),
+    path(
+        "approve-forum-request/<int:request_id>/",
+        ApproveJoinForumRequest.as_view(),
+        name="Approve Forum Request",
+    ),
+    path(
+        "decline-forum-request/<int:request_id>/",
+        DeclineJoinForumRequest.as_view(),
+        name="Decline Forum Request",
+    ),
+    path(
+        "get-forum-join-requests/<int:forum_id>/<int:page_number>/",
+        GetForumJoinRequests.as_view(),
+        name="Get Forum Join Requests",
+    ),
+    path(
+        "manage-forum/<int:forum_id>/",
+        ManageMyForum.as_view(),
+        name="Manage My Forum",
+    ),
+    path(
+        "get-my-forum-polls/<int:forum_id>/<int:page_number>/",
+        GetMyForumPolls.as_view(),
+        name="Get My Forum Polls",
+    ),
+    path(
+        "get-my-vault-documents/<int:page_number>/",
+        GetMyDocumentsInVault.as_view(),
+        name="Get My Documents In Vault",
     ),
 ]

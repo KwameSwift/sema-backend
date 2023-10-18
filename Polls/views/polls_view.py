@@ -9,16 +9,26 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from Polls.models.poll_models import Poll, PollChoices, PollVote
-from Polls.poll_helper import (get_polls_by_logged_in_user,
-                               retrieve_poll_with_choices)
+from Polls.poll_helper import (
+    get_polls_by_logged_in_user,
+    retrieve_poll_with_choices,
+    get_polls_by_author,
+    author_retrieve_poll_with_choices,
+)
 from Utilities.models.documents_model import UserDocuments
-from helpers.azure_file_handling import delete_blob, upload_poll_file_or_pdf_to_azure, upload_cover_image
+from helpers.azure_file_handling import (
+    delete_blob,
+    upload_poll_file_or_pdf_to_azure,
+    upload_cover_image,
+)
 from helpers.functions import aware_datetime, paginate_data
-from helpers.status_codes import (action_authorization_exception,
-                                  cannot_perform_action,
-                                  duplicate_data_exception,
-                                  non_existing_data_exception)
-from helpers.validations import (check_permission, check_required_fields)
+from helpers.status_codes import (
+    action_authorization_exception,
+    cannot_perform_action,
+    duplicate_data_exception,
+    non_existing_data_exception,
+)
+from helpers.validations import check_permission, check_required_fields
 
 LOCAL_FILE_PATH = os.environ.get("LOCAL_FILE_PATH")
 
@@ -48,8 +58,12 @@ class CreatePoll(APIView):
             Poll.objects.get(question=data["question"])
             raise duplicate_data_exception("Poll")
         except Poll.DoesNotExist:
-            data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
-            data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            data["start_date"] = datetime.datetime.strptime(
+                data["start_date"], "%Y-%m-%d"
+            ).date()
+            data["end_date"] = datetime.datetime.strptime(
+                data["end_date"], "%Y-%m-%d"
+            ).date()
             data["author_id"] = user.user_key
             choices = data.pop("choices", None)
             poll = Poll.objects.create(**data)
@@ -101,7 +115,7 @@ class VoteOnAPoll(APIView):
         data = request.data
         user = self.request.user
 
-        check_required_fields(data, ["poll_id", "choice_id"])
+        check_required_fields(data, ["poll_id", "choice_id", "comments"])
 
         try:
             poll = Poll.objects.get(id=data["poll_id"])
@@ -112,9 +126,6 @@ class VoteOnAPoll(APIView):
                 PollVote.objects.get(poll=poll, voter=user)
                 raise cannot_perform_action("User already voted for this poll")
             except PollVote.DoesNotExist:
-                comments = None
-                if "comments" in data:
-                    comments = data["comments"]
                 try:
                     poll_choice = PollChoices.objects.get(
                         poll=poll, id=data["choice_id"]
@@ -124,7 +135,10 @@ class VoteOnAPoll(APIView):
                     poll_choice.save()
 
                     PollVote.objects.create(
-                        poll=poll, voter=user, poll_choice=poll_choice, comments=comments
+                        poll=poll,
+                        voter=user,
+                        poll_choice=poll_choice,
+                        comments=data["comments"],
                     )
                 except PollChoices.DoesNotExist:
                     raise non_existing_data_exception("Poll Choice")
@@ -178,6 +192,7 @@ class GetAllApprovedPollsByUser(APIView):
 
     def get(self, request, *args, **kwargs):
         user = self.request.user
+        page_number = self.kwargs.get("page_number")
 
         data = []
         Poll.objects.filter(
@@ -187,29 +202,19 @@ class GetAllApprovedPollsByUser(APIView):
         poll_data = get_polls_by_logged_in_user(user)
         for item in poll_data:
             if (
-                    item["is_ended"]
-                    and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
+                item["is_ended"]
+                and not PollVote.objects.filter(voter=user, poll_id=item["id"]).exists()
             ):
                 item = retrieve_poll_with_choices(item["id"])
-
-            image = (
-                UserDocuments.objects.filter(
-                    owner_id=item["author_id"], document_type="Profile Image"
-                )
-                .values("document_location")
-                .first()
-            )
-            item["total_votes"] = PollChoices.objects.filter(poll_id=item["id"]).aggregate(total_votes=Sum('votes'))[
-                'total_votes']
-            item["author_profile_image"] = image["document_location"] if image else None
+            item["total_votes"] = PollChoices.objects.filter(
+                poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
             data.append(item)
 
+        data = paginate_data(data, page_number, 10)
+
         return JsonResponse(
-            {
-                "status": "success",
-                "detail": "Polls retrieved successfully",
-                "data": data,
-            },
+            data,
             safe=False,
         )
 
@@ -217,14 +222,14 @@ class GetAllApprovedPollsByUser(APIView):
 # Get All Polls and their results
 class GetAllApprovedPolls(APIView):
     def get(self, request, *args, **kwargs):
-        page_number = self.kwargs.get('page_number')
+        page_number = self.kwargs.get("page_number")
         Poll.objects.filter(
             end_date__lt=aware_datetime(datetime.datetime.now()), is_ended=False
         ).update(is_ended=True)
 
-        polls = Poll.objects.filter(is_approved=True).values(
+        polls = Poll.objects.filter(is_approved=True, is_declined=False).values(
             "id",
-            "title",
+            "question",
             "file_location",
             "snapshot_location",
             "start_date",
@@ -235,23 +240,17 @@ class GetAllApprovedPolls(APIView):
             "author__first_name",
             "author__last_name",
             "author__is_verified",
+            "author__profile_image",
             "approved_on",
             "created_on",
         )
 
         for poll in polls:
-            poll["total_votes"] = PollChoices.objects.filter(poll_id=poll["id"]).aggregate(total_votes=Sum('votes'))[
-                'total_votes']
-            image = (
-                UserDocuments.objects.filter(
-                    owner_id=poll["author_id"], document_type="Profile Image"
-                )
-                .values("document_location")
-                .first()
-            )
-            poll["author_profile_image"] = image["document_location"] if image else None
+            poll["total_votes"] = PollChoices.objects.filter(
+                poll_id=poll["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
             if poll["is_ended"]:
-                poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+                poll["stats"] = retrieve_poll_with_choices(poll["id"], poll_type="All")
 
             else:
                 poll["choices"] = list(
@@ -287,26 +286,18 @@ class GetMyPolls(APIView):
             query &= Q(is_approved=True)
         elif data_type == 2:
             query &= Q(is_approved=False)
+        elif data_type == 3:
+            query &= Q(is_declined=True)
 
-        polls = Poll.objects.filter(query).values(
-            "id",
-            "title",
-            "file_location",
-            "snapshot_location",
-            "start_date",
-            "end_date",
-            "is_approved",
-            "approved_on",
-            "created_on",
-        )
+        polls = get_polls_by_author(query)
 
-        # for poll in polls:
-        #     poll["stats"] = retrieve_poll_with_choices(poll["id"], type="All")
+        for item in polls:
+            item["total_votes"] = PollChoices.objects.filter(
+                poll_id=item["id"]
+            ).aggregate(total_votes=Sum("votes"))["total_votes"]
+
         data = paginate_data(polls, page_number, 10)
-        return JsonResponse(
-            data,
-            safe=False
-        )
+        return JsonResponse(data, safe=False)
 
 
 class UpdatePoll(APIView):
@@ -324,6 +315,8 @@ class UpdatePoll(APIView):
 
         try:
             poll = Poll.objects.get(id=poll_id)
+            if poll.author_id != user.user_key:
+                raise action_authorization_exception("Cannot edit this poll")
             container_name = f"{poll.author.first_name}-{poll.author.last_name}".lower()
 
             if files:
@@ -353,20 +346,30 @@ class UpdatePoll(APIView):
 
             if "is_document_deleted" in data and data["is_document_deleted"]:
                 delete_blob(container_name, poll.file_key)
+                delete_blob(container_name, poll.snapshot_key)
                 poll.file_key = None
                 poll.file_location = None
+                poll.snapshot_location = None
+                poll.snapshot_key = None
                 poll.save()
                 data.pop("is_document_deleted", None)
 
             if "start_date" in data:
-                data["start_date"] = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+                data["start_date"] = datetime.datetime.strptime(
+                    data["start_date"], "%Y-%m-%d"
+                ).date()
             if "end_date" in data:
-                data["end_date"] = datetime.datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+                data["end_date"] = datetime.datetime.strptime(
+                    data["end_date"], "%Y-%m-%d"
+                ).date()
                 if data["end_date"] >= datetime.datetime.now().date():
                     data["is_ended"] = False
 
             data["updated_on"] = aware_datetime(datetime.datetime.now())
             Poll.objects.filter(id=poll_id).update(**data)
+            poll.refresh_from_db()
+            poll.is_declined = False if poll.is_declined else False
+            poll.save()
             return JsonResponse(
                 {"status": "success", "detail": "Poll updated successfully"},
                 safe=False,
@@ -418,8 +421,7 @@ class SearchPolls(APIView):
         check_required_fields(data, ["search_query"])
 
         polls = Poll.objects.filter(
-            Q(description__icontains=data["search_query"])
-            | Q(question__icontains=data["search_query"])
+            Q(question__icontains=data["search_query"])
             | Q(author__first_name__icontains=data["search_query"])
             | Q(author__last_name__icontains=data["search_query"])
         )
@@ -429,14 +431,15 @@ class SearchPolls(APIView):
 
         polls = polls.values(
             "id",
-            "description",
+            "question",
             "file_location",
             "snapshot_location",
             "end_date",
             "is_approved",
-            "author_id",
+            "is_declined",
             "author__first_name",
             "author__last_name",
+            "author__profile_image",
             "approved_by__first_name",
             "approved_by__last_name",
             "approved_on",
@@ -444,20 +447,35 @@ class SearchPolls(APIView):
             "created_on",
         )
 
-        if user.is_admin:
-            for poll in polls:
-                image = (
-                    UserDocuments.objects.filter(
-                        owner_id=poll["author_id"], document_type="Profile Image"
-                    )
-                    .values("document_location")
-                    .first()
-                )
-                poll["author_profile_image"] = image["document_location"]
-
         data = paginate_data(polls, page_number, 10)
 
         return JsonResponse(
             data,
             safe=False,
         )
+
+
+class UpdateUserPollComment(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
+
+    def put(self, request, *args, **kwargs):
+        user = self.request.user
+        poll_id = self.kwargs["poll_id"]
+        data = request.data
+        check_required_fields(data, ["comments"])
+
+        try:
+            poll = Poll.objects.get(id=poll_id)
+            poll_vote = PollVote.objects.get(poll_id=poll.id, voter=user)
+            poll_vote.comments = data["comments"]
+            poll_vote.updated_on = aware_datetime(datetime.datetime.now())
+            poll_vote.save()
+            return JsonResponse(
+                {"status": "success", "detail": "Poll comment updated successfully"},
+                safe=False,
+            )
+        except Poll.DoesNotExist:
+            raise non_existing_data_exception("Poll")
+        except PollVote.DoesNotExist:
+            raise non_existing_data_exception("Vote")
