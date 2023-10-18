@@ -50,6 +50,7 @@ english_welcome_message = """
 
 swahili_welcome_message = """
                 Tupo na furaha kubwa kuwaeleza zaidi kuhusu jukwaa hili.
+                
                 Jukwaa la Sema ni jukwaa huru la teknolojia ya kiraia lililoundwa kwa lengo la kuwawezesha
                 wananchi kushiriki kikamilifu katika mchakato wa kidemokrasia kupitia upigaji kura, kubuni
                 mawazo, ushirikiano, na upatikanaji wa huduma za kidigitali. Lengo ni kuimarisha ushiriki wa
