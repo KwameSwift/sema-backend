@@ -1,8 +1,6 @@
 import datetime
 
-from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.db.models import Q
 from django.http import JsonResponse
 from django.utils.timezone import make_aware
 from rest_framework.permissions import IsAuthenticated
@@ -13,8 +11,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from Auth.models import User
 from Auth.models.permissions_model import Permission
 from Auth.models.user_model import UserRole, Country
-from Blog.models.blog_model import BlogPost
-from helpers.email_sender import send_email, welcome_message
+from helpers.email_sender import (
+    send_email,
+    english_welcome_message,
+    swahili_welcome_message,
+)
 from helpers.status_codes import (
     PasswordMismatch,
     WrongCode,
@@ -28,7 +29,6 @@ from helpers.status_codes import (
 from helpers.validations import (
     check_required_fields,
     generate_password_reset_code,
-    is_email,
 )
 
 
@@ -80,7 +80,16 @@ class RegisterView(APIView):
             user = User.objects.create(**data)
 
             # Send welcome mail to user
-            send_email(data["email"], "Welcome to Sema", welcome_message)
+            if data.get("language") == "en":
+                send_email(
+                    data["email"], "Welcome to Sema App!", english_welcome_message
+                )
+            else:
+                send_email(
+                    data["email"],
+                    "Karibu sana kwenye jukwaa hili kwenye Sema App!",
+                    swahili_welcome_message,
+                )
 
             refresh = RefreshToken.for_user(user)
 

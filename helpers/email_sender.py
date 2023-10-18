@@ -10,7 +10,7 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 
-welcome_message = """
+english_welcome_message = """
                 Hello there!
 
                 Welcome to Sema App Platform.
@@ -46,6 +46,39 @@ welcome_message = """
                 hackathon.
                 On any comments or feedback, kindly contact us +255679585176 for more information, queries
                 or comments.
+            """
+
+swahili_welcome_message = """
+                Tupo na furaha kubwa kuwaeleza zaidi kuhusu jukwaa hili.
+                Jukwaa la Sema ni jukwaa huru la teknolojia ya kiraia lililoundwa kwa lengo la kuwawezesha
+                wananchi kushiriki kikamilifu katika mchakato wa kidemokrasia kupitia upigaji kura, kubuni
+                mawazo, ushirikiano, na upatikanaji wa huduma za kidigitali. Lengo ni kuimarisha ushiriki wa
+                kiraia kati ya wananchi na serikali ili kujenga demokrasia imara na yenye kuingiza watu wote.
+                
+                Muundo wa Programu ya Sema umegawanywa katika sehemu tatu:
+                a. Kura ya maoni:
+                    - Katika sehemu hii, Mtumiaji anaweza kushirikisha jamii nyingine ya watumiaji katika kupiga
+                    kura kuhusu suala fulani. Hii inaweza kutumiwa kuchangisha maoni au kufikia makubaliano
+                    kuhusu jambo fulani. Sehemu hii pia inapatikana kwa matumizi ya viongozi wa jamii na wananchi
+                    wao ndani ya mamlaka za serikali za mitaa, inapohusisha kundi la watu wachache.
+                    - Mwongozo wa Mtumiaji: Nenda kwenye Kura+
+                
+                b. Jukwaa:
+                    - Sehemu hii ya Programu ni mahali pa mikusanyiko ya jamii, ambapo mtu anaweza kufanya
+                    mikutano, mijadala, au shughuli zinazohusiana na jukwaa hili, kulingana na sheria na masharti ya
+                    matumizi.
+                    - Mwongozo wa Mtumiaji: Nenda kwenye Jukwaa+
+                
+                c. Blogu:
+                    - Kwenye Blogu, mtu anaweza kupata nyaraka za serikali kama sera na tangazo za hivi karibuni,
+                    kuchapisha nyaraka za kuhusiana na utawala, na kutumika kama kituo cha habari kwa watu.
+                    - Mwongozo wa Mtumiaji: Nenda kwenye Kura+.
+                    Tunaendelea kuwakaribisha kutuchunguza zaidi na kutumia jukwaa hili kwa ufanisi, ambalo
+                    limewekwa mahsusi kwa kuongeza ushiriki wa raia kwa raia-na-serikali (C2G). Tunatarajia
+                    kushirikiana nanyi na kuchora taasisi zetu za kidemokrasia zinazoendelea katika Sema hackathon.
+                    
+                Kwa maoni au maoni yoyote, tafadhali wasiliana na ………………………………….. kwa maelezo zaidi,
+                maswali au maoni.
             """
 
 
